@@ -1,0 +1,214 @@
+/*
+ * Theme tokens. Three complete, switchable looks.
+ * Selected via <html data-theme="editorial | notebook | warm">.
+ * Deliberately avoids the "AI-generated" palette: no purple/blue gradients,
+ * no glassmorphism, no neon. Intentional system font stacks (not Inter).
+ */
+
+:root {
+  /* Typography — system stacks chosen for character, not the Inter/Google default */
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
+    Georgia, "Times New Roman", serif;
+  --font-ui: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, "Roboto Mono", monospace;
+  --font-annotation: "Bradley Hand", "Segoe Print", "Comic Sans MS", cursive;
+
+  /* Shape & depth — restrained, no neon glows */
+  --radius: 6px;
+  --radius-lg: 12px;
+  --shadow-1: 0 1px 2px rgba(30, 27, 22, 0.06), 0 1px 1px rgba(30, 27, 22, 0.04);
+  --shadow-2: 0 6px 20px -8px rgba(30, 27, 22, 0.18);
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------- Editorial */
+/* Clean scientific / textbook. Warm paper, near-black ink, deep teal accent. */
+:root,
+:root[data-theme="editorial"] {
+  --bg: #f7f5ef;
+  --bg-tint: #f0ede3;
+  --surface: #fefdf9;
+  --surface-raised: #ffffff;
+
+  --ink: #211d17;
+  --ink-2: #4b463c;
+  --ink-3: #8a8577;
+
+  --accent: #14594f;
+  --accent-2: #b23a2f; /* marker red, used sparingly */
+  --accent-ink: #fefdf9;
+  --accent-soft: #e3ece8;
+
+  --line: #ddd8cc;
+  --line-strong: #c3bdad;
+  --grid: transparent;
+  --paper-grid: none;
+  --marker: #b23a2f;
+
+  --focus-ring: #14594f;
+
+  --display-weight: 600;
+  --display-style: normal;
+  --display-tracking: -0.01em;
+  --control-radius: var(--radius);
+}
+
+/* ----------------------------------------------------------------- Notebook */
+/* Squared exercise-book paper, fountain-pen ink blue, red-pen annotations. */
+:root[data-theme="notebook"] {
+  --bg: #eef1f4;
+  --bg-tint: #e6eaef;
+  --surface: #fcfdff;
+  --surface-raised: #ffffff;
+
+  --ink: #17233f;
+  --ink-2: #3c4a68;
+  --ink-3: #8791a6;
+
+  --accent: #26467e;
+  --accent-2: #c0392b;
+  --accent-ink: #fcfdff;
+  --accent-soft: #dde5f1;
+
+  --line: #cdd6e4;
+  --line-strong: #aab8ce;
+  --grid: #d3e0ee; /* graph-paper line colour */
+  --marker: #c0392b;
+
+  /* real squared-paper texture (5mm grid) drawn behind the worksheet */
+  --paper-grid: linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+
+  --focus-ring: #26467e;
+
+  --display-weight: 600;
+  --display-style: normal;
+  --display-tracking: 0;
+  --control-radius: var(--radius);
+}
+
+/* --------------------------------------------------------------------- Warm */
+/* Approachable study app. Soft cream, forest-green accent, rounded humanist */
+/* sans display. Deliberately NOT the beige + rusty-orange + italic-serif look */
+/* that has itself become an AI tell. */
+:root[data-theme="warm"] {
+  --bg: #fbf4ea;
+  --bg-tint: #f5ebdc;
+  --surface: #fffdf9;
+  --surface-raised: #ffffff;
+
+  --ink: #2c2823;
+  --ink-2: #5b5349;
+  --ink-3: #938877;
+
+  --accent: #2f7d63;
+  --accent-2: #d9622b;
+  --accent-ink: #fffdf9;
+  --accent-soft: #dcece4;
+
+  --line: #ecdec9;
+  --line-strong: #dcc7a9;
+  --grid: transparent;
+  --paper-grid: none;
+  --marker: #d9622b;
+
+  --focus-ring: #2f7d63;
+
+  /* rounded, friendly display uses the humanist sans (bold), not an italic serif */
+  --font-display: "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif;
+  --display-weight: 700;
+  --display-style: normal;
+  --display-tracking: -0.005em;
+  --control-radius: 10px;
+  --radius: 10px;
+  --radius-lg: 18px;
+}
+
+/* ------------------------------------------------------------- Dark mode */
+/*
+ * Each theme keeps its own character after dark rather than collapsing into
+ * one generic dark grey: editorial stays warm, notebook stays ink-blue, warm
+ * stays green. Accents are lifted so they still carry on a dark ground.
+ */
+:root[data-dark="on"][data-theme="editorial"],
+:root[data-dark="on"]:not([data-theme]) {
+  --bg: #16150f;
+  --bg-tint: #1e1c15;
+  --surface: #1b1913;
+  --surface-raised: #23211a;
+
+  --ink: #f0ece0;
+  --ink-2: #c6c0af;
+  --ink-3: #8e887a;
+
+  --accent: #63c3ac;
+  --accent-2: #e08573;
+  --accent-ink: #10201c;
+  --accent-soft: #23342f;
+
+  --line: #322f26;
+  --line-strong: #494435;
+  --marker: #e08573;
+  --focus-ring: #63c3ac;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 6px 20px -8px rgba(0, 0, 0, 0.7);
+}
+
+:root[data-dark="on"][data-theme="notebook"] {
+  --bg: #0f1626;
+  --bg-tint: #151d31;
+  --surface: #131b2c;
+  --surface-raised: #1a2338;
+
+  --ink: #e6ecf7;
+  --ink-2: #b3bed4;
+  --ink-3: #7e89a1;
+
+  --accent: #7aa5e8;
+  --accent-2: #e8776a;
+  --accent-ink: #0f1626;
+  --accent-soft: #22304c;
+
+  --line: #26304a;
+  --line-strong: #3a4767;
+  --grid: #223050;
+  --marker: #e8776a;
+  --focus-ring: #7aa5e8;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 6px 20px -8px rgba(0, 0, 0, 0.7);
+}
+
+:root[data-dark="on"][data-theme="warm"] {
+  --bg: #191510;
+  --bg-tint: #221c15;
+  --surface: #1e1913;
+  --surface-raised: #27211a;
+
+  --ink: #f4ebdd;
+  --ink-2: #cabda9;
+  --ink-3: #948674;
+
+  --accent: #6cc39c;
+  --accent-2: #f0925f;
+  --accent-ink: #10201a;
+  --accent-soft: #23352c;
+
+  --line: #33291f;
+  --line-strong: #4c3e2e;
+  --marker: #f0925f;
+  --focus-ring: #6cc39c;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 6px 20px -8px rgba(0, 0, 0, 0.7);
+}

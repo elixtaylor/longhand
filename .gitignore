@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Editor / tooling
+.claude/
+.vercel/
+.DS_Store
