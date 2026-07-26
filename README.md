@@ -1,5 +1,7 @@
 # Longhand
 
+### → [elixtaylor.github.io/longhand](https://elixtaylor.github.io/longhand/)
+
 **SACE maths, worked line by line.** Enter a problem, pick the method you were taught, and get
 correct, step-by-step working — with your choice of method.
 
@@ -95,10 +97,15 @@ npm run dev        # start the dev server (http://localhost:5173)
 npm run test       # run the solver test suite (Vitest)
 npm run build      # type-check + production build to dist/
 npm run preview    # preview the production build
+npm run deploy     # build + publish to GitHub Pages
 ```
 
 It builds to a static bundle in `dist/`, so it can be hosted anywhere (Vercel, Netlify, GitHub
 Pages, any static host). No backend, no API keys, works offline.
+
+Asset paths are relative (`base: './'` in `vite.config.ts`), so the same build runs at a domain
+root or under a subpath — state lives in the URL hash, never the path. `npm run deploy` pushes
+`dist/` to the `gh-pages` branch; see `scripts/deploy.sh`.
 
 ## How it's built
 
