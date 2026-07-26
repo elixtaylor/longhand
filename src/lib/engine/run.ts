@@ -1,6 +1,7 @@
 import { normalise, type Reading } from '../nl/normalise';
 import { detectSolver, type Detection } from './registry';
 import { work, type Worked } from './parts';
+import { foldArithmetic } from '../nl/arithmetic';
 import type { Solver, SolveResult } from './types';
 
 export type { Worked, WorkedPart } from './parts';
@@ -20,8 +21,14 @@ export interface Interpretation extends Reading {
 export function interpret(raw: string): Interpretation {
   const reading = normalise(raw);
   // Detect on the canonical text, but fall back to the raw text: a detector
-  // occasionally reads the original phrasing better than the rewrite.
-  const detection = detectSolver(reading.text) ?? detectSolver(raw);
+  // occasionally reads the original phrasing better than the rewrite. Last,
+  // try it with the arithmetic worked out, so that live detection agrees
+  // with what the solver will actually do — otherwise "ln x = 5^2" reports
+  // "not sure what this is" while solving perfectly well.
+  const detection =
+    detectSolver(reading.text) ??
+    detectSolver(raw) ??
+    detectSolver(foldArithmetic(reading.text));
   return { ...reading, detection };
 }
 

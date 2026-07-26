@@ -180,7 +180,10 @@ export function Workspace({
   }
 
   const solver = getSolver(solverId)!;
-  const unknown = input.trim() !== '' && !detected && !pin;
+  // Only say we cannot read it when nothing has been worked out either —
+  // otherwise a solved question could show its topic and "not sure what this
+  // is" at the same time.
+  const unknown = input.trim() !== '' && !detected && !pin && !worked?.parts.length;
   // One part is the ordinary case; the single-solution view and the method
   // comparison both speak in terms of it.
   const single = worked && worked.parts.length === 1 ? worked.parts[0] : null;
