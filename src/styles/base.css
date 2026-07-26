@@ -465,10 +465,16 @@ button {
   flex-direction: column;
 }
 .step {
+  /* One number drives the badge, the column it sits in, and the rule that
+     joins the badges. They used to be set separately, so changing the badge
+     size in a theme left the connector running down beside it instead of
+     through it. */
+  --badge: 28px;
+  --connector: 1.5px;
   counter-increment: step;
   position: relative;
   display: grid;
-  grid-template-columns: 34px 1fr;
+  grid-template-columns: var(--badge) 1fr;
   gap: var(--sp-4);
   padding: var(--sp-4) 0;
 }
@@ -478,8 +484,8 @@ button {
   align-self: start;
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: var(--badge);
+  height: var(--badge);
   font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 600;
@@ -488,14 +494,15 @@ button {
   border: 1.5px solid var(--accent-soft);
   border-radius: 50%;
 }
-/* continuous rule connecting the steps, like margin working */
+/* Continuous rule joining the steps, like margin working. Runs from the
+   bottom of one badge to the top of the next, down the badge's centre. */
 .step:not(:last-child)::after {
   content: "";
   position: absolute;
-  left: 13.5px;
-  top: 40px;
-  bottom: -6px;
-  width: 1.5px;
+  left: calc(var(--badge) / 2 - var(--connector) / 2);
+  top: calc(var(--badge) + var(--sp-4) + var(--badge-offset, 0px));
+  bottom: 0;
+  width: var(--connector);
   background: var(--accent-soft);
 }
 .step-body {
@@ -626,14 +633,22 @@ button {
   height: var(--rule);
   margin-top: 0;
 }
+:root[data-theme='notebook'] .step {
+  /* A badge exactly one square across, so it sits in the ruling like a
+     margin number. */
+  --badge: var(--rule);
+  /* The number labels the line of maths, so it centres on it — which is
+     half a square down when the maths comes first, and a square and a half
+     when an explanation is shown above it. */
+  --badge-offset: calc(var(--rule) / 2);
+}
+:root[data-theme='notebook'] .step:has(.step-note) {
+  --badge-offset: calc(var(--rule) * 1.5);
+}
 :root[data-theme='notebook'] .step::before {
-  /* Centre the number badge on the first ruled row of its step. */
-  width: var(--rule);
-  height: var(--rule);
-  margin-top: calc(var(--rule) / 2);
+  margin-top: var(--badge-offset);
 }
 :root[data-theme='notebook'] .step:not(:last-child)::after {
-  top: calc(var(--rule) * 1.5);
   bottom: calc(var(--rule) * -1);
 }
 

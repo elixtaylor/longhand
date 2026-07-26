@@ -72,7 +72,11 @@ export function parseNumberList(input: string): number[] {
  */
 export function parseParams(input: string): Record<string, number> {
   const out: Record<string, number> = {};
-  const re = /([A-Za-z][A-Za-z0-9_]*)\s*=\s*(-?\d*\.?\d+)/g;
+  // The value has to be the *whole* value. Without the guard, "a = 3+4"
+  // yielded a = 3 and the "+ 4" vanished — a triangle solved from the wrong
+  // side, with no sign anything had been dropped. Refusing here lets the
+  // caller retry with the arithmetic worked out (see nl/arithmetic.ts).
+  const re = /([A-Za-z][A-Za-z0-9_]*)\s*=\s*(-?\d*\.?\d+)(?![\d.]|\s*[+\-*/^×÷])/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(input))) out[m[1]] = Number(m[2]);
   return out;

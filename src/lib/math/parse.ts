@@ -128,7 +128,14 @@ export function parsePoly(inputRaw: string, variable = 'x'): Poly {
   if (prose.length > 0) {
     throw new ParseError(`“${prose[0]}” isn’t part of an expression.`);
   }
-  let s = normalise(inputRaw).toLowerCase().replace(/\*/g, '');
+  let s = normalise(inputRaw).toLowerCase();
+  // The star is dropped so "3*x" reads as the implicit product 3x. Between
+  // two digits it is real arithmetic this parser cannot do, and deleting it
+  // silently turned "2*7" into twenty-seven.
+  if (/\d\*\d/.test(s)) {
+    throw new ParseError(`Work out "${s.match(/\d+\*\d+/)?.[0]}" first — this reads polynomials, not arithmetic.`);
+  }
+  s = s.replace(/\*/g, '');
   if (s === '') throw new ParseError('Nothing to parse.');
 
   // Turn every subtraction into "+-" so terms split cleanly. There are no

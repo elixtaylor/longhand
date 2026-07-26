@@ -9,16 +9,25 @@
   /* Size of one square on the notebook paper. The step rhythm in base.css
      is quantised to this, so the two cannot drift apart. */
   --rule: 24px;
-  /* Offset from the top of a step's maths line box to its baseline, used to
-     sit the notebook rulings under the working. See .steps in base.css. */
-  --rule-baseline: 5.2px;
+  /* Where a ruling has to sit so it lands on the maths baseline rather than
+     through the middle of the glyphs. Measured: in the two-square line box
+     used for working, the baseline is 28.5px down, which is 4.5px past the
+     ruling above it. Re-measure if --rule or .step-expr's font-size change.
+     See .steps in base.css. */
+  --rule-baseline: 4.5px;
   /* Typography — system stacks chosen for character, not the Inter/Google default */
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
     Georgia, "Times New Roman", serif;
   --font-ui: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system,
     BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, "Roboto Mono", monospace;
-  --font-annotation: "Bradley Hand", "Segoe Print", "Comic Sans MS", cursive;
+  /* Handwriting, from faces that ship with macOS and Windows — nothing is
+     fetched, so the app still works offline. It ends at `cursive` so a Linux
+     browser substitutes something in the right spirit rather than falling
+     back to a sans-serif and losing the effect entirely. */
+  --font-hand: "Bradley Hand", "Segoe Print", "Chalkboard SE", Noteworthy,
+    "Comic Sans MS", "Comic Neue", cursive;
+  --font-annotation: var(--font-hand);
 
   /* Shape & depth — restrained, no neon glows */
   --radius: 6px;
@@ -103,6 +112,15 @@
   --display-style: normal;
   --display-tracking: 0;
   --control-radius: var(--radius);
+
+  /* An exercise book is handwritten, so the interface is too. The maths
+     itself stays in KaTeX's own face: its layout depends on that font's
+     metrics, and its symbols (radicals, large operators, braces) come from
+     custom glyph tables — substituting a handwriting font would render the
+     maths wrong, which is far worse than it not matching. */
+  --font-display: var(--font-hand);
+  --font-ui: var(--font-hand);
+  --display-weight: 400;
 }
 
 /* --------------------------------------------------------------------- Warm */

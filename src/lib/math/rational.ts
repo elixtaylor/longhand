@@ -35,7 +35,14 @@ export class Rational {
     return new Rational(n, 1);
   }
 
-  /** Parse an integer, decimal, or "a/b" token (optional leading sign). */
+  /**
+   * Parse an integer, decimal, or "a/b" token (optional leading sign).
+   *
+   * Strict on purpose. `parseInt` stops at the first character it does not
+   * understand and reports success, so "3^2" used to come back as 3 — which
+   * turned "x² = 3² + 4²" into x² = 7 and produced a confident √7 instead of
+   * 5. Anything that is not wholly a number has to be an error.
+   */
   static parse(tokenRaw: string): Rational {
     let token = tokenRaw.trim();
     let sign = 1;
@@ -46,16 +53,25 @@ export class Rational {
       token = token.slice(1);
     }
     if (token === '') throw new Error(`Rational.parse: empty token`);
+
+    const DIGITS = /^\d+$/;
+    const DECIMAL = /^\d*\.\d+$|^\d+\.\d*$/;
+
     if (token.includes('/')) {
-      const [a, b] = token.split('/');
+      const [a, b, ...rest] = token.split('/');
+      if (rest.length > 0 || !DIGITS.test(a) || !DIGITS.test(b)) {
+        throw new Error(`Rational.parse: "${tokenRaw}" is not a fraction`);
+      }
       return new Rational(sign * parseInt(a, 10), parseInt(b, 10));
     }
     if (token.includes('.')) {
+      if (!DECIMAL.test(token)) throw new Error(`Rational.parse: "${tokenRaw}" is not a number`);
       const [i, f] = token.split('.');
       const den = Math.pow(10, f.length);
       const num = (parseInt(i || '0', 10) || 0) * den + parseInt(f || '0', 10);
       return new Rational(sign * num, den);
     }
+    if (!DIGITS.test(token)) throw new Error(`Rational.parse: "${tokenRaw}" is not a number`);
     return new Rational(sign * parseInt(token, 10), 1);
   }
 

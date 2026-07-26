@@ -1,4 +1,5 @@
 import { normalise } from '../nl/normalise';
+import { foldArithmetic } from '../nl/arithmetic';
 import { detectSolver } from './registry';
 import type { Solver, SolveResult } from './types';
 
@@ -120,6 +121,27 @@ function cut(text: string, re: RegExp): [string, string] | null {
  * use the first that does.
  */
 function solveFragment(
+  text: string,
+  solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
+): { solver: Solver; methodId: string; result: SolveResult } | null {
+  // Read it as written first. Only if that gets nowhere is the arithmetic
+  // inside it worked out — "ln x = 5^2" becomes "ln x = 25" — so a question
+  // that already made sense can never be altered underneath the student.
+  const readings = [text];
+  const folded = foldArithmetic(text);
+  if (folded !== text) readings.push(folded);
+
+  let fallback: { solver: Solver; methodId: string; result: SolveResult } | null = null;
+  for (const reading of readings) {
+    const got = attempt(reading, solveOne);
+    if (got?.result.ok && got.result.solution.answerLatex) return got;
+    fallback ??= got;
+  }
+  return fallback;
+}
+
+/** One reading, trying each method until one reaches an answer. */
+function attempt(
   text: string,
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
 ): { solver: Solver; methodId: string; result: SolveResult } | null {
@@ -298,9 +320,16 @@ export function work(
   preferred?: { solver: Solver; methodId: string },
 ): Worked {
   const whole = (): Worked | null => {
-    const chosen = preferred
-      ? { ...preferred, result: solveOne(preferred.solver, raw, preferred.methodId) }
-      : solveFragment(raw, solveOne);
+    if (preferred) {
+      for (const reading of [raw, foldArithmetic(raw)]) {
+        const result = solveOne(preferred.solver, reading, preferred.methodId);
+        if (result.ok) {
+          return { parts: [{ label: 'a', text: reading, ...preferred, result }], split: false };
+        }
+      }
+      return null;
+    }
+    const chosen = solveFragment(raw, solveOne);
     if (!chosen || !chosen.result.ok) return null;
     return { parts: [{ label: 'a', text: raw, ...chosen }], split: false };
   };
