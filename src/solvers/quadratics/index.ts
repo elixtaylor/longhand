@@ -249,13 +249,24 @@ function solveByCompletingSquare(std: Poly): SolveResult {
     latex: `x^{2} ${term(B, 'x')} = ${rl(C.neg())}`,
   });
   steps.push({
-    note: 'Halve the coefficient of $x$, square it, and add to both sides.',
+    note: `Halve the coefficient of $x$: half of $${rl(B)}$ is $${rl(H)}$. Square that and add it to both sides, which keeps the equation balanced.`,
     latex: `x^{2} ${term(B, 'x')} + \\left(${rl(H)}\\right)^{2} = ${rl(C.neg())} + \\left(${rl(H)}\\right)^{2}`,
     annotation: `half of ${rl(B)} is ${rl(H)}`,
   });
   steps.push({
-    note: 'The left-hand side is now a perfect square.',
+    // Squaring the half-coefficient is its own arithmetic move; folding it
+    // into the factorised line hides where the number on the right came from.
+    note: `Work out the square: $\\left(${rl(H)}\\right)^{2} = ${rl(H.mul(H))}$.`,
+    latex: `x^{2} ${term(B, 'x')} + ${rl(H.mul(H))} = ${rl(C.neg())} + ${rl(H.mul(H))}`,
+  });
+  steps.push({
+    note: `Add up the right-hand side: $${rl(C.neg())} + ${rl(H.mul(H))} = ${rl(rhs)}$.`,
+    latex: `x^{2} ${term(B, 'x')} + ${rl(H.mul(H))} = ${rl(rhs)}`,
+  });
+  steps.push({
+    note: `The left-hand side is now a perfect square, because $\\left(x ${term(H)}\\right)^{2} = x^{2} ${term(B, 'x')} + ${rl(H.mul(H))}$.`,
     latex: `\\left(x ${term(H)}\\right)^{2} = ${rl(rhs)}`,
+    annotation: 'completed the square',
   });
 
   if (rhs.isNeg()) {

@@ -1,6 +1,9 @@
 import { normalise, type Reading } from '../nl/normalise';
 import { detectSolver, type Detection } from './registry';
+import { work, type Worked } from './parts';
 import type { Solver, SolveResult } from './types';
+
+export type { Worked, WorkedPart } from './parts';
 
 /**
  * The single boundary where raw student input becomes canonical maths.
@@ -31,4 +34,19 @@ export function runSolve(solver: Solver, raw: string, methodId: string): SolveRe
   // reporting failure — the student's own phrasing may already have been valid.
   const original = solver.solve(raw, methodId);
   return original.ok ? original : first;
+}
+
+/**
+ * Work a question end to end, splitting it across topics when it spans more
+ * than one. This is what the UI calls; `runSolve` remains the single-topic
+ * path underneath it.
+ *
+ * Passing `preferred` means the student chose the topic by hand, which is
+ * taken as a statement that the question is about that one thing.
+ */
+export function runWorked(
+  raw: string,
+  preferred?: { solver: Solver; methodId: string },
+): Worked {
+  return work(raw, runSolve, preferred);
 }

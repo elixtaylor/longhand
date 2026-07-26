@@ -593,6 +593,114 @@ button {
 .step.is-hidden {
   display: none;
 }
+
+.detected-split strong {
+  display: block;
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+/* Multi-part questions ---------------------------------------------------- */
+/* A question that spans two topics is worked as (a), (b) — the way it would
+   be set and the way it would be marked. */
+.parts-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-4);
+  margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+.parts-count {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+.parts-note {
+  font-size: 0.86rem;
+  color: var(--ink-3);
+}
+.part + .part {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-6);
+  border-top: 1px dashed var(--line);
+}
+.part-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.part-label {
+  font-family: var(--font-display, var(--font-ui));
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.4;
+}
+.part-titles {
+  min-width: 0;
+}
+.part-title {
+  font-family: var(--font-display, var(--font-ui));
+  font-size: 1.08rem;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.part-sub {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
+.part-topic {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.part-carried {
+  margin-top: var(--sp-2);
+  padding-left: 10px;
+  border-left: 2px solid var(--marker);
+  font-size: 0.82rem;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+.part-carried em {
+  font-family: var(--font-mono);
+  font-style: normal;
+  color: var(--ink-2);
+}
+.part-failed {
+  color: var(--ink-3);
+}
+.part-error {
+  font-size: 0.9rem;
+  color: var(--ink-3);
+  padding: var(--sp-3) 0;
+}
+.answer-card-sm {
+  padding: var(--sp-3) var(--sp-4);
+}
+.answer-card-sm .answer-value {
+  font-size: 1.05rem;
+}
+.btn-sm {
+  margin-top: var(--sp-4);
+  font-size: 0.74rem;
+  padding: 5px 11px;
+}
+@media (max-width: 900px) {
+  .part-head {
+    grid-template-columns: auto 1fr;
+  }
+  .part-head .answer-card-sm {
+    grid-column: 1 / -1;
+  }
+}
 .step-enter {
   animation: stepIn 0.32s var(--ease) both;
 }
@@ -688,6 +796,101 @@ button {
   letter-spacing: 0.08em;
   color: var(--ink-3);
   font-weight: 600;
+}
+
+/* Reference tabs ---------------------------------------------------------- */
+/* Formulas, examples and past work, kept one click from the top of the page
+   rather than a scroll below the working. */
+.reference {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--sp-6);
+}
+.ref-strip {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: var(--sp-3) 0 0;
+}
+.ref-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.ref-tab:hover {
+  color: var(--ink);
+  background: var(--bg-tint);
+}
+.ref-tab[aria-selected='true'] {
+  color: var(--accent);
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: var(--shadow-1);
+}
+.ref-count {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg-tint);
+  color: var(--ink-3);
+}
+.ref-tab[aria-selected='true'] .ref-count {
+  background: var(--accent-tint, var(--bg-tint));
+  color: var(--accent);
+}
+.ref-panel {
+  margin-top: var(--sp-3);
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  max-height: 42vh;
+  overflow-y: auto;
+}
+.ref-panel-title {
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--ink-3);
+  margin-bottom: var(--sp-3);
+}
+/* Wide panels can hold several columns, which is the point of moving them
+   out of a narrow sidebar. */
+.examples-grid,
+.formula-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px var(--sp-5);
+}
+.formula-grid {
+  gap: var(--sp-4) var(--sp-5);
+  margin: 0;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .reference {
+    padding: 0 var(--sp-4);
+  }
+  .ref-panel {
+    max-height: 50vh;
+  }
 }
 
 /* Imported question attribution ------------------------------------------- */

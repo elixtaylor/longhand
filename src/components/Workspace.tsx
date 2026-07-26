@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { solvers, getSolver } from '../lib/engine/registry';
-import { interpret, runSolve } from '../lib/engine/run';
+import { interpret, runWorked, type Worked } from '../lib/engine/run';
 import type { SolveResult, Solver } from '../lib/engine/types';
 import type { RevealMode } from '../lib/ui';
-import { examplesFor, type Example } from '../data/examples';
-import { importedFor, sourceOf } from '../data/imported';
-import { formulasFor } from '../data/formulas';
+import { type Example } from '../data/examples';
 import {
   loadHistory,
   pushHistory,
@@ -19,6 +17,8 @@ import { TopicMethodPicker } from './TopicMethodPicker';
 import { ProblemInput } from './ProblemInput';
 import { StepList } from './StepList';
 import { CompareMethods } from './CompareMethods';
+import { ReferenceTabs } from './ReferenceTabs';
+import { PartedSolution } from './PartedSolution';
 import { TeX, RichText } from './TeX';
 
 type Mode = 'auto' | 'manual';
@@ -32,7 +32,7 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
     shared?.methodId ?? getSolver(shared?.solverId ?? '')?.defaultMethodId ?? solvers[0].defaultMethodId,
   );
   const [input, setInput] = useState(shared?.input ?? '');
-  const [result, setResult] = useState<SolveResult | null>(null);
+  const [worked, setWorked] = useState<Worked | null>(null);
   const [detected, setDetected] = useState<Solver | null>(null);
   /** The canonical rewrite of what was typed, shown when it differs. */
   const [reading, setReading] = useState<string | null>(null);
@@ -41,21 +41,26 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
   const [copied, setCopied] = useState(false);
   const hasSolved = useRef(false);
 
-  const solveWith = useCallback((sid: string, mid: string, value: string) => {
+  /**
+   * Choosing a topic by hand is a statement that the question is about that
+   * one thing, so the engine is told not to go looking for a second topic.
+   * Left on auto, it may split the question across the topics it spans.
+   */
+  const solveWith = useCallback((sid: string, mid: string, value: string, manual: boolean) => {
     const solver = getSolver(sid);
     if (!solver || value.trim() === '') {
-      setResult(null);
+      setWorked(null);
       hasSolved.current = false;
       return;
     }
-    setResult(runSolve(solver, value, mid));
+    setWorked(runWorked(value, manual ? { solver, methodId: mid } : undefined));
     hasSolved.current = true;
   }, []);
 
   /** Solving is the moment worth recording and worth making shareable. */
   const commit = useCallback(
-    (sid: string, mid: string, value: string) => {
-      solveWith(sid, mid, value);
+    (sid: string, mid: string, value: string, manual: boolean) => {
+      solveWith(sid, mid, value, manual);
       if (value.trim() === '') return;
       setHistory(pushHistory({ input: value, solverId: sid, methodId: mid, at: Date.now() }));
       window.history.replaceState(null, '', encodeShare({ input: value, solverId: sid, methodId: mid }));
@@ -65,7 +70,7 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
 
   // Restore a shared link on first load.
   useEffect(() => {
-    if (shared?.input) solveWith(shared.solverId ?? solverId, shared.methodId ?? methodId, shared.input);
+    if (shared?.input) solveWith(shared.solverId ?? solverId, shared.methodId ?? methodId, shared.input, !!shared.solverId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -84,7 +89,7 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
       setSolverId(sid);
       setMethodId(mid);
       setInput(next.input);
-      solveWith(sid, mid, next.input);
+      solveWith(sid, mid, next.input, !!next.solverId);
     }
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -112,16 +117,16 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
 
   // Once there's working on screen, keep it in step with further edits.
   useEffect(() => {
-    if (hasSolved.current) solveWith(solverId, methodId, input);
+    if (hasSolved.current) solveWith(solverId, methodId, input, mode === 'manual');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input, solverId, methodId]);
+  }, [input, solverId, methodId, mode]);
 
   function selectSolver(id: string) {
     const solver = getSolver(id);
     if (!solver) return;
     setSolverId(id);
     setMethodId(solver.defaultMethodId);
-    setResult(null);
+    setWorked(null);
     hasSolved.current = false;
   }
 
@@ -130,7 +135,7 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
     setSolverId(ex.solverId);
     setMethodId(mid);
     setInput(ex.input);
-    commit(ex.solverId, mid, ex.input);
+    commit(ex.solverId, mid, ex.input, true);
   }
 
   function loadHistoryEntry(h: HistoryEntry) {
@@ -138,7 +143,7 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
     setSolverId(h.solverId);
     setMethodId(h.methodId);
     setInput(h.input);
-    solveWith(h.solverId, h.methodId, h.input);
+    solveWith(h.solverId, h.methodId, h.input, true);
   }
 
   async function copyLink() {
@@ -165,9 +170,28 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
 
   const solver = getSolver(solverId)!;
   const autoUnknown = mode === 'auto' && input.trim() !== '' && !detected;
+  // One part is the ordinary case; the single-solution view and the method
+  // comparison both speak in terms of it.
+  const single = worked && worked.parts.length === 1 ? worked.parts[0] : null;
 
   return (
-    <main className="worksheet">
+    <>
+      <ReferenceTabs
+        solver={solver}
+        onLoadExample={loadExample}
+        onLoadImported={(p) => {
+          const mid = p.methodId ?? getSolver(p.solverId)!.defaultMethodId;
+          setMode('manual');
+          setSolverId(p.solverId);
+          setMethodId(mid);
+          setInput(p.input);
+          commit(p.solverId, mid, p.input, true);
+        }}
+        history={history}
+        onLoadHistory={loadHistoryEntry}
+        onClearHistory={() => setHistory(clearHistory())}
+      />
+      <main className="worksheet">
       <aside className="controls">
         <section className="panel">
           <div className="mode-row">
@@ -192,7 +216,7 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              commit(solverId, methodId, input);
+              commit(solverId, methodId, input, mode === 'manual');
             }}
           >
             <ProblemInput
@@ -211,12 +235,24 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
               </p>
             )}
 
-            {mode === 'auto' && detected && (
-              <p className="detected" role="status">
+            {/* Once a question has been worked, say what it actually turned
+                out to be. Live detection only ever sees one topic, so on a
+                split question it would name whichever half it liked best. */}
+            {mode === 'auto' && worked && worked.split ? (
+              <p className="detected detected-split" role="status">
                 <span className="detected-dot" aria-hidden="true" />
-                Detected: <strong>{detected.title}</strong>
-                <span className="detected-sub">{detected.subjects.join(' · ')}</span>
+                {worked.parts.length} parts:{' '}
+                <strong>{worked.parts.map((p) => p.solver.title).join(' → ')}</strong>
               </p>
+            ) : (
+              mode === 'auto' &&
+              detected && (
+                <p className="detected" role="status">
+                  <span className="detected-dot" aria-hidden="true" />
+                  Detected: <strong>{detected.title}</strong>
+                  <span className="detected-sub">{detected.subjects.join(' · ')}</span>
+                </p>
+              )
             )}
             {autoUnknown && (
               <p className="detected detected-unknown" role="status">
@@ -246,116 +282,18 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
           />
         </section>
 
-        <section className="panel">
-          <div className="panel-title">Try one</div>
-          <div className="examples">
-            {examplesFor(solverId).map((ex) => (
-              <button
-                key={ex.label}
-                type="button"
-                className="example-row"
-                onClick={() => loadExample(ex)}
-              >
-                <span className="example-expr">{ex.label}</span>
-                <span className="example-tag">{ex.subject}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {importedFor(solverId).length > 0 && (
-          <section className="panel">
-            <div className="panel-title">
-              Textbook questions ({importedFor(solverId).length})
-            </div>
-            <div className="examples examples-scroll">
-              {importedFor(solverId).map((p) => (
-                <button
-                  key={p.ref}
-                  type="button"
-                  className="example-row"
-                  onClick={() => {
-                    setSolverId(p.solverId);
-                    setMethodId(p.methodId ?? getSolver(p.solverId)!.defaultMethodId);
-                    setInput(p.input);
-                    commit(p.solverId, p.methodId ?? getSolver(p.solverId)!.defaultMethodId, p.input);
-                  }}
-                >
-                  <span className="example-expr">{p.label}</span>
-                  <span className="example-tag">{p.ref}</span>
-                </button>
-              ))}
-            </div>
-            <p className="attribution">
-              Questions from{' '}
-              <a href={sourceOf(importedFor(solverId)[0]).url} target="_blank" rel="noreferrer">
-                {sourceOf(importedFor(solverId)[0]).title}
-              </a>{' '}
-              ({sourceOf(importedFor(solverId)[0]).publisher}), used under{' '}
-              <a href={sourceOf(importedFor(solverId)[0]).licenceUrl} target="_blank" rel="noreferrer">
-                {sourceOf(importedFor(solverId)[0]).licence}
-              </a>
-              . All working is Longhand’s own.
-            </p>
-          </section>
-        )}
-
-        {formulasFor(solverId).length > 0 && (
-          <section className="panel">
-            <div className="panel-title">Formulas — {solver.title}</div>
-            <dl className="formula-list">
-              {formulasFor(solverId).map((f) => (
-                <div key={f.name} className="formula-row">
-                  <dt>{f.name}</dt>
-                  <dd>
-                    <TeX tex={f.latex} />
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        )}
-
-        {history.length > 0 && (
-          <section className="panel">
-            <div className="panel-title panel-title-row">
-              Recent
-              <button
-                type="button"
-                className="link-btn"
-                onClick={() => setHistory(clearHistory())}
-              >
-                Clear
-              </button>
-            </div>
-            <div className="examples">
-              {history.slice(0, 8).map((h) => (
-                <button
-                  key={`${h.at}-${h.input}`}
-                  type="button"
-                  className="example-row"
-                  onClick={() => loadHistoryEntry(h)}
-                  title={h.input}
-                >
-                  <span className="example-expr">{truncate(h.input, 30)}</span>
-                  <span className="example-tag">{getSolver(h.solverId)?.title ?? ''}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
       </aside>
 
       <section className="solution" aria-live="polite">
-        {comparing && result?.ok ? (
+        {comparing && single?.result.ok ? (
           <>
             <header className="solution-head">
               <div>
                 <div className="solution-title">
-                  <RichText text={result.solution.headline} />
+                  <RichText text={single.result.solution.headline} />
                 </div>
                 <div className="solution-sub">
-                  Comparing all <em>{solver.methods.length}</em> methods
+                  Comparing all <em>{single.solver.methods.length}</em> methods
                 </div>
               </div>
               <div className="solution-tools">
@@ -364,25 +302,36 @@ export function Workspace({ revealMode }: { revealMode: RevealMode }) {
                 </button>
               </div>
             </header>
-            <CompareMethods solver={solver} input={input} />
+            <CompareMethods solver={single.solver} input={single.text} />
           </>
+        ) : worked && worked.parts.length > 1 ? (
+          <PartedSolution
+            worked={worked}
+            revealMode={revealMode}
+            onFocusPart={(part) => {
+              // Working one part alone is how a student gets the method
+              // choices and the comparison for just that topic.
+              setMode('manual');
+              setSolverId(part.solver.id);
+              setMethodId(part.methodId);
+              setInput(part.text);
+              commit(part.solver.id, part.methodId, part.text, true);
+            }}
+          />
         ) : (
           <SolutionView
-            result={result}
+            result={single?.result ?? null}
             revealMode={revealMode}
-            canCompare={solver.methods.length > 1 && !!result?.ok}
+            canCompare={(single?.solver.methods.length ?? 0) > 1 && !!single?.result.ok}
             onCompare={() => setComparing(true)}
             onCopyLink={copyLink}
             copied={copied}
           />
         )}
       </section>
-    </main>
+      </main>
+    </>
   );
-}
-
-function truncate(s: string, n: number): string {
-  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
 }
 
 function SolutionView({

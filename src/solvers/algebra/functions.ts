@@ -34,7 +34,12 @@ export const functionsSolver: Solver = {
     if (!/\bsketch|\bgraph\b|turning\s*point|key\s*features?|\bvertex\b/i.test(input)) return 0;
     try {
       const p = parsePoly(clean(input), 'x');
-      return p.degree() >= 1 ? 0.95 : 0;
+      if (p.degree() < 1) return 0;
+      // "Find the turning point" asks for one coordinate, not a whole sketch.
+      // Answering it with the axis intercepts is a confident answer to a
+      // different question, so stand aside unless a sketch was asked for.
+      const wantsSketch = /\bsketch|\bgraph\b|key\s*features?/i.test(input);
+      return wantsSketch ? 0.95 : 0.4;
     } catch {
       return 0;
     }

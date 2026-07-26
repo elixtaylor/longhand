@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { TeX } from './TeX';
+import { isExpression } from '../lib/nl/vocabulary';
 
 interface Key {
   label: string;
@@ -19,20 +20,10 @@ const KEYS: Key[] = [
   { label: '=', insert: '=' },
 ];
 
-/**
- * Words that belong in a mathematical expression. Anything else of three or
- * more letters means the input is prose, which KaTeX would set as a run of
- * italic letters — unreadable. Prose is shown as plain text instead.
- */
-const MATH_WORDS = new Set([
-  'sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'log', 'ln', 'exp', 'sqrt', 'abs',
-  'det', 'pi', 'dx', 'dy', 'dt', 'lim', 'sum', 'int', 'max', 'min', 'mod',
-]);
-
-export function isExpression(text: string): boolean {
-  const words = text.match(/[A-Za-z]{3,}/g) ?? [];
-  return words.every((w) => MATH_WORDS.has(w.toLowerCase()));
-}
+// Prose would be set by KaTeX as a run of italic letters — unreadable. It is
+// shown as plain text instead. Same judgement as the parser uses, so what
+// looks like maths in the preview is what the parser will accept.
+export { isExpression };
 
 export function ProblemInput({
   value,

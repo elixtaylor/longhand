@@ -24,10 +24,30 @@ works out **which topic it belongs to**, and solves it. If the reading is wrong 
 see why straight away. Structured input (`a=7, b=9, C=40`) works exactly as before, and
 **Choose topic** lets you pick one yourself.
 
+## Questions that span two topics
+
+School questions don't respect topic boundaries, so neither does Longhand. Ask
+
+> *"solve x² + 5x + 6 = 0 then differentiate it"*
+
+and it works part **(a)** in quadratics and part **(b)** in calculus, telling you it read
+"it" as `x² + 5x + 6` so you can check that's what you meant. Later parts can use earlier
+answers — *"…and then find 20% of the answer"*, *"…15% of the larger root"*.
+
+A split has to prove itself: every piece must independently detect a topic **and** solve.
+That's what stops *"a triangle with sides 5, 6 and 7"* being torn in half at the "and".
+Choosing a topic by hand turns splitting off.
+
+Some questions need two topics at once rather than one after the other — the gradient at a
+point, stationary points and their nature, tangents and normals. Those are a topic of their
+own, so the working shows the join: differentiate, solve what you differentiated, interpret.
+
 ## Other things it does
 
 - **Compare all methods** — every method for the same problem side by side, with a
   step count for each and a check that they agree. The whole point of the app, in one view.
+- **Reference tabs** at the top — formulas, examples, textbook questions and recent work,
+  one click away instead of a scroll past the working.
 - **Diagrams** — scale triangles, parabolas with roots and turning points marked, shaded
   normal curves, box plots, and number lines for inequalities.
 - **Formula sheet** for the current topic, always alongside the working.
@@ -57,7 +77,8 @@ Covering SACE Stage 1 and Stage 2 (Years 11–12).
 | | Sine & cosine rules | Sine rule · Cosine rule · Area (½ab sin C, Heron) |
 | | Statistics | Full summary · Centre · Spread · Five-number summary |
 | | Matrices | Add · Multiply · Determinant · Inverse |
-| **Methods** | Inequalities | Balancing (with sign flip) · Sign diagram |
+| **Methods** | Gradients, tangents & turning points | Stationary points · Gradient at a point · Tangent · Normal |
+| | Inequalities | Balancing (with sign flip) · Sign diagram |
 | | Quadratic equations | Factorising · Completing the square · Quadratic formula |
 | | Polynomials | Factor theorem · Division · Remainder theorem |
 | | Logs & exponentials | Equating indices · Taking logs |
@@ -147,6 +168,11 @@ against an **independent** source of truth — never against the engine itself:
 | Fractions, surds, percentages | Floating-point value, and forward/reverse round-trips |
 
 Because the seed is fixed, any failure reproduces exactly.
+
+The *shape* of the working is checked too, across every example in the library: no step may
+be blank, repeat the line above it, or go unexplained. And any arithmetic written into a
+step ("126 × 0.766044 = 96.5216") must actually hold to the figures shown — a line a student
+can't reproduce on a calculator is worse than no line at all.
 
 ## Practice questions
 

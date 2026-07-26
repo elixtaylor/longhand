@@ -209,11 +209,41 @@ function byCosineRule(t: Tri): SolveResult {
       note: `Both sides either side of angle ${ta} are known, so substitute straight in.`,
       latex: `${ts}^{2} = ${fmt(x)}^{2} + ${fmt(y)}^{2} - 2 \\times ${fmt(x)} \\times ${fmt(y)} \\times \\cos ${fmt(ang)}${DEG}`,
     });
+    // Each arithmetic move gets its own line. Collapsing them into one
+    // "work it out" line is exactly where a student loses the thread —
+    // and where a calculator slip hides.
+    const cosA = Math.cos(deg2rad(ang));
+    const twoXY = 2 * x * y;
+    const product = twoXY * cosA;
     steps.push({
-      note: 'Work out each part.',
-      latex: `${ts}^{2} = ${fmt(x * x, 4)} + ${fmt(y * y, 4)} - ${fmt(2 * x * y * Math.cos(deg2rad(ang)), 4)} = ${fmt(sq, 4)}`,
+      note: `Square the two sides, and multiply out the $2ab$ part: $2 \\times ${fmt(x)} \\times ${fmt(y)} = ${fmt(twoXY, 4)}$.`,
+      latex: `${ts}^{2} = ${fmt(x * x, 4)} + ${fmt(y * y, 4)} - ${fmt(twoXY, 4)}\\cos ${fmt(ang)}${DEG}`,
     });
-    steps.push({ note: 'Take the square root.', latex: `${ts} = \\sqrt{${fmt(sq, 4)}} = ${fmt(val)}`, annotation: 'side found' });
+    steps.push({
+      // Six figures, so the multiplication on the next line genuinely checks
+      // out against what is printed here. Four would round to a value that
+      // does not reproduce the product, which is worse than useless to a
+      // student re-doing it on a calculator.
+      note: 'Look up the cosine of the angle, keeping enough figures to carry through.',
+      latex: `\\cos ${fmt(ang)}${DEG} = ${fmt(cosA, 6)}`,
+    });
+    steps.push({
+      note: `Multiply: $${fmt(twoXY, 4)} \\times ${fmt(cosA, 6)} = ${fmt(product, 4)}$.`,
+      latex: `${ts}^{2} = ${fmt(x * x + y * y, 4)} - ${fmt(product, 4)}`,
+    });
+    steps.push({
+      note: 'Subtract to get the square of the side.',
+      latex: `${ts}^{2} = ${fmt(sq, 4)}`,
+    });
+    steps.push({
+      note: 'Take the square root of both sides — a length is positive, so only the positive root is used.',
+      latex: `${ts} = \\sqrt{${fmt(sq, 4)}} = ${fmt(val, 4)}`,
+    });
+    steps.push({
+      note: 'Round to two decimal places.',
+      latex: `${ts} = ${fmt(val)}`,
+      annotation: 'side found',
+    });
     const full = { ...t, [ts]: val } as Tri;
     const dia = diagramStep(full.a!, full.b!, full.c!);
     if (dia) steps.push(dia);

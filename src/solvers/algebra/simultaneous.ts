@@ -54,14 +54,19 @@ function coeffVar(r: Rational, v: string): string {
   if (r.eq(Rational.int(-1))) return `-${v}`;
   return `${rl(r)}${v}`;
 }
-function eqLatex(e: Eq): string {
+/** Just the left-hand side, for writing one equation minus another. */
+function eqSideLatex(e: Eq): string {
   let lhs = '';
   if (!e.a.isZero()) lhs += coeffVar(e.a, 'x');
   if (!e.b.isZero()) {
     if (lhs === '') lhs += coeffVar(e.b, 'y');
     else lhs += (e.b.isNeg() ? ' - ' : ' + ') + coeffVar(e.b.abs(), 'y');
   }
-  if (lhs === '') lhs = '0';
+  return lhs === '' ? '0' : lhs;
+}
+
+function eqLatex(e: Eq): string {
+  const lhs = eqSideLatex(e);
   return `${lhs} = ${rl(e.c)}`;
 }
 function systemLatex(e1: Eq, e2: Eq): string {
@@ -113,10 +118,17 @@ function solveByElimination(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
     latex: systemLatex(s1, s2),
   });
 
-  // Subtract: s1 - s2 removes the matched variable.
+  // Subtract: s1 - s2 removes the matched variable. Write the subtraction out
+  // before its result — lining the two equations up is the step students are
+  // taught to show, and it is where sign slips actually happen.
   const diff: Eq = { a: s1.a.sub(s2.a), b: s1.b.sub(s2.b), c: s1.c.sub(s2.c) };
   steps.push({
-    note: 'Subtract to eliminate it, leaving one variable.',
+    note: 'Subtract equation (2′) from (1′), term by term.',
+    latex: `\\left(${eqSideLatex(s1)}\\right) - \\left(${eqSideLatex(s2)}\\right) = ${rl(s1.c)} - ${rl(s2.c)}`,
+    annotation: 'line them up',
+  });
+  steps.push({
+    note: `The $${elimX ? 'x' : 'y'}$-terms cancel because they now match exactly.`,
     latex: `(1') - (2'):\\quad ${eqLatex(diff)}`,
   });
 
@@ -124,16 +136,43 @@ function solveByElimination(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
   const coeffLeft = elimX ? diff.b : diff.a;
   const val = diff.c.div(coeffLeft);
   steps.push({
-    note: `Solve for $${solvedVar}$.`,
+    note: `Divide both sides by $${rl(coeffLeft)}$ to get $${solvedVar}$ on its own.`,
     latex: `${solvedVar} = \\dfrac{${rl(diff.c)}}{${rl(coeffLeft)}} = ${rl(val)}`,
+    annotation: `${solvedVar} found`,
   });
 
-  // Back-substitute into (1).
-  const backLatex = elimX
-    ? `${coeffVar(e1.a, 'x')} + ${coeffVar(e1.b, 'y')} = ${rl(e1.c)} \\;\\Rightarrow\\; ${coeffVar(e1.a, 'x')} = ${rl(e1.c.sub(e1.b.mul(val)))}`
-    : `${coeffVar(e1.a, 'x')} + ${coeffVar(e1.b, 'y')} = ${rl(e1.c)} \\;\\Rightarrow\\; ${coeffVar(e1.b, 'y')} = ${rl(e1.c.sub(e1.a.mul(val)))}`;
-  steps.push({ note: `Substitute $${solvedVar} = ${rl(val)}$ back into (1).`, latex: backLatex });
-  steps.push({ note: 'Solve for the other variable.', latex: answer(sol)!, annotation: 'solved' });
+  // Back-substitute into (1), one line per stage rather than one arrow.
+  const known = elimX ? 'y' : 'x';
+  const knownCoeff = elimX ? e1.b : e1.a;
+  const wantedCoeff = elimX ? e1.a : e1.b;
+  const wantedVar = elimX ? 'x' : 'y';
+  const product = knownCoeff.mul(val);
+  const remainder = e1.c.sub(product);
+  const wantedVal = remainder.div(wantedCoeff);
+
+  steps.push({
+    note: `Put $${known} = ${rl(val)}$ into equation (1).`,
+    latex: elimX
+      ? `${coeffVar(e1.a, 'x')} + ${rl(e1.b)}\\left(${rl(val)}\\right) = ${rl(e1.c)}`
+      : `${rl(e1.a)}\\left(${rl(val)}\\right) + ${coeffVar(e1.b, 'y')} = ${rl(e1.c)}`,
+  });
+  steps.push({
+    note: `Work out $${rl(knownCoeff)} \\times ${rl(val)} = ${rl(product)}$.`,
+    latex: elimX
+      ? `${coeffVar(e1.a, 'x')} + ${rl(product)} = ${rl(e1.c)}`
+      : `${rl(product)} + ${coeffVar(e1.b, 'y')} = ${rl(e1.c)}`,
+  });
+  steps.push({
+    note: `${product.isNeg() ? 'Add' : 'Subtract'} $${rl(product.abs())}$ ${product.isNeg() ? 'to' : 'from'} both sides.`,
+    latex: `${coeffVar(wantedCoeff, wantedVar)} = ${rl(remainder)}`,
+  });
+  if (!wantedCoeff.eq(Rational.int(1))) {
+    steps.push({
+      note: `Divide both sides by $${rl(wantedCoeff)}$.`,
+      latex: `${wantedVar} = \\dfrac{${rl(remainder)}}{${rl(wantedCoeff)}} = ${rl(wantedVal)}`,
+    });
+  }
+  steps.push({ note: 'Both values together.', latex: answer(sol)!, annotation: 'solved' });
 
   return { ok: true, solution: { headline: HEAD, methodName: 'Elimination', steps, answerLatex: answer(sol) } };
 }

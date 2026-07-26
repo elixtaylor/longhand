@@ -106,10 +106,20 @@ function compound(f: Finance, input: string): SolveResult {
       latex: `A = ${fmt(P)}\\left(1 + \\dfrac{${fmt(rate, 6)}}{${n}}\\right)^{${n} \\times ${fmt(t)}}`,
     },
     {
-      note: 'Simplify inside the brackets and the index.',
+      note: `Divide the rate by the number of periods a year and add 1: $1 + ${fmt(perPeriod, 8)} = ${fmt(1 + perPeriod, 8)}$. The index is $${n} \\times ${fmt(t)} = ${fmt(periods)}$.`,
       latex: `A = ${fmt(P)} \\times \\left(${fmt(1 + perPeriod, 8)}\\right)^{${fmt(periods)}}`,
     },
-    { note: 'Work out the final amount.', latex: `A = ${AUD(A)}`, annotation: 'final balance' },
+    {
+      // The power is the one line a student cannot do in their head, so it
+      // gets its own step rather than being folded into the final figure.
+      note: 'Raise the multiplier to that power.',
+      latex: `\\left(${fmt(1 + perPeriod, 8)}\\right)^{${fmt(periods)}} = ${fmt(Math.pow(1 + perPeriod, periods), 8)}`,
+    },
+    {
+      note: 'Multiply the principal by it.',
+      latex: `A = ${fmt(P)} \\times ${fmt(Math.pow(1 + perPeriod, periods), 8)} = ${AUD(A)}`,
+      annotation: 'final balance',
+    },
     { note: 'The interest is the growth on top of the principal.', latex: `I = ${AUD(A)} - ${AUD(P)} = ${AUD(A - P)}` },
   ];
   return {

@@ -1,4 +1,5 @@
 import { Rational } from './rational';
+import { proseWordsIn } from '../nl/vocabulary';
 
 /**
  * A single-variable polynomial with exact rational coefficients, stored as
@@ -121,6 +122,12 @@ export function detectVariable(input: string): string {
 /** Parse one side of an equation (a sum of monomials) into a Poly. */
 export function parsePoly(inputRaw: string, variable = 'x'): Poly {
   const v = variable.toLowerCase();
+  // Catch English before whitespace is stripped: afterwards "2x and y" has
+  // become "2xandy", where "and" is indistinguishable from a run of variables.
+  const prose = proseWordsIn(inputRaw);
+  if (prose.length > 0) {
+    throw new ParseError(`“${prose[0]}” isn’t part of an expression.`);
+  }
   let s = normalise(inputRaw).toLowerCase().replace(/\*/g, '');
   if (s === '') throw new ParseError('Nothing to parse.');
 
@@ -153,11 +160,14 @@ function parseMonomial(chunk: string, v: string): Monomial {
 
   let power = 1;
   if (rest.startsWith('^')) {
-    const p = parseInt(rest.slice(1), 10);
-    if (!Number.isInteger(p) || p < 0 || rest.slice(1) === '') {
+    // parseInt stops at the first non-digit and reports success, so "^2sinx"
+    // used to read as power 2 with the rest of the input silently discarded.
+    // The exponent has to be the whole remainder.
+    const exp = rest.slice(1);
+    if (!/^\d+$/.test(exp)) {
       throw new ParseError(`Unsupported power in "${chunk}". Use a whole number like ${v}^2.`);
     }
-    power = p;
+    power = parseInt(exp, 10);
   } else if (rest !== '') {
     throw new ParseError(`Couldn't read "${chunk}".`);
   }

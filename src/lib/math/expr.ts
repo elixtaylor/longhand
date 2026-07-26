@@ -18,6 +18,8 @@ export type Expr =
   | { t: 'neg'; a: Expr }
   | { t: 'fn'; name: FnName; a: Expr };
 
+import { isProseWord } from '../nl/vocabulary';
+
 export type FnName = 'sin' | 'cos' | 'tan' | 'sec' | 'ln' | 'log' | 'exp' | 'sqrt';
 
 export class ExprError extends Error {}
@@ -54,16 +56,26 @@ function tokenise(src: string): Token[] {
       let j = i;
       while (j < s.length && /[a-zA-Z]/.test(s[j])) j++;
       let word = s.slice(i, j);
-      // "sinx" should read as sin(x), not a variable called "sinx".
-      const fn = FUNCTIONS.find((f) => word.startsWith(f));
-      if (fn && word.length > fn.length) {
-        out.push({ k: 'id', v: fn });
-        word = word.slice(fn.length);
-        for (const ch of word) out.push({ k: 'id', v: ch });
-      } else if (fn && word.length === fn.length) {
-        out.push({ k: 'id', v: fn });
-      } else {
-        for (const ch of word) out.push({ k: 'id', v: ch });
+      // An English word left in the input must stop the parse. Below, any
+      // unrecognised run becomes a product of single-letter variables, which
+      // would quietly turn "and stationary points" into a·n·d·s·t·… and hand
+      // back a confident, wrong derivative.
+      if (isProseWord(word)) {
+        throw new ExprError(`“${word}” isn’t part of an expression.`);
+      }
+      // "sinx" should read as sin(x), not a variable called "sinx" — and
+      // "sinxcosx" as sin(x)cos(x), so scan the whole run rather than peeling
+      // a single leading function name off the front.
+      let k = 0;
+      while (k < word.length) {
+        const fn = FUNCTIONS.find((f) => word.startsWith(f, k));
+        if (fn) {
+          out.push({ k: 'id', v: fn });
+          k += fn.length;
+        } else {
+          out.push({ k: 'id', v: word[k] });
+          k++;
+        }
       }
       i = j;
     } else if ('+-*/^()'.includes(c)) {

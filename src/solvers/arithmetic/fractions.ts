@@ -116,7 +116,13 @@ export function solveFraction(p: Problem): SolveResult {
   }
 
   const answerLatex = fracLatex(reduced.n, reduced.d);
-  steps.push({ note: 'Final answer.', latex: `= ${answerLatex}`, annotation: 'answer' });
+  // When the previous step already reached the reduced fraction, a "final
+  // answer" line just restates it. Mark that line as the answer instead.
+  if (steps[steps.length - 1]?.latex === `= ${answerLatex}`) {
+    steps[steps.length - 1].annotation = 'answer';
+  } else {
+    steps.push({ note: 'Final answer.', latex: `= ${answerLatex}`, annotation: 'answer' });
+  }
 
   return {
     ok: true,

@@ -1,6 +1,6 @@
 import { Rational } from '../../lib/math/rational';
 import { parseEquation, Poly, ParseError } from '../../lib/math/parse';
-import { rl, polyLatex } from '../../lib/math/format';
+import { rl, polyLatex, connectTerm } from '../../lib/math/format';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /** Build a display polynomial  a·x + b. */
@@ -62,18 +62,35 @@ function solveByBalance(lin: Linear): SolveResult {
   let leftConst = lin.b;
   let rightConst = lin.d;
 
+  // Balancing is taught as two lines per move: write the same operation on
+  // both sides, *then* tidy up. Showing only the tidied line hides the very
+  // thing the method is about, so each move gets both.
+  const undo = (r: Rational) => (r.isNeg() ? `+ ${rl(r.abs())}` : `- ${rl(r)}`);
+
   // Gather the x-terms on the left.
   if (!lin.c.isZero()) {
     steps.push({
-      note: `Subtract $${termX(lin.c)}$ from both sides so the $x$-terms are together.`,
+      note: `Take $${termX(lin.c)}$ off both sides, so the $x$-terms end up together.`,
+      latex: `${polyLatex(linearPoly(lin.a, lin.b))} ${undo(lin.c)}x = ${polyLatex(linearPoly(lin.c, lin.d))} ${undo(lin.c)}x`,
+      annotation: 'same to both sides',
+    });
+    steps.push({
+      note: `On the left $${termX(lin.a)} ${undo(lin.c)}x = ${termX(A)}$; on the right the $x$-terms cancel.`,
       latex: `${polyLatex(linearPoly(A, leftConst))} = ${rl(rightConst)}`,
     });
   }
   // Move the constant to the right.
   if (!leftConst.isZero()) {
+    const moved = leftConst;
+    const before = rightConst;
     rightConst = rightConst.sub(leftConst);
     steps.push({
-      note: `${leftConst.isNeg() ? 'Add' : 'Subtract'} $${rl(leftConst.abs())}$ ${leftConst.isNeg() ? 'to' : 'from'} both sides.`,
+      note: `${moved.isNeg() ? 'Add' : 'Subtract'} $${rl(moved.abs())}$ ${moved.isNeg() ? 'to' : 'from'} both sides to leave the $x$-term on its own.`,
+      latex: `${termX(A)}${connectTerm(moved, 0, 'x')} ${undo(moved)} = ${rl(before)} ${undo(moved)}`,
+      annotation: 'same to both sides',
+    });
+    steps.push({
+      note: `The constants on the left cancel, and the right is $${rl(before)} ${undo(moved)} = ${rl(rightConst)}$.`,
       latex: `${termX(A)} = ${rl(rightConst)}`,
     });
     leftConst = Rational.int(0);
@@ -81,11 +98,19 @@ function solveByBalance(lin: Linear): SolveResult {
   // Divide through by the coefficient.
   if (!A.eq(Rational.int(1))) {
     steps.push({
-      note: `Divide both sides by $${rl(A)}$.`,
+      note: `$x$ is multiplied by $${rl(A)}$, so divide both sides by $${rl(A)}$ to undo it.`,
+      latex: `\\dfrac{${termX(A)}}{${rl(A)}} = \\dfrac{${rl(rightConst)}}{${rl(A)}}`,
+      annotation: 'same to both sides',
+    });
+    steps.push({
+      note: 'The left-hand side cancels down to $x$.',
       latex: `x = \\dfrac{${rl(rightConst)}}{${rl(A)}}`,
     });
+    steps.push({ note: 'Work out the division.', latex: `x = ${rl(outcome.x)}`, annotation: 'solved' });
+  } else {
+    // The last line already reads x = …; repeating it would be padding.
+    steps[steps.length - 1].annotation = 'solved';
   }
-  steps.push({ note: 'Simplify.', latex: `x = ${rl(outcome.x)}`, annotation: 'solved' });
 
   return {
     ok: true,
