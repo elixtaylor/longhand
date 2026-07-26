@@ -6,6 +6,12 @@
  */
 
 :root {
+  /* Size of one square on the notebook paper. The step rhythm in base.css
+     is quantised to this, so the two cannot drift apart. */
+  --rule: 24px;
+  /* Offset from the top of a step's maths line box to its baseline, used to
+     sit the notebook rulings under the working. See .steps in base.css. */
+  --rule-baseline: 5.2px;
   /* Typography — system stacks chosen for character, not the Inter/Google default */
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
     Georgia, "Times New Roman", serif;

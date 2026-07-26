@@ -57,15 +57,17 @@ function solveLinear(iq: Ineq): SolveResult {
     rel = FLIP[rel];
     steps.push({
       note: `Divide both sides by $${rl(a)}$. Dividing by a negative **reverses** the inequality sign.`,
-      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${rl(a)}} = ${rl(value)}`,
+      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${rl(a)}}`,
       annotation: 'sign flipped!',
     });
   } else {
     steps.push({
       note: `Divide both sides by $${rl(a)}$.`,
-      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${rl(a)}} = ${rl(value)}`,
+      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${rl(a)}}`,
     });
   }
+  // The division is its own move, not a tail on the line that set it up.
+  steps.push({ note: 'Work out the division.', latex: `x ${PRETTY[rel]} ${rl(value)}` });
 
   const answer = `x ${PRETTY[rel]} ${rl(value)}`;
   const v = value.toNumber();
@@ -73,7 +75,8 @@ function solveLinear(iq: Ineq): SolveResult {
   steps.push({
     note: 'On a number line this is everything ' + (rel.startsWith('<') ? 'to the left of' : 'to the right of') +
       ` $${rl(value)}$, with ${inclusive ? 'a filled circle (the value is included)' : 'an open circle (the value is not included)'}.`,
-    latex: answer,
+    // No latex: the line above already states the solution, and the diagram
+    // is what this step adds.
     visual: {
       kind: 'number-line',
       data: {

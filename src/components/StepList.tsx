@@ -4,7 +4,16 @@ import type { RevealMode } from '../lib/ui';
 import { TeX, RichText } from './TeX';
 import { StepVisualView } from './visuals';
 
-export function StepList({ solution, revealMode }: { solution: Solution; revealMode: RevealMode }) {
+export function StepList({
+  solution,
+  revealMode,
+  showNotes,
+}: {
+  solution: Solution;
+  revealMode: RevealMode;
+  /** Whether each line's "why" is shown. Off by default; see App. */
+  showNotes: boolean;
+}) {
   const total = solution.steps.length;
   const [revealed, setRevealed] = useState(total);
 
@@ -18,8 +27,10 @@ export function StepList({ solution, revealMode }: { solution: Solution; revealM
   async function copyWorking() {
     const lines = [stripMath(solution.headline)];
     solution.steps.forEach((s, i) => {
-      if (s.note) lines.push(`${i + 1}. ${stripMath(s.note)}`);
-      if (s.latex) lines.push(`    ${s.latex}`);
+      // Copy what is on screen: with explanations hidden, a bare list of
+      // lines is exactly what a student wants to paste into their book.
+      if (s.note && showNotes) lines.push(`${i + 1}. ${stripMath(s.note)}`);
+      if (s.latex) lines.push(showNotes ? `    ${s.latex}` : s.latex);
     });
     if (solution.answerLatex) lines.push(`Answer:  ${solution.answerLatex}`);
     try {
@@ -37,7 +48,7 @@ export function StepList({ solution, revealMode }: { solution: Solution; revealM
           return (
             <li key={i} className={`step${hidden ? ' is-hidden' : ''}`}>
               <div className="step-body">
-                {step.note && (
+                {step.note && showNotes && (
                   <p className="step-note">
                     <RichText text={step.note} />
                   </p>

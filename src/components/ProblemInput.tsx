@@ -25,6 +25,18 @@ const KEYS: Key[] = [
 // looks like maths in the preview is what the parser will accept.
 export { isExpression };
 
+/**
+ * Typed maths is not LaTeX. Without this, "ln x = 5" is set as the italic
+ * product l·n·x — which is what a variable looks like, so a student would
+ * reasonably think their function name had not been understood.
+ */
+function forPreview(text: string): string {
+  return text.replace(
+    /\b(sin|cos|tan|sec|csc|cot|arcsin|arccos|arctan|sinh|cosh|tanh|ln|log|exp|det|min|max|lim)\b/g,
+    '\\$1 ',
+  );
+}
+
 export function ProblemInput({
   value,
   onChange,
@@ -95,7 +107,7 @@ export function ProblemInput({
           {trimmed === '' ? (
             <span className="preview-empty">Start typing — plain English is fine…</span>
           ) : isExpression(trimmed) ? (
-            <TeX tex={trimmed} display />
+            <TeX tex={forPreview(trimmed)} display />
           ) : (
             <span className="preview-plain">{trimmed}</span>
           )}

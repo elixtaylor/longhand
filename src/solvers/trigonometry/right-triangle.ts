@@ -71,13 +71,23 @@ function byPythagoras(rt: RT): SolveResult {
 
   if (a !== undefined && b !== undefined) {
     const cc = Math.sqrt(a * a + b * b);
+    // Substituting, squaring and adding are three separate moves; running
+    // them together on one line is where a student loses the thread.
     steps.push({
-      note: 'Both short sides are known, so substitute and find the hypotenuse.',
-      latex: `c^{2} = ${fmt(a, 4)}^{2} + ${fmt(b, 4)}^{2} = ${fmt(a * a, 4)} + ${fmt(b * b, 4)} = ${fmt(a * a + b * b, 4)}`,
+      note: 'Both short sides are known, so substitute them in.',
+      latex: `c^{2} = ${fmt(a, 4)}^{2} + ${fmt(b, 4)}^{2}`,
     });
     steps.push({
-      note: 'Take the square root of both sides.',
-      latex: `c = \\sqrt{${fmt(a * a + b * b, 4)}} = ${fmt(cc)}`,
+      note: 'Square each one.',
+      latex: `c^{2} = ${fmt(a * a, 4)} + ${fmt(b * b, 4)}`,
+    });
+    steps.push({
+      note: 'Add them together.',
+      latex: `c^{2} = ${fmt(a * a + b * b, 4)}`,
+    });
+    steps.push({
+      note: 'Take the square root of both sides. A length is positive, so only the positive root is used.',
+      latex: `c = \\sqrt{${fmt(a * a + b * b, 4)}} = ${fmt(cc, 4)}`,
       annotation: 'hypotenuse',
     });
     steps.push(diagramStep(a, b, cc));
@@ -98,11 +108,19 @@ function byPythagoras(rt: RT): SolveResult {
   });
   steps.push({
     note: 'Substitute the known lengths.',
-    latex: `${target}^{2} = ${fmt(hyp, 4)}^{2} - ${fmt(known, 4)}^{2} = ${fmt(hyp * hyp, 4)} - ${fmt(known * known, 4)} = ${fmt(hyp * hyp - known * known, 4)}`,
+    latex: `${target}^{2} = ${fmt(hyp, 4)}^{2} - ${fmt(known, 4)}^{2}`,
   });
   steps.push({
-    note: 'Take the square root.',
-    latex: `${target} = \\sqrt{${fmt(hyp * hyp - known * known, 4)}} = ${fmt(other)}`,
+    note: 'Square each one.',
+    latex: `${target}^{2} = ${fmt(hyp * hyp, 4)} - ${fmt(known * known, 4)}`,
+  });
+  steps.push({
+    note: 'Subtract.',
+    latex: `${target}^{2} = ${fmt(hyp * hyp - known * known, 4)}`,
+  });
+  steps.push({
+    note: 'Take the square root of both sides.',
+    latex: `${target} = \\sqrt{${fmt(hyp * hyp - known * known, 4)}} = ${fmt(other, 4)}`,
     annotation: 'missing side',
   });
   steps.push(
@@ -141,8 +159,16 @@ function byTrigRatio(rt: RT): SolveResult {
         latex: `\\sin ${fmt(A)}${DEG} = \\dfrac{a}{${fmt(c)}}`,
       });
       steps.push({
-        note: 'Multiply both sides by the hypotenuse.',
-        latex: `a = ${fmt(c)} \\times \\sin ${fmt(A)}${DEG} = ${fmt(side)}`,
+        note: 'Multiply both sides by the hypotenuse to get the side on its own.',
+        latex: `a = ${fmt(c)} \\times \\sin ${fmt(A)}${DEG}`,
+      });
+      steps.push({
+        note: 'Look up the sine of the angle.',
+        latex: `\\sin ${fmt(A)}${DEG} = ${fmt(Math.sin(r), 6)}`,
+      });
+      steps.push({
+        note: `Multiply: $${fmt(c)} \\times ${fmt(Math.sin(r), 6)} = ${fmt(side, 4)}$.`,
+        latex: `a = ${fmt(side, 4)}`,
         annotation: 'opposite side',
       });
       return finish(steps, 'Trigonometric ratios', `Find the missing side ($A = ${fmt(A)}${DEG}$, $c = ${fmt(c)}$)`, `a = ${fmt(side)}`);
@@ -167,8 +193,16 @@ function byTrigRatio(rt: RT): SolveResult {
         latex: `\\tan ${fmt(A)}${DEG} = \\dfrac{a}{${fmt(b)}}`,
       });
       steps.push({
-        note: 'Multiply both sides by the adjacent side.',
-        latex: `a = ${fmt(b)} \\times \\tan ${fmt(A)}${DEG} = ${fmt(opp)}`,
+        note: 'Multiply both sides by the adjacent side to get the side on its own.',
+        latex: `a = ${fmt(b)} \\times \\tan ${fmt(A)}${DEG}`,
+      });
+      steps.push({
+        note: 'Look up the tangent of the angle.',
+        latex: `\\tan ${fmt(A)}${DEG} = ${fmt(Math.tan(r), 6)}`,
+      });
+      steps.push({
+        note: `Multiply: $${fmt(b)} \\times ${fmt(Math.tan(r), 6)} = ${fmt(opp, 4)}$.`,
+        latex: `a = ${fmt(opp, 4)}`,
         annotation: 'opposite side',
       });
       return finish(steps, 'Trigonometric ratios', `Find the missing side ($A = ${fmt(A)}${DEG}$, $b = ${fmt(b)}$)`, `a = ${fmt(opp)}`);

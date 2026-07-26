@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Solver } from '../lib/engine/types';
 import { runSolve } from '../lib/engine/run';
+import { distinctMethods } from '../lib/engine/methods';
 import { TeX, RichText } from './TeX';
 
 /**
@@ -11,9 +12,11 @@ import { TeX, RichText } from './TeX';
  * much work each route takes.
  */
 export function CompareMethods({ solver, input }: { solver: Solver; input: string }) {
+  // Comparing a method against an identical copy of itself teaches nothing,
+  // so compare only the ones that genuinely differ on this problem.
   const runs = useMemo(
     () =>
-      solver.methods.map((m) => ({
+      distinctMethods(solver, input).map((m) => ({
         method: m,
         result: runSolve(solver, input, m.id),
       })),

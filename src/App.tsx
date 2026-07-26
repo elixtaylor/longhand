@@ -8,6 +8,13 @@ export default function App() {
   const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'editorial');
   const [revealMode, setRevealMode] = useLocalStorage<RevealMode>('longhand.reveal', 'all');
   const [dark, setDark] = useLocalStorage<boolean>('longhand.dark', false);
+  /**
+   * Off by default: the working itself is what a student came for, and a
+   * sentence above every line pushes the maths apart. The toggle sits with
+   * the working rather than in settings, because it is a thing you reach for
+   * mid-question and put back.
+   */
+  const [showNotes, setShowNotes] = useLocalStorage<boolean>('longhand.notes', false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Apply the theme to <html> so the token sets in themes.css take effect.
@@ -68,7 +75,11 @@ export default function App() {
         </div>
       </header>
 
-      <Workspace revealMode={revealMode} />
+      <Workspace
+        revealMode={revealMode}
+        showNotes={showNotes}
+        onShowNotes={setShowNotes}
+      />
 
       <footer className="colophon">
         <span>Longhand — worked out exactly, never generated. Made for SACE maths.</span>

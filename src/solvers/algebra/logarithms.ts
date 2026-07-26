@@ -122,8 +122,16 @@ function solveExponential(p: Extract<Problem, { kind: 'exponential' }>, methodId
     annotation: 'power law',
   });
   steps.push({
-    note: 'Divide to make x the subject.',
-    latex: `x = \\dfrac{${logName('e')}(${fmt(rhs, 6)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${logName('e')}(${baseTex(base)})} = ${fmt(x, 6)}`,
+    note: `Divide both sides by $${mult === 1 ? '' : `${fmt(mult)}`}${logName('e')}(${baseTex(base)})$ to make $x$ the subject.`,
+    latex: `x = \\dfrac{${logName('e')}(${fmt(rhs, 6)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${logName('e')}(${baseTex(base)})}`,
+  });
+  steps.push({
+    note: 'Look up the two logarithms.',
+    latex: `${logName('e')}(${fmt(rhs, 6)}) = ${fmt(Math.log(rhs), 6)}, \\qquad ${logName('e')}(${baseTex(base)}) = ${fmt(lnOf(base), 6)}`,
+  });
+  steps.push({
+    note: 'Work out the division.',
+    latex: `x = \\dfrac{${fmt(Math.log(rhs), 6)}}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${fmt(lnOf(base), 6)}} = ${fmt(x, 6)}`,
     annotation: 'solved',
   });
 
@@ -171,20 +179,49 @@ export const logarithmsSolver: Solver = {
       const { base, value } = p;
       const bNum = base === 'e' ? Math.E : base;
       const x = Math.pow(bNum, value);
+      const b = baseTex(base);
+      const L = logName(base);
+
+      // Going straight from "ln x = 5" to "x = e^5" hides the move that
+      // justifies it. Raising both sides as a power of the base is an
+      // ordinary do-the-same-to-both-sides step, and seeing it written out is
+      // what makes the cancellation obvious rather than a rule to memorise.
+      const steps: Step[] = [
+        { note: 'Write down the equation.', latex: `${L} x = ${fmt(value)}` },
+        {
+          note: `To undo a logarithm, raise ${base === 'e' ? '$e$' : `$${b}$`} to the power of each side. Doing the same thing to both sides keeps the equation true.`,
+          latex: `${b}^{\\,${L} x} = ${b}^{\\,${fmt(value)}}`,
+          annotation: 'same to both sides',
+        },
+        {
+          note: `$${b}^{\\,${L} x}$ and $${L} x$ undo each other — raising to a power and taking a logarithm of the same base are inverse operations — so the left-hand side is just $x$.`,
+          latex: `x = ${b}^{\\,${fmt(value)}}`,
+          annotation: 'index form',
+        },
+      ];
+
+      // When the base and index are whole, the power is worth expanding.
+      if (Number.isInteger(value) && value > 1 && value <= 6 && base !== 'e') {
+        steps.push({
+          note: `Expand the power: ${b} multiplied by itself ${fmt(value)} times.`,
+          latex: `x = ${Array(value).fill(b).join(' \\times ')}`,
+        });
+      }
+      steps.push({
+        note:
+          base === 'e'
+            ? 'Work out that power of $e$ on a calculator.'
+            : 'Work out that power.',
+        latex: `x = ${fmt(x, 6)}`,
+        annotation: 'solved',
+      });
+
       return {
         ok: true,
         solution: {
-          headline: `Solve $${logName(base)} x = ${fmt(value)}$`,
+          headline: `Solve $${L} x = ${fmt(value)}$`,
           methodName: 'Converting to index form',
-          steps: [
-            { note: 'Write down the equation.', latex: `${logName(base)} x = ${fmt(value)}` },
-            {
-              note: 'A logarithm is an index in disguise: $\\log_{b} x = c$ means $x = b^{c}$.',
-              latex: `x = ${baseTex(base)}^{${fmt(value)}}`,
-              annotation: 'index form',
-            },
-            { note: 'Work it out.', latex: `x = ${fmt(x, 6)}`, annotation: 'solved' },
-          ],
+          steps,
           answerLatex: `x = ${fmt(x, 6)}`,
         },
       };
@@ -212,9 +249,20 @@ export const logarithmsSolver: Solver = {
       });
       steps.push({ note: 'So the logarithm is that index.', latex: `${logName(base)}(${fmt(value)}) = ${exact}`, annotation: 'answer' });
     } else {
+      // One line used to do three things: state the rule, look up both
+      // logarithms, and divide. Split so each is checkable on a calculator.
       steps.push({
-        note: 'It isn’t a whole power, so use the change-of-base rule.',
-        latex: `${logName(base)}(${fmt(value)}) = \\dfrac{\\ln ${fmt(value)}}{\\ln ${baseTex(base)}} = ${fmt(result, 6)}`,
+        note: 'It isn’t a whole power, so use the change-of-base rule to get something a calculator has a button for.',
+        latex: `${logName(base)}(${fmt(value)}) = \\dfrac{\\ln ${fmt(value)}}{\\ln ${baseTex(base)}}`,
+        annotation: 'change of base',
+      });
+      steps.push({
+        note: 'Look up the two natural logarithms.',
+        latex: `\\ln ${fmt(value)} = ${fmt(Math.log(value), 6)}, \\qquad \\ln ${baseTex(base)} = ${fmt(lnOf(base), 6)}`,
+      });
+      steps.push({
+        note: 'Divide one by the other.',
+        latex: `${logName(base)}(${fmt(value)}) = \\dfrac{${fmt(Math.log(value), 6)}}{${fmt(lnOf(base), 6)}} = ${fmt(result, 6)}`,
         annotation: 'answer',
       });
     }

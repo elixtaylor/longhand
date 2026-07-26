@@ -20,9 +20,9 @@ You don't have to learn a syntax. Type the question the way you'd say it:
 > *"probability of exactly 3 heads in 10 coin flips"*
 
 Longhand rewrites that into maths, shows you **exactly how it read your question**,
-works out **which topic it belongs to**, and solves it. If the reading is wrong you can
-see why straight away. Structured input (`a=7, b=9, C=40`) works exactly as before, and
-**Choose topic** lets you pick one yourself.
+works out **which topic it belongs to**, and solves it — there is nothing to select.
+If the reading is wrong you can see why straight away. Structured input
+(`a=7, b=9, C=40`) works exactly as before.
 
 ## Questions that span two topics
 
@@ -36,7 +36,8 @@ answers — *"…and then find 20% of the answer"*, *"…15% of the larger root"
 
 A split has to prove itself: every piece must independently detect a topic **and** solve.
 That's what stops *"a triangle with sides 5, 6 and 7"* being torn in half at the "and".
-Choosing a topic by hand turns splitting off.
+Picking a method, or reopening a past problem, settles the question on one topic and
+turns splitting off until the question changes.
 
 Some questions need two topics at once rather than one after the other — the gradient at a
 point, stationary points and their nature, tangents and normals. Those are a topic of their
@@ -46,11 +47,15 @@ own, so the working shows the join: differentiate, solve what you differentiated
 
 - **Compare all methods** — every method for the same problem side by side, with a
   step count for each and a check that they agree. The whole point of the app, in one view.
-- **Reference tabs** at the top — formulas, examples, textbook questions and recent work,
+- **Reference tabs** at the top — formulas, textbook questions and recent work,
   one click away instead of a scroll past the working.
+- **Maths first** — the working shows lines only. **Why?**, top right, adds the reason
+  for each line when you want it.
+- **No duplicate methods** — if two methods give identical working for your problem
+  (solving `ln x = 5` is the same either way), only one is offered.
 - **Diagrams** — scale triangles, parabolas with roots and turning points marked, shaded
   normal curves, box plots, and number lines for inequalities.
-- **Formula sheet** for the current topic, always alongside the working.
+- **Formula sheet** for the current topic, in the tab strip above the working.
 - **Shareable links** — every solve updates the URL, so you can send working to a
   classmate or hand it to a teacher.
 - **Recent problems**, kept locally so you can pick up where you left off.
@@ -173,6 +178,11 @@ The *shape* of the working is checked too, across every example in the library: 
 be blank, repeat the line above it, or go unexplained. And any arithmetic written into a
 step ("126 × 0.766044 = 96.5216") must actually hold to the figures shown — a line a student
 can't reproduce on a calculator is worse than no line at all.
+
+Steps that *justify* the next line are tested by name, because they are the ones easiest to
+leave out: `ln x = 5` must show `e^{ln x} = e^5` before `x = e^5`, balancing must write the
+operation on both sides before the tidy-up, and Pythagoras must square, add and root on
+separate lines.
 
 ## Practice questions
 

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Solver } from '../lib/engine/types';
-import { examplesFor, type Example } from '../data/examples';
 import { importedFor, sourceOf, type ImportedProblem } from '../data/imported';
 import { formulasFor } from '../data/formulas';
 import { getSolver } from '../lib/engine/registry';
@@ -8,7 +7,7 @@ import type { HistoryEntry } from '../lib/history';
 import { TeX } from './TeX';
 
 /**
- * Formulas, examples, textbook questions and recent work, reachable from the
+ * Formulas, textbook questions and recent work, reachable from the
  * top of the page rather than by scrolling past the working.
  *
  * They used to sit in a column under the input, which put the formula sheet
@@ -19,18 +18,16 @@ import { TeX } from './TeX';
  * a dead end.
  */
 
-type TabId = 'formulas' | 'examples' | 'textbook' | 'recent';
+type TabId = 'formulas' | 'textbook' | 'recent';
 
 export function ReferenceTabs({
   solver,
-  onLoadExample,
   onLoadImported,
   history,
   onLoadHistory,
   onClearHistory,
 }: {
   solver: Solver;
-  onLoadExample: (ex: Example) => void;
   onLoadImported: (p: ImportedProblem) => void;
   history: HistoryEntry[];
   onLoadHistory: (h: HistoryEntry) => void;
@@ -40,12 +37,10 @@ export function ReferenceTabs({
   const panelRef = useRef<HTMLDivElement>(null);
 
   const formulas = formulasFor(solver.id);
-  const examples = examplesFor(solver.id);
   const imported = importedFor(solver.id);
 
   const tabs: Array<{ id: TabId; label: string; count?: number; available: boolean }> = [
     { id: 'formulas', label: 'Formulas', count: formulas.length, available: formulas.length > 0 },
-    { id: 'examples', label: 'Try one', count: examples.length, available: examples.length > 0 },
     { id: 'textbook', label: 'Textbook questions', count: imported.length, available: imported.length > 0 },
     { id: 'recent', label: 'Recent', count: history.length, available: history.length > 0 },
   ];
@@ -111,16 +106,6 @@ export function ReferenceTabs({
             </>
           )}
 
-          {open === 'examples' && (
-            <div className="examples examples-grid">
-              {examples.map((ex) => (
-                <button key={ex.label} type="button" className="example-row" onClick={() => onLoadExample(ex)}>
-                  <span className="example-expr">{ex.label}</span>
-                  <span className="example-tag">{ex.subject}</span>
-                </button>
-              ))}
-            </div>
-          )}
 
           {open === 'textbook' && (
             <>

@@ -14,10 +14,12 @@ import { TeX, RichText } from './TeX';
 export function PartedSolution({
   worked,
   revealMode,
+  showNotes,
   onFocusPart,
 }: {
   worked: Worked;
   revealMode: RevealMode;
+  showNotes: boolean;
   onFocusPart?: (part: WorkedPart) => void;
 }) {
   return (
@@ -69,7 +71,7 @@ export function PartedSolution({
           </header>
 
           {part.result.ok ? (
-            <StepList solution={part.result.solution} revealMode={revealMode} />
+            <StepList solution={part.result.solution} revealMode={revealMode} showNotes={showNotes} />
           ) : (
             <p className="part-error">{part.result.error}</p>
           )}

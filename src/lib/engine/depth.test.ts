@@ -133,3 +133,41 @@ describe('the arithmetic on a step reproduces on a calculator', () => {
     }
   });
 });
+
+describe('undoing an operation is shown, not assumed', () => {
+  /**
+   * The move a student is most likely to be marked down for leaving out is
+   * the one that justifies the next line. "ln x = 5, therefore x = e^5" skips
+   * the step that makes it true.
+   */
+  it('raises both sides as a power before cancelling the logarithm', () => {
+    const ls = lines('ln x = 5');
+    expect(ls).toContain('e^{\\,\\ln x} = e^{\\,5}'); // the same-to-both-sides move
+    expect(ls).toContain('x = e^{\\,5}'); // only then does the log cancel
+    expect(ls).toContain('x = 148.413159');
+  });
+
+  it('does the same for a base-10 logarithm', () => {
+    const ls = lines('log x = 3');
+    expect(ls).toContain('10^{\\,\\log x} = 10^{\\,3}');
+    expect(ls).toContain('x = 1000');
+  });
+
+  it('looks up each logarithm before dividing them', () => {
+    const ls = lines('3^x = 20').join(' | ');
+    expect(ls).toContain('2.995732'); // ln 20
+    expect(ls).toContain('1.098612'); // ln 3
+  });
+
+  it('squares, adds and roots on separate lines in Pythagoras', () => {
+    const ls = lines('a=3, b=4');
+    expect(ls).toContain('c^{2} = 3^{2} + 4^{2}');
+    expect(ls).toContain('c^{2} = 9 + 16');
+    expect(ls).toContain('c^{2} = 25');
+  });
+
+  it('looks up a trigonometric ratio before multiplying by it', () => {
+    const ls = lines('A=30, c=10').join(' | ');
+    expect(ls).toContain('\\sin 30^{\\circ} = 0.5');
+  });
+});

@@ -68,8 +68,9 @@ button {
   color: var(--ink);
 }
 .wordmark-mark {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 1.35em;
   height: 1.35em;
   align-self: center;
@@ -79,7 +80,14 @@ button {
   font-size: 0.7em;
   font-family: var(--font-mono);
   font-weight: 600;
-  transform: translateY(-1px);
+  /* The inherited line-height is taller than this box, and an "L" has no
+     descender to fill the space under its baseline — between them the glyph
+     was pushed below the bottom border. Collapsing the line box to the font
+     size lets the flex centring act on the letter itself; the padding is the
+     last ~1.5px of optical correction, since centring a line box still leaves
+     the cap-height slightly high. */
+  line-height: 1;
+  padding-top: 0.1em;
 }
 .masthead-meta {
   display: flex;
@@ -241,11 +249,6 @@ button {
   font-size: 0.85rem;
 }
 
-/* Mode toggle + detection ------------------------------------------------- */
-.mode-row {
-  margin-bottom: var(--sp-4);
-}
-
 .detected {
   display: flex;
   align-items: center;
@@ -267,14 +270,6 @@ button {
   border-radius: 50%;
   background: var(--accent);
   flex: none;
-}
-.detected-sub {
-  margin-left: auto;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-3);
-  font-weight: 600;
 }
 .detected-unknown {
   background: var(--bg-tint);
@@ -307,68 +302,10 @@ button {
   word-break: break-word;
 }
 
-/* Topic chips ------------------------------------------------------------- */
-.topic-filter {
-  width: 100%;
-  padding: 9px 12px;
-  margin-bottom: var(--sp-3);
-  font-size: 0.92rem;
-  color: var(--ink);
-  background: var(--surface-raised);
-  border: 1.5px solid var(--line);
-  border-radius: var(--control-radius);
-}
-.topic-filter:focus {
-  border-color: var(--accent);
-  outline: none;
-}
-.topic-groups {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  max-height: 46vh;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-.topic-group-name {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.11em;
-  font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 6px;
-}
 .topic-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-2);
-}
-.topic-chip {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  text-align: left;
-  background: var(--surface-raised);
-  border: 1.5px solid var(--line);
-  border-radius: var(--control-radius);
-  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
-}
-.topic-chip:hover {
-  border-color: var(--line-strong);
-}
-.topic-chip[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-.topic-chip-name {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--ink);
-}
-.topic-chip-sub {
-  font-size: 0.76rem;
-  color: var(--ink-3);
 }
 
 /* Method segmented control ------------------------------------------------ */
@@ -466,9 +403,6 @@ button {
   box-shadow: var(--shadow-1);
   padding: var(--sp-6);
   min-height: 60vh;
-  background-image: var(--paper-grid);
-  background-size: 24px 24px;
-  background-position: -1px -1px;
 }
 @media (max-width: 900px) {
   .solution {
@@ -594,10 +528,113 @@ button {
   display: none;
 }
 
+/* Why? toggle ------------------------------------------------------------- */
+/* Sits in the top-right corner of the working, out of the way of the maths
+   until a student wants the reasoning. */
+.solution {
+  position: relative;
+}
+.notes-toggle {
+  position: absolute;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  z-index: 2;
+  padding: 4px 11px;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  background: var(--bg-tint);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition:
+    color 0.12s var(--ease),
+    background 0.12s var(--ease);
+}
+.notes-toggle:hover {
+  color: var(--ink);
+}
+.notes-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--surface);
+}
+/* The answer card would otherwise sit under it. */
+.solution-head,
+.parts-head {
+  padding-right: 5.5rem;
+}
+@media print {
+  .notes-toggle {
+    display: none;
+  }
+}
+
 .detected-split strong {
   display: block;
   margin-top: 2px;
   line-height: 1.45;
+}
+
+/* Notebook: sit the working on the ruled squares --------------------------- */
+/*
+ * On squared paper you write *on* the lines, not adrift between them. That
+ * only works if every vertical measurement in a step is a whole number of
+ * squares, so in this theme the step rhythm is quantised to --rule: the
+ * maths line box is exactly two squares, and the padding above and below it
+ * makes each step a whole number of squares tall. Elsewhere --paper-grid is
+ * none and this block does nothing.
+ */
+:root[data-theme='notebook'] .steps {
+  /* The paper is drawn on the working itself, not on the whole card. That
+     way row one starts exactly where the first step starts, and nothing
+     above it (a heading of some other height, an answer card) can knock the
+     rulings out of step with the maths. */
+  background-image: var(--paper-grid);
+  background-size: var(--rule) var(--rule);
+  /* On paper you write *on* a line, so the rulings are shifted down by the
+     distance from the top of a step's line box to the maths baseline. That
+     puts a ruling under every line of working rather than through the middle
+     of it. Measured against the current KaTeX size — if --rule or
+     .step-expr's font-size changes, re-measure. */
+  background-position: 0 var(--rule-baseline);
+  padding-top: 0;
+  margin-top: var(--sp-2);
+}
+:root[data-theme='notebook'] .step {
+  padding: 0;
+  margin-bottom: var(--rule);
+}
+:root[data-theme='notebook'] .step-expr {
+  /* Two squares tall, and the KaTeX baseline sits on the lower one. */
+  line-height: calc(var(--rule) * 2);
+  padding: 0;
+  min-height: calc(var(--rule) * 2);
+}
+:root[data-theme='notebook'] .step-note {
+  line-height: var(--rule);
+  margin-bottom: 0;
+  font-size: 0.86rem;
+}
+:root[data-theme='notebook'] .step-annotation {
+  /* Inline-block would sit in a line box governed by the parent's
+     line-height, adding a stray 1.5px per step that accumulates into visible
+     drift. As a block it occupies exactly one square. */
+  display: block;
+  line-height: var(--rule);
+  height: var(--rule);
+  margin-top: 0;
+}
+:root[data-theme='notebook'] .step::before {
+  /* Centre the number badge on the first ruled row of its step. */
+  width: var(--rule);
+  height: var(--rule);
+  margin-top: calc(var(--rule) / 2);
+}
+:root[data-theme='notebook'] .step:not(:last-child)::after {
+  top: calc(var(--rule) * 1.5);
+  bottom: calc(var(--rule) * -1);
 }
 
 /* Multi-part questions ---------------------------------------------------- */
