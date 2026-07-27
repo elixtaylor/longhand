@@ -257,3 +257,91 @@ describe('worked answers stay worked', () => {
     });
   }
 });
+
+/**
+ * Statistics, the Specialist topics and finance, checked against reference
+ * implementations written from the definitions: quartiles and deviations
+ * straight from the data, binomial probabilities from Pascal's triangle,
+ * determinants by cofactor expansion, interest iterated year by year, and a
+ * loan amortised month by month to confirm the balance reaches zero.
+ *
+ * This sweep found no wrong answers — these lock that in.
+ */
+describe('statistics, specialist and finance', () => {
+  const CASES: Array<[input: string, expected: string]> = [
+    // Descriptive — mean, median and the five-number summary computed directly
+    ['4, 8, 15, 16, 23, 42', '\\bar{x} = 18, \\quad \\text{median} = 15.5, \\quad s = 13.4907'],
+    // Counting — against Pascal's triangle and n!/(n−r)!
+    ['10C3', '120'],
+    ['20C10', '184756'],
+    ['7C1', '7'],
+    ['6C0', '1'],
+    ['5!', '120'],
+    ['0!', '1'],
+    // Distributions — binomial summed term by term
+    ['binomial n=10, p=0.5, x=3', 'P(X = 3) = 0.117188'],
+    ['binomial n=5, p=0.2, x=2', 'P(X = 2) = 0.2048'],
+    ['binomial n=10, p=0, x=0', 'P(X = 0) = 1'],
+    // Matrices — determinant by cofactor expansion
+    ['det [[1,2],[3,4]]', '\\det = -2'],
+    ['det [[6,1,1],[4,-2,5],[2,8,7]]', '\\det = -306'],
+    // Vectors — from the dot-product definition
+    ['(1,2,3) . (4,5,6)', '\\mathbf{a} \\cdot \\mathbf{b} = 32'],
+    ['|(3,4)|', '|\\mathbf{a}| = 5'],
+    ['|(1,2,2)|', '|\\mathbf{a}| = 3'],
+    // Complex — (3+4i)(1−2i) = 3 − 6i + 4i + 8 = 11 − 2i
+    ['|3+4i|', '|z| = 5'],
+    ['(3+4i)*(1-2i)', '11 - 2i'],
+    ['(1+2i)/(3-4i)', '-0.2 + 0.4i'],
+    // Financial — iterated year by year; the loan amortises to zero
+    ['$5000 at 4% for 3 years compound', 'A = \\$5,624.32, \\quad I = \\$624.32'],
+    ['$20000 at 7.5% for 10 years compound', 'A = \\$41,220.63, \\quad I = \\$21,220.63'],
+    ['$5000 at 4% for 3 years simple', 'I = \\$600.00, \\quad A = \\$5,600.00'],
+    ['$20000 at 15% for 4 years depreciation', 'A = \\$10,440.13'],
+    ['loan $300000 at 6% for 30 years repaid monthly', 'R = \\$1,798.65'],
+    // Sequences — summed term by term
+    ['3, 7, 11, 15', 't_n = 4n - 1, \\quad t_{4} = 15, \\quad S_{4} = 36'],
+    ['10, 7, 4, 1', 't_n = -3n + 13, \\quad t_{4} = 1, \\quad S_{4} = 22'],
+    // Logs — b^answer reproduces the argument
+    ['log10(1000)', '\\log(1000) = 3'],
+    ['log2(20)', '\\log_{2}(20) = 4.321928'],
+    // Fractions and percentages, forwards and in reverse
+    ['-1/2 + 1/3', '-\\frac{1}{6}'],
+    ['7/3 - 1/3', '2'],
+    ['15% of 80', '12'],
+    ['increase 200 by 12%', '224'],
+    ['decrease 90 by 30%', '63'],
+  ];
+
+  for (const [input, expected] of CASES) {
+    it(`${input}  →  ${expected}`, () => {
+      expect(answer(input)).toBe(expected);
+    });
+  }
+
+  /** Preconditions that must be refused rather than fudged. */
+  it('turns away input the formula cannot take', () => {
+    refused('8C10'); // choosing 10 from 8
+    refused('binomial n=10, p=0.5, x=12'); // x beyond n
+    refused('[[1,2,3],[4,5,6]] * [[1,2],[3,4]]'); // dimensions do not match
+    refused('log2(0)'); // logarithm of zero
+    refused('2^x = -5'); // a positive base cannot reach a negative
+  });
+
+  it('proves a singular matrix has no inverse rather than inventing one', () => {
+    const p = runWorked('inverse [[1,2],[2,4]]').parts[0];
+    expect(p.result.ok).toBe(true);
+    if (!p.result.ok) return;
+    const working = p.result.solution.steps.map((s) => s.latex ?? '').join(' ');
+    expect(working).toContain('No inverse exists');
+    expect(working).toContain('= 0'); // the determinant, shown
+  });
+
+  it('offers a limiting sum only when the ratio allows one', () => {
+    const withSum = answer('a=8, r=0.5, n=10');
+    expect(withSum).toContain('S_{\\infty}');
+    for (const diverging of ['a=8, r=2, n=10', 'a=8, r=1, n=10']) {
+      expect(answer(diverging), diverging).not.toContain('S_{\\infty}');
+    }
+  });
+});
