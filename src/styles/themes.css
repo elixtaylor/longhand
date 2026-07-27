@@ -64,7 +64,6 @@
 
 /* ---------------------------------------------------------------- Editorial */
 /* Clean scientific / textbook. Warm paper, near-black ink, deep teal accent. */
-:root,
 :root[data-theme="editorial"] {
   --bg: #f7f5ef;
   --bg-tint: #f0ede3;
@@ -95,7 +94,10 @@
 }
 
 /* ----------------------------------------------------------------- Notebook */
-/* Squared exercise-book paper, fountain-pen ink blue, red-pen annotations. */
+/* Squared exercise-book paper, fountain-pen ink blue, red-pen annotations.
+   The default theme (also index.html's pre-hydration data-theme, so a
+   first-time visitor never flashes editorial before this applies). */
+:root,
 :root[data-theme="notebook"] {
   /* The Settings text-size control is deliberately inert here. --rule-baseline
      is a pixel constant measured against one specific rendered font size —

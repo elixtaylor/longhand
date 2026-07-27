@@ -555,6 +555,14 @@ button {
   height: var(--rule);
   margin-bottom: calc(var(--rule) - var(--rule-baseline));
 }
+:root[data-theme='notebook'] .step-annotation-text {
+  /* Centering the line box (above) isn't quite centering the ink — the
+     hand font's glyphs sit slightly high within their own line box. Nudged
+     on the text itself, not .step-annotation, so the border-left stays on
+     the square it was aligned to above. */
+  position: relative;
+  top: 1.5px;
+}
 .step.is-hidden {
   display: none;
 }
@@ -673,15 +681,15 @@ button {
   min-height: calc(var(--rule) * 3);
 }
 :root[data-theme='notebook'] .step-body {
-  /* A step with a margin annotation used to be a whole square taller than
-     one without — the annotation is a real block that adds its own height
-     on top of step-expr's, rather than sharing space already reserved for
-     it. Reserving that square on every step, used or not, makes the gap to
-     the next line the same whether this one has a note or not. */
-  min-height: calc(var(--rule) * 3);
+  /* Mirrors .step-expr's own min-height exactly — no spare square held
+     back for a .step-note above it. That note, when shown, has a
+     line-height of one square and adds its own height on top of this the
+     ordinary way, so the gap to the next line stays whatever .step's
+     margin-bottom says (one square) whether or not this step has a note. */
+  min-height: calc(var(--rule) * 2);
 }
 :root[data-theme='notebook'] .step-body:has(.mfrac) {
-  min-height: calc(var(--rule) * 4);
+  min-height: calc(var(--rule) * 3);
 }
 :root[data-theme='notebook'] .step-expr .katex-display {
   /*

@@ -176,7 +176,11 @@ export function StepList({
                         <TeX tex={step.latex} display />
                       </div>
                     )}
-                    {step.annotation && <span className="step-annotation">{step.annotation}</span>}
+                    {step.annotation && (
+                      <span className="step-annotation">
+                        <span className="step-annotation-text">{step.annotation}</span>
+                      </span>
+                    )}
                   </div>
                 )}
                 {step.visual && <StepVisualView visual={step.visual} />}

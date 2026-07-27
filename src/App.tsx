@@ -5,7 +5,7 @@ import { Workspace } from './components/Workspace';
 import { SettingsPanel } from './components/SettingsPanel';
 
 export default function App() {
-  const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'editorial');
+  const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'notebook');
   const [revealMode, setRevealMode] = useLocalStorage<RevealMode>('longhand.reveal', 'all');
   const [dark, setDark] = useLocalStorage<boolean>('longhand.dark', false);
   const [textSize, setTextSize] = useLocalStorage<TextSize>('longhand.textSize', 'md');
