@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { TeX } from './TeX';
 import { isExpression } from '../lib/nl/vocabulary';
+import { parseExpr, toLatex } from '../lib/math/expr';
 
 interface Key {
   label: string;
@@ -35,6 +36,41 @@ function forPreview(text: string): string {
     /\b(sin|cos|tan|sec|csc|cot|arcsin|arccos|arctan|sinh|cosh|tanh|ln|log|exp|det|min|max|lim)\b/g,
     '\\$1 ',
   );
+}
+
+/** One side of an equation, rendered through the same parser the solvers use. */
+function sideToLatex(side: string): string {
+  return toLatex(parseExpr(side));
+}
+
+/**
+ * The typed text is not LaTeX, and KaTeX's `^` only takes a single following
+ * character or a `{...}`-braced group — never a `(...)` one. So "2^(x+1)"
+ * was rendered as $2$ with a tiny superscript "(", then "x+1)" back at
+ * normal size: exactly backwards from what was typed, and confusing enough
+ * that a correct equation looked broken before it was ever solved.
+ *
+ * The fix is to stop guessing at a text-to-LaTeX rewrite and instead reuse
+ * `expr.ts`'s own parser — the same one the solvers use, so the preview and
+ * the working can never disagree about what a bracketed exponent means. It
+ * only understands one algebraic expression at a time, so each side of each
+ * "=" is converted separately, and anything it can't parse yet (a question
+ * that isn't algebra, or one that's still mid-type with a bracket not yet
+ * closed) falls back to the old plain-text rendering rather than erroring.
+ */
+function toPreviewLatex(text: string): string {
+  const clauses = text.split(/[;\n]/);
+  try {
+    return clauses
+      .map((clause) => {
+        const sides = clause.split('=');
+        if (sides.some((s) => s.trim() === '')) throw new Error('incomplete');
+        return sides.map(sideToLatex).join(' = ');
+      })
+      .join(' \\quad ');
+  } catch {
+    return forPreview(text);
+  }
 }
 
 export function ProblemInput({
@@ -107,7 +143,7 @@ export function ProblemInput({
           {trimmed === '' ? (
             <span className="preview-empty">Start typing — plain English is fine…</span>
           ) : isExpression(trimmed) ? (
-            <TeX tex={forPreview(trimmed)} display />
+            <TeX tex={toPreviewLatex(trimmed)} display />
           ) : (
             <span className="preview-plain">{trimmed}</span>
           )}

@@ -1240,6 +1240,14 @@ button {
 .katex {
   font-size: 1.04em;
 }
+
+/* An exercise book is handwritten — so, in that theme, is the maths itself.
+   KaTeX's structural glyphs (the fraction bar, the radical sign) are drawn
+   from borders and SVG paths rather than font characters, so overriding the
+   font here reaches the letters and digits without redrawing those. */
+:root[data-theme="notebook"] .katex {
+  font-family: var(--font-hand);
+}
 .step-expr .katex-display {
   margin: 0;
   text-align: left;

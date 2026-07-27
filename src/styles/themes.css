@@ -10,11 +10,11 @@
      is quantised to this, so the two cannot drift apart. */
   --rule: 24px;
   /* Where a ruling has to sit so it lands on the maths baseline rather than
-     through the middle of the glyphs. Measured: in the two-square line box
-     used for working, the baseline is 28.5px down, which is 4.5px past the
-     ruling above it. Re-measure if --rule or .step-expr's font-size change.
-     See .steps in base.css. */
-  --rule-baseline: 4.5px;
+     through the middle of the glyphs. Measured with a zero-size inline probe
+     appended to a rendered .katex node. Depends on the font the maths is set
+     in (see the notebook theme's .katex rule in base.css) as well as --rule
+     and .step-expr's font-size — re-measure if any of those change. */
+  --rule-baseline: 2.73px;
   /* Typography — system stacks chosen for character, not the Inter/Google default */
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
     Georgia, "Times New Roman", serif;
@@ -113,14 +113,9 @@
   --display-tracking: 0;
   --control-radius: var(--radius);
 
-  /* An exercise book is handwritten, so the interface is too. The maths
-     itself stays in KaTeX's own face: its layout depends on that font's
-     metrics, and its symbols (radicals, large operators, braces) come from
-     custom glyph tables — substituting a handwriting font would render the
-     maths wrong, which is far worse than it not matching. */
-  --font-display: var(--font-hand);
-  --font-ui: var(--font-hand);
-  --display-weight: 400;
+  /* The interface itself (headings, buttons, labels) stays in the ordinary
+     display/UI faces — only the rendered maths switches to handwriting; see
+     the .katex rule below. */
 }
 
 /* --------------------------------------------------------------------- Warm */
