@@ -89,7 +89,7 @@ function solveExponential(p: Extract<Problem, { kind: 'exponential' }>, methodId
     steps.push({
       note: `Write the right-hand side as a power of ${fmt(bNum)}.`,
       latex: `${baseTex(base)}^{${mult === 1 ? 'x' : `${fmt(mult)}x`}} = ${fmt(bNum)}^{${power}}`,
-      annotation: `${fmt(bNum)}^{${power}} = ${fmt(rhs)}`,
+      annotation: `${fmt(bNum)}^${power} = ${fmt(rhs)}`,
     });
     steps.push({
       note: 'The bases match, so the indices must be equal.',

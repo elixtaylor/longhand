@@ -1,6 +1,6 @@
 import { Rational } from '../../lib/math/rational';
 import { parseEquation, toStandardForm, Poly, ParseError } from '../../lib/math/parse';
-import { rl, polyLatex, connectTerm } from '../../lib/math/format';
+import { rl, rlPlain, polyLatex, connectTerm } from '../../lib/math/format';
 import { simplifySqrt, isPerfectSquare } from '../../lib/math/surd';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
@@ -254,7 +254,7 @@ function solveByCompletingSquare(std: Poly): SolveResult {
   steps.push({
     note: `Halve the coefficient of $x$: half of $${rl(B)}$ is $${rl(H)}$. Square that and add it to both sides, which keeps the equation balanced.`,
     latex: `x^{2} ${term(B, 'x')} + \\left(${rl(H)}\\right)^{2} = ${rl(C.neg())} + \\left(${rl(H)}\\right)^{2}`,
-    annotation: `half of ${rl(B)} is ${rl(H)}`,
+    annotation: `half of ${rlPlain(B)} is ${rlPlain(H)}`,
   });
   steps.push({
     // Squaring the half-coefficient is its own arithmetic move; folding it

@@ -8,6 +8,15 @@ export function rl(r: Rational): string {
   return `${sign}\\frac{${Math.abs(r.n)}}{${r.d}}`;
 }
 
+/**
+ * Rational -> plain text, e.g. "7/2". For `Step.annotation` and any other
+ * context that renders as-is rather than through KaTeX — `rl`'s `\frac{..}`
+ * shows up as literal backslashes there instead of a fraction.
+ */
+export function rlPlain(r: Rational): string {
+  return r.isInt() ? String(r.n) : `${r.n}/${r.d}`;
+}
+
 /** A rational wrapped in parentheses when it is negative (for substitution). */
 export function rlParen(r: Rational): string {
   return r.isNeg() ? `\\left(${rl(r)}\\right)` : rl(r);

@@ -1,6 +1,6 @@
 import { Rational } from '../../lib/math/rational';
 import { parsePoly, Poly, ParseError } from '../../lib/math/parse';
-import { polyLatex } from '../../lib/math/format';
+import { polyLatex, rlPlain } from '../../lib/math/format';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /**
@@ -91,6 +91,11 @@ function factorLatex(a: Rational): string {
   if (a.isZero()) return 'x';
   return a.isNeg() ? `(x + ${rl(a.abs())})` : `(x - ${rl(a)})`;
 }
+/** Same as factorLatex, but plain text — for notes/annotations outside $..$. */
+function factorPlain(a: Rational): string {
+  if (a.isZero()) return 'x';
+  return a.isNeg() ? `(x + ${rlPlain(a.abs())})` : `(x - ${rlPlain(a)})`;
+}
 
 /** Split "P(x) ÷ (x - a)" into its two parts, if the student wrote a divisor. */
 function splitDivision(input: string): { dividend: string; root: Rational } | null {
@@ -118,9 +123,9 @@ function byFactorTheorem(p: Poly): SolveResult {
     const found = candidates(current).find((c) => evaluate(current, c).isZero());
     if (!found) break;
     steps.push({
-      note: `Test the possible roots. Substituting $x = ${rl(found)}$ gives zero, so ${factorLatex(found)} is a factor.`,
+      note: `Test the possible roots. Substituting $x = ${rl(found)}$ gives zero, so ${factorPlain(found)} is a factor.`,
       latex: `P(${rl(found)}) = 0`,
-      annotation: `${factorLatex(found)} is a factor`,
+      annotation: `${factorPlain(found)} is a factor`,
     });
     const { quotient } = syntheticDivide(current, found);
     steps.push({
@@ -137,7 +142,7 @@ function byFactorTheorem(p: Poly): SolveResult {
     if (found) {
       const { quotient } = syntheticDivide(current, found);
       steps.push({
-        note: `The quadratic factorises too: $P(${rl(found)}) = 0$, so ${factorLatex(found)} is a factor.`,
+        note: `The quadratic factorises too: $P(${rl(found)}) = 0$, so ${factorPlain(found)} is a factor.`,
         latex: `${polyLatex(current)} = ${factorLatex(found)}\\left(${polyLatex(quotient)}\\right)`,
       });
       factors.push(found);
@@ -198,7 +203,7 @@ function byDivision(p: Poly, a: Rational): SolveResult {
       latex: remainder.isZero()
         ? `${polyLatex(p)} = ${factorLatex(a)}\\left(${polyLatex(quotient)}\\right)`
         : `\\dfrac{${polyLatex(p)}}{${factorLatex(a).slice(1, -1)}} = ${polyLatex(quotient)} + \\dfrac{${rl(remainder)}}{${factorLatex(a).slice(1, -1)}}`,
-      annotation: remainder.isZero() ? 'divides exactly' : `remainder ${rl(remainder)}`,
+      annotation: remainder.isZero() ? 'divides exactly' : `remainder ${rlPlain(remainder)}`,
     },
   ];
   return {

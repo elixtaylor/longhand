@@ -1,6 +1,6 @@
 import { Rational } from '../../lib/math/rational';
 import { Poly, detectVariable } from '../../lib/math/parse';
-import { polyLatex, rl } from '../../lib/math/format';
+import { polyLatex, rl, rlPlain } from '../../lib/math/format';
 import { fmt } from '../../lib/math/num';
 import { realRoots } from '../../lib/math/roots';
 import { parseExpr, toLatex, ExprError } from '../../lib/math/expr';
@@ -100,7 +100,7 @@ function peelToQuadratic(std: Poly): { roots: Rational[]; remaining: Poly; steps
     steps.push({
       note: `Test whether $x = ${rl(root)}$ is a root: substituting it in gives zero, so $(x ${root.isNeg() ? '+' : '-'} ${rl(root.abs())})$ is a factor.`,
       latex: `${polyLatex(current)} = 0`,
-      annotation: `x = ${rl(root)} is a root`,
+      annotation: `x = ${rlPlain(root)} is a root`,
     });
     roots.push(root);
     current = quotient;
