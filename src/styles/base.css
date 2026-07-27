@@ -94,13 +94,6 @@ button {
   align-items: center;
   gap: var(--sp-4);
 }
-.masthead-tag {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--ink-3);
-  font-weight: 600;
-}
 
 /* Worksheet layout -------------------------------------------------------- */
 .worksheet {

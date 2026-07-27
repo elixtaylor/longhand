@@ -49,7 +49,6 @@ export default function App() {
           Longhand
         </div>
         <div className="masthead-meta">
-          <span className="masthead-tag">SACE maths · line by line</span>
           <button
             type="button"
             className="icon-btn"
@@ -82,8 +81,7 @@ export default function App() {
       />
 
       <footer className="colophon">
-        <span>Longhand — worked out exactly, never generated. Made for SACE maths.</span>
-        <span>Foundations · General · Methods · Specialist</span>
+        <span>Longhand</span>
       </footer>
 
       {settingsOpen && (
