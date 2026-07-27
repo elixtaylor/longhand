@@ -81,9 +81,12 @@ function pmFraction(
   const A = bN / g;
   const C = out / g;
   const D = den / g;
+  // i goes after whatever it's attached to — a bare coefficient ("2i") or a
+  // surd ("√7 i") — never in front of it, so it reads as "that many i" the
+  // way a student would say it, not "i times that".
   const iPart = imaginary ? 'i' : '';
   const coeff = C === 1 ? '' : String(C);
-  const surdTerm = inside === 1 ? `${coeff}${iPart}` : `${coeff}${iPart}\\sqrt{${inside}}`;
+  const surdTerm = inside === 1 ? `${coeff}${iPart}` : `${coeff}\\sqrt{${inside}}${iPart}`;
   const numerator = A === 0 ? `\\pm ${surdTerm}` : `${A} \\pm ${surdTerm}`;
   return D === 1 ? numerator : `\\dfrac{${numerator}}{${D}}`;
 }

@@ -60,6 +60,16 @@ export function StepList({
    * Forcing the same measured width there caused exactly that: a snapshot
    * narrower than the KaTeX web font's real, slightly wider metrics,
    * clipping the ends of longer lines once the font finished loading.
+   *
+   * Also depends on `revealed`, not just `solution`: a step past the old
+   * solution's step count starts out `is-hidden` (display:none) for one
+   * render, because the effect below that grows `revealed` back up to the
+   * new total fires *after* this one and only takes effect next paint.
+   * scrollWidth on a display:none subtree is 0, so measuring on the
+   * `solution`-only commit permanently baked in a 0px width for every step
+   * beyond the previous solution's length — the maths was there, just
+   * zero-width. Re-running once `revealed` actually reaches that step
+   * re-measures it while it's genuinely visible.
    */
   useEffect(() => {
     const list = listRef.current;
@@ -69,7 +79,7 @@ export function StepList({
       const katex = exprEl.querySelector<HTMLElement>('.katex-display > .katex');
       if (katex) exprEl.style.width = `${katex.scrollWidth}px`;
     });
-  }, [solution]);
+  }, [solution, revealed]);
 
   /**
    * The notebook theme's squared paper tiles at a fixed --rule (24px) in
