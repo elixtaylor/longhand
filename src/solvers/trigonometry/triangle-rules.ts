@@ -1,4 +1,4 @@
-import { fmt, parseParams, deg2rad, rad2deg } from '../../lib/math/num';
+import { fmt, parseParams, deg2rad, rad2deg, round } from '../../lib/math/num';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /**
@@ -63,6 +63,35 @@ const PAIRS: Array<['a' | 'b' | 'c', 'A' | 'B' | 'C']> = [
   ['b', 'B'],
   ['c', 'C'],
 ];
+
+/**
+ * Why the given measurements cannot be a triangle, or null if they can.
+ *
+ * Every solver here assumed its inputs were sane. They are typed by hand, so
+ * they are not: a mistyped angle of 200°, or a length entered as −7, produced
+ * confident nonsense (including negative areas and negative side lengths)
+ * rather than being turned away.
+ */
+function whyImpossible(t: Tri): string | null {
+  for (const k of ['a', 'b', 'c'] as const) {
+    const v = t[k];
+    if (v !== undefined && v <= 0) {
+      return `A side length has to be positive, and ${k} = ${fmt(v)}.`;
+    }
+  }
+  for (const k of ['A', 'B', 'C'] as const) {
+    const v = t[k];
+    if (v !== undefined && (v <= 0 || v >= 180)) {
+      return `An angle in a triangle is between 0° and 180°, and ${k} = ${fmt(v)}°.`;
+    }
+  }
+  const given = (['A', 'B', 'C'] as const).map((k) => t[k]).filter((v): v is number => v !== undefined);
+  const sum = given.reduce((x, y) => x + y, 0);
+  if (given.length >= 2 && sum >= 180) {
+    return `The angles given already add to ${fmt(sum)}°, and a triangle's three angles add to exactly 180°.`;
+  }
+  return null;
+}
 
 /* -------------------------------------------------------------- sine rule */
 function bySineRule(t: Tri): SolveResult {
@@ -147,11 +176,22 @@ function bySineRule(t: Tri): SolveResult {
       note: 'Multiply through, then take the inverse sine.',
       latex: `\\sin ${ta} = \\dfrac{${fmt(tri[ts]!)} \\times \\sin ${fmt(aAng)}${DEG}}{${fmt(aSide)}} = ${fmt(sinVal, 4)}`,
     });
+    // sin B = sin(180° − B), so there may be a second triangle — but only if
+    // its angles still fit inside 180°. Offering "or 156.42°" next to a
+    // 30° angle proposes a triangle that cannot be drawn.
+    const obtuse = 180 - ang;
+    const secondTriangle = obtuse !== ang && obtuse + aAng < 180;
     steps.push({
       note: 'Apply the inverse sine.',
       latex: `${ta} = \\sin^{-1}(${fmt(sinVal, 4)}) = ${fmt(ang)}${DEG}`,
-      annotation: `or ${fmt(180 - ang)}° — check the ambiguous case`,
+      annotation: secondTriangle ? `or ${fmt(obtuse)}° — check the ambiguous case` : 'angle found',
     });
+    if (secondTriangle) {
+      steps.push({
+        note: `Because $\\sin ${ta} = \\sin(180${DEG} - ${ta})$, a second triangle fits: ${ta} = ${fmt(obtuse)}${DEG.replace('^{\\circ}', '°')} still leaves ${fmt(180 - obtuse - aAng)}${DEG.replace('^{\\circ}', '°')} for the third angle.`,
+        latex: `${ta} = ${fmt(ang)}${DEG} \\quad\\text{or}\\quad ${ta} = ${fmt(obtuse)}${DEG}`,
+      });
+    }
     return finish(steps, 'Sine rule', 'Solve the triangle', `${ta} = ${fmt(ang)}${DEG}`);
   }
 
@@ -205,6 +245,9 @@ function byCosineRule(t: Tri): SolveResult {
     const ang = t[ta]!;
     const sq = x * x + y * y - 2 * x * y * Math.cos(deg2rad(ang));
     const val = Math.sqrt(sq);
+    // Note: `sq` and `val` stay at full precision — only the *displayed*
+    // intermediate below is rounded, so the answer never inherits rounding
+    // from the working.
     steps.push({
       note: `Both sides either side of angle ${ta} are known, so substitute straight in.`,
       latex: `${ts}^{2} = ${fmt(x)}^{2} + ${fmt(y)}^{2} - 2 \\times ${fmt(x)} \\times ${fmt(y)} \\times \\cos ${fmt(ang)}${DEG}`,
@@ -212,8 +255,12 @@ function byCosineRule(t: Tri): SolveResult {
     // Each arithmetic move gets its own line. Collapsing them into one
     // "work it out" line is exactly where a student loses the thread —
     // and where a calculator slip hides.
-    const cosA = Math.cos(deg2rad(ang));
+    // Round the cosine *first*, then multiply by the rounded value, so the
+    // line a student re-does on a calculator gives exactly the number
+    // printed underneath it. Multiplying at full precision and displaying a
+    // rounded factor put the printed working out by 6.87 at a=1234, b=5678.
     const twoXY = 2 * x * y;
+    const cosA = round(Math.cos(deg2rad(ang)), 6);
     const product = twoXY * cosA;
     steps.push({
       note: `Square the two sides, and multiply out the $2ab$ part: $2 \\times ${fmt(x)} \\times ${fmt(y)} = ${fmt(twoXY, 4)}$.`,
@@ -320,6 +367,12 @@ export const triangleRulesSolver: Solver = {
     if (known(t) < 3) {
       return { ok: false, error: 'A triangle needs three measurements, e.g.  a=7, b=9, C=40.' };
     }
+    // Check the givens describe a triangle before working with them. Without
+    // this the cosine rule happily accepted C = 200° and a = −7, and the area
+    // method returned a *negative area* — an answer with no meaning at all.
+    const impossible = whyImpossible(t);
+    if (impossible) return { ok: false, error: impossible };
+
     if (/area/i.test(input) || methodId === 'area') return byArea(t);
     if (methodId === 'sine-rule') return bySineRule(t);
     return byCosineRule(t);

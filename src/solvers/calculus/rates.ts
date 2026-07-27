@@ -38,6 +38,28 @@ function read(input: string): Growth {
   );
   if (init && g.initial === undefined) g.initial = Number(init[1]);
 
+  /*
+   * Students state the starting amount as the subject of the sentence far
+   * more often than they label it: "a population of 500 grows at 5% per
+   * year", "500 bacteria grow at 5% per hour". Neither matched, so the
+   * solver fell back to y₀ = 100 and answered 164.87 for a question whose
+   * answer is 824.36 — a plausible number for a question nobody asked.
+   *
+   * Every other quantity has already been read above, and each is introduced
+   * by a word or a percent sign. So the starting amount is the first number
+   * in the sentence that none of them claimed.
+   */
+  if (g.initial === undefined) {
+    const CLAIMED = /(?:%|per|after|for|t\s*=|k\s*=|half[\s-]?life|doubling|target|reaches?|drops?|falls?|grows?\s+to|down\s+to)/i;
+    for (const m of input.matchAll(/(-?\d*\.?\d+)/g)) {
+      const before = input.slice(Math.max(0, m.index - 14), m.index);
+      const after = input.slice(m.index + m[0].length, m.index + m[0].length + 2);
+      if (CLAIMED.test(before) || after.trimStart().startsWith('%')) continue;
+      g.initial = Number(m[1]);
+      break;
+    }
+  }
+
   const after = input.match(/after\s*(-?\d*\.?\d+)/i);
   if (after && g.t === undefined) g.t = Number(after[1]);
 

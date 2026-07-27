@@ -124,20 +124,23 @@ function solveFragment(
   text: string,
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
 ): { solver: Solver; methodId: string; result: SolveResult } | null {
-  // Read it as written first. Only if that gets nowhere is the arithmetic
-  // inside it worked out — "ln x = 5^2" becomes "ln x = 25" — so a question
-  // that already made sense can never be altered underneath the student.
-  const readings = [text];
-  const folded = foldArithmetic(text);
-  if (folded !== text) readings.push(folded);
+  // Read it as written first.
+  const asWritten = attempt(text, solveOne);
+  // Any successful reading of the question as asked wins outright — including
+  // one that reaches a conclusion rather than a value, like "no real
+  // solutions". Rewriting the question because it produced no `answerLatex`
+  // would answer a different question instead of reporting the real one.
+  if (asWritten?.result.ok) return asWritten;
 
-  let fallback: { solver: Solver; methodId: string; result: SolveResult } | null = null;
-  for (const reading of readings) {
-    const got = attempt(reading, solveOne);
-    if (got?.result.ok && got.result.solution.answerLatex) return got;
-    fallback ??= got;
+  // Only now work out the arithmetic inside it — "ln x = 5^2" becomes
+  // "ln x = 25" — so a question that already made sense is never altered
+  // underneath the student.
+  const folded = foldArithmetic(text);
+  if (folded !== text) {
+    const got = attempt(folded, solveOne);
+    if (got?.result.ok) return got;
   }
-  return fallback;
+  return asWritten;
 }
 
 /** One reading, trying each method until one reaches an answer. */
@@ -153,12 +156,21 @@ function attempt(
   if (first.ok && first.solution.answerLatex) {
     return { solver, methodId: solver.defaultMethodId, result: first };
   }
+
+  // A method that reaches a conclusion without a value — "no triangle exists",
+  // proved in three steps — is a real answer, and used to be thrown away in
+  // favour of another method's error message. Keep the best one seen.
+  let reasoned: { solver: Solver; methodId: string; result: SolveResult } | null = first.ok
+    ? { solver, methodId: solver.defaultMethodId, result: first }
+    : null;
+
   for (const method of solver.methods) {
     if (method.id === solver.defaultMethodId) continue;
     const alt = solveOne(solver, text, method.id);
     if (alt.ok && alt.solution.answerLatex) return { solver, methodId: method.id, result: alt };
+    if (alt.ok) reasoned ??= { solver, methodId: method.id, result: alt };
   }
-  return { solver, methodId: solver.defaultMethodId, result: first };
+  return reasoned ?? { solver, methodId: solver.defaultMethodId, result: first };
 }
 
 /**

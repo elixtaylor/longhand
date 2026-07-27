@@ -62,6 +62,43 @@ function derivativeSteps(f: Poly, fd: Poly): Step[] {
   ];
 }
 
+/**
+ * How far either side of a stationary point to sample the gradient: close
+ * enough to stay inside this turning point's own territory, but not so close
+ * that the value vanishes into floating-point noise.
+ */
+function probeStep(x: number, all: number[]): number {
+  const nearest = all
+    .filter((o) => o !== x)
+    .reduce((best, o) => Math.min(best, Math.abs(o - x)), Infinity);
+  return Math.min(1e-4, nearest / 4);
+}
+
+function gradientEitherSide(fd: Poly, x: number, all: number[]): { left: number; right: number } {
+  const h = probeStep(x, all);
+  return { left: evaluatePoly(fd, x - h), right: evaluatePoly(fd, x + h) };
+}
+
+/**
+ * Classify a stationary point where f''(x) = 0.
+ *
+ * The second derivative test is silent here, and calling every such point an
+ * inflection is simply wrong: y = x⁴ has f''(0) = 0 and a clear minimum — it
+ * is the standard counter-example, and the app was giving the standard wrong
+ * answer. The first-derivative test settles it: the gradient changes sign
+ * through a turning point and keeps its sign through an inflection.
+ */
+function natureBySign(fd: Poly, x: number, all: number[]): string {
+  const { left, right } = gradientEitherSide(fd, x, all);
+  if (left < 0 && right > 0) return 'minimum';
+  if (left > 0 && right < 0) return 'maximum';
+  return 'stationary point of inflection';
+}
+
+function describeSign(v: number): string {
+  return v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero';
+}
+
 /* ------------------------------------------------------------- gradient at */
 function gradientAt(input: string): SolveResult {
   const f = parseFn(input);
@@ -165,16 +202,23 @@ function stationaryPoints(input: string, wording: 'stationary' | 'turning'): Sol
     // The second derivative decides which way the curve bends there, which is
     // what turns a bare coordinate into "maximum" or "minimum".
     const curvature = evaluatePoly(fdd, x);
-    const nature =
-      curvature > 0 ? 'minimum' : curvature < 0 ? 'maximum' : 'stationary point of inflection';
+    const nature = curvature > 0 ? 'minimum' : curvature < 0 ? 'maximum' : natureBySign(fd, x, xs);
     steps.push({
       note:
         curvature === 0
-          ? 'The second derivative is zero here, so the curve does not bend either way — check the gradient on each side.'
+          ? 'The second derivative is zero here, so it settles nothing — look at the sign of the gradient on each side instead.'
           : `The second derivative is ${curvature > 0 ? 'positive' : 'negative'}, so the curve bends ${curvature > 0 ? 'upwards' : 'downwards'} here.`,
       latex: `f''(x) = ${polyLatex(fdd)}, \\quad f''(${par(x)}) = ${fmt(curvature, 4)} \\;${curvature > 0 ? '>' : curvature < 0 ? '<' : '='}\\; 0`,
       annotation: nature,
     });
+    if (curvature === 0) {
+      const { left, right } = gradientEitherSide(fd, x, xs);
+      steps.push({
+        note: `Just left of the point the gradient is ${describeSign(left)}; just right it is ${describeSign(right)}.`,
+        latex: `f'(${fmt(x - 0.0001, 4)}) = ${fmt(left, 6)}, \\qquad f'(${fmt(x + 0.0001, 4)}) = ${fmt(right, 6)}`,
+        annotation: nature,
+      });
+    }
     described.push(`\\left(${fmt(x, 4)},\\; ${fmt(y, 4)}\\right)\\text{ ${nature}}`);
   }
 
@@ -226,22 +270,35 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
     });
   }
 
-  steps.push(
-    {
-      note: 'Use the point–gradient form of a straight line.',
-      latex: `y - ${par(y1)} = ${fmt(m, 4)}\\left(x - ${par(x1)}\\right)`,
-      annotation: 'y − y₁ = m(x − x₁)',
-    },
-    {
-      note: 'Expand the bracket.',
-      latex: `y = ${fmt(m, 4)}x ${m * x1 < 0 ? '+' : '-'} ${fmt(Math.abs(m * x1), 4)} ${y1 < 0 ? '-' : '+'} ${fmt(Math.abs(y1), 4)}`,
-    },
-    {
-      note: 'Collect the constants.',
-      latex: `y = ${fmt(m, 4)}x ${c < 0 ? '-' : '+'} ${fmt(Math.abs(c), 4)}`,
+  // A zero gradient means a horizontal line. "y = 0x + 3" is not wrong so
+  // much as not written by anyone.
+  const lineLatex =
+    m === 0 ? `y = ${fmt(c, 4)}` : `y = ${fmt(m, 4)}x ${c < 0 ? '-' : '+'} ${fmt(Math.abs(c), 4)}`;
+
+  steps.push({
+    note: 'Use the point–gradient form of a straight line.',
+    latex: `y - ${par(y1)} = ${fmt(m, 4)}\\left(x - ${par(x1)}\\right)`,
+    annotation: 'y − y₁ = m(x − x₁)',
+  });
+  if (m === 0) {
+    steps.push({
+      note: 'The gradient is zero, so the right-hand side vanishes and the line is horizontal.',
+      latex: lineLatex,
       annotation: kind,
-    },
-  );
+    });
+  } else {
+    steps.push(
+      {
+        note: 'Expand the bracket.',
+        latex: `y = ${fmt(m, 4)}x ${m * x1 < 0 ? '+' : '-'} ${fmt(Math.abs(m * x1), 4)} ${y1 < 0 ? '-' : '+'} ${fmt(Math.abs(y1), 4)}`,
+      },
+      {
+        note: 'Collect the constants.',
+        latex: lineLatex,
+        annotation: kind,
+      },
+    );
+  }
 
   return {
     ok: true,
@@ -249,7 +306,7 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
       headline: `${kind === 'tangent' ? 'Tangent' : 'Normal'} to ${polyLatex(f)} at x = ${fmt(x1)}`,
       methodName: kind === 'tangent' ? 'Tangent line' : 'Normal line',
       steps,
-      answerLatex: `y = ${fmt(m, 4)}x ${c < 0 ? '-' : '+'} ${fmt(Math.abs(c), 4)}`,
+      answerLatex: lineLatex,
     },
   };
 }

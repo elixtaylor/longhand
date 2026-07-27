@@ -135,12 +135,40 @@ function indexLaws(o: IndexOp): SolveResult {
 }
 
 /* ------------------------------------------------------------------ parsing */
+/**
+ * Strip the words that only say what to do, leaving the expression.
+ * Anchoring the readers below to what remains is what stops them matching a
+ * fragment and ignoring the rest.
+ */
+function bare(input: string): string {
+  return input
+    .replace(/\b(?:simplify|rationalise|rationalize|the|denominator|of|surd|express|in|simplest|form)\b/gi, ' ')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+/**
+ * A single surd, and nothing else.
+ *
+ * Anchored deliberately. Unanchored, this matched the first √ anywhere and
+ * discarded everything around it: `sqrt(8) + sqrt(18)` simplified only the
+ * first term and answered 2√2 for a quantity that is 5√2. Refusing the whole
+ * input is right — this solver simplifies one surd, and combining surds is a
+ * different question it cannot yet do.
+ */
 function readSurd(input: string): number | null {
-  const m = input.match(/(?:sqrt|√|square\s*root)\s*\(?\s*(\d+)\s*\)?/i);
+  const m = bare(input).match(/^(?:sqrt|√|squareroot)\(?(\d+)\)?$/i);
   return m ? Number(m[1]) : null;
 }
+
+/**
+ * `number / √n`, and nothing else. A binomial denominator such as
+ * `3/(2+√3)` needs the conjugate method, which this solver does not have —
+ * so it must be refused rather than quietly falling through to readSurd and
+ * answering √3.
+ */
 function readRationalise(input: string): { num: number; rootOf: number } | null {
-  const m = input.match(/(-?\d+(?:\.\d+)?)\s*\/\s*(?:sqrt|√)\s*\(?\s*(\d+)\s*\)?/i);
+  const m = bare(input).match(/^(-?\d+(?:\.\d+)?)\/(?:sqrt|√)\(?(\d+)\)?$/i);
   return m ? { num: Number(m[1]), rootOf: Number(m[2]) } : null;
 }
 function readIndex(input: string): IndexOp | null {

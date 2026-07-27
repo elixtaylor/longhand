@@ -431,32 +431,75 @@ export function toLatex(e: Expr): string {
       return e.name;
     case 'neg':
       return `-${wrap(e.a, 3)}`;
-    case 'add':
+    case 'add': {
+      // Nobody writes "2x + -4 sin x". A negative second term is a subtraction.
+      const positive = withoutSign(e.b);
+      if (positive) return `${wrap(e.a, 1)} - ${wrap(positive, 2)}`;
       return `${wrap(e.a, 1)} + ${wrap(e.b, 1)}`;
+    }
     case 'sub':
       return `${wrap(e.a, 1)} - ${wrap(e.b, 2)}`;
     case 'mul': {
-      const left = wrap(e.a, 2);
-      const right = wrap(e.b, 2);
       /*
-       * Maths is written by juxtaposition — 2x sin x, not 2 · x · sin x. The
-       * only place a dot is needed is before a bare number, which would
-       * otherwise run into whatever precedes it (x · 2, not x2).
+       * Maths is written by juxtaposition — 2x sin x, not 2 · x · sin x.
+       *
+       * A function's argument is written without brackets, so a plain factor
+       * *after* one runs straight into it: cos(x)·x printed as "\cos xx",
+       * which reads as cos of xx. Textbooks put the plain factor first, so
+       * order the product that way — multiplication commutes, so this only
+       * changes how it reads.
        */
-      const glue = e.b.t === 'num' ? ' \\cdot ' : '';
+      let a = e.a;
+      let b = e.b;
+      if (a.t === 'fn' && b.t !== 'fn') [a, b] = [b, a];
+      const left = wrap(a, 2);
+      const right = wrap(b, 2);
+      // A dot is still needed before a bare number, which would otherwise
+      // run into whatever precedes it (x · 2, not x2).
+      const glue = b.t === 'num' ? ' \\cdot ' : '';
       return `${left}${glue}${right}`;
     }
     case 'div':
       return `\\dfrac{${toLatex(e.a)}}{${toLatex(e.b)}}`;
-    case 'pow':
+    case 'pow': {
+      /*
+       * A power of a function goes on the function name: sin²x. Printed the
+       * other way — "\sin x^{2}" — it reads as sin(x²), which is a different
+       * function, so `d/dx tan x` was giving an answer that is simply wrong
+       * when read as written.
+       */
+      if (e.a.t === 'fn' && e.a.name !== 'sqrt' && e.a.name !== 'exp') {
+        const f = e.a;
+        return `${FN_TEX[f.name] ?? `\\${f.name}`}^{${toLatex(e.b)}} ${fnArg(f.a)}`;
+      }
       return `${wrap(e.a, 5)}^{${toLatex(e.b)}}`;
+    }
     case 'fn': {
       if (e.name === 'sqrt') return `\\sqrt{${toLatex(e.a)}}`;
       if (e.name === 'exp') return `e^{${toLatex(e.a)}}`;
-      const inner = e.a.t === 'var' || e.a.t === 'num' ? toLatex(e.a) : `\\left(${toLatex(e.a)}\\right)`;
-      return `${FN_TEX[e.name] ?? `\\${e.name}`} ${inner}`;
+      return `${FN_TEX[e.name] ?? `\\${e.name}`} ${fnArg(e.a)}`;
     }
   }
+}
+
+/** A function's argument: bare when it is a single symbol, bracketed otherwise. */
+function fnArg(a: Expr): string {
+  return a.t === 'var' || a.t === 'num' ? toLatex(a) : `\\left(${toLatex(a)}\\right)`;
+}
+
+/**
+ * If `e` is a negative quantity, the same quantity without its sign — so the
+ * caller can print a subtraction instead of "+ −".
+ */
+function withoutSign(e: Expr): Expr | null {
+  if (e.t === 'neg') return e.a;
+  if (e.t === 'num' && e.v < 0) return num(-e.v);
+  // −4 sin x is a product whose leading factor carries the sign.
+  if (e.t === 'mul') {
+    const left = withoutSign(e.a);
+    if (left) return { t: 'mul', a: left, b: e.b };
+  }
+  return null;
 }
 
 /** Does this expression involve x at all? */

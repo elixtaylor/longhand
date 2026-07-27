@@ -12,17 +12,26 @@
  * It is deliberately **not** applied to every input. `234 × 56` is entirely
  * numeric, and evaluating it would answer the question instead of working it
  * out. So callers use this only as a second reading, after the question as
- * written has failed — which also means it can never take a working question
- * and break it.
+ * written has failed. That is not enough on its own to make it safe: a
+ * question that *correctly* fails must not be turned into a confident wrong
+ * answer either, which is what the boundary rules below are for.
  */
 
 /**
- * A run of numbers joined by operators. Deliberately excludes brackets: in
- * `log2(4^2)` only `4^2` should be worked out, and a pattern that reached for
- * the surrounding brackets would either swallow the closing one or strip the
- * brackets the log solver needs.
+ * A run of numbers joined by operators, which must be a whole operand.
+ *
+ * The boundaries are the important part. In `x^3 - 1 = 0` a context-free
+ * pattern happily matches `3 - 1`, where the `3` is the *exponent* of x and
+ * the `- 1` is a separate term — folding it rewrote the question as
+ * `x^2 = 0` and answered x = 0 for a cubic whose root is 1. So a match may
+ * not begin straight after a `^` or a letter (it would be part of a power or
+ * an implicit product), and may not end straight before one.
+ *
+ * Brackets are excluded too: in `log2(4^2)` only `4^2` should be worked out,
+ * and a pattern reaching for the brackets would either swallow the closing
+ * one or strip the brackets the log solver needs.
  */
-const NUMERIC = /\d[\d.]*(?:\s*[+\-*/^×÷]\s*\d[\d.]*)+/g;
+const NUMERIC = /(?<![\^\w.])\d[\d.]*(?:\s*[+\-*/^×÷]\s*\d[\d.]*)+(?![\w.])/g;
 
 /** A sub-expression is only worth replacing if it does something. */
 const HAS_OPERATOR = /[+\-*/^×÷]/;
