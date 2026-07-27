@@ -138,14 +138,6 @@ button {
   box-shadow: var(--shadow-1);
   padding: var(--sp-5);
 }
-/* A second, conditional section within the same panel (e.g. the method
-   picker, once a topic is settled) — a rule rather than a whole new card,
-   so choosing a method doesn't read as a second, separate box appearing. */
-.panel-section {
-  margin-top: var(--sp-5);
-  padding-top: var(--sp-5);
-  border-top: 1px solid var(--line);
-}
 .panel-title {
   font-family: var(--font-ui);
   font-size: 0.74rem;
@@ -307,6 +299,18 @@ button {
 }
 
 /* Method segmented control ------------------------------------------------ */
+/* Sits at the top of the solved working now, where a student's eye already
+   is — centred, since it's no longer anchored to a left-aligned form above
+   it the way it was in the input panel. */
+.solution-methods {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: var(--sp-5);
+  margin-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--line);
+}
 .methods {
   display: flex;
   flex-direction: column;
@@ -606,7 +610,11 @@ button {
      puts a ruling under every line of working rather than through the middle
      of it. Measured against the current KaTeX size — if --rule or
      .step-expr's font-size changes, re-measure. */
-  background-position: 0 var(--rule-baseline);
+  /* Centred horizontally rather than anchored at 0 — the container's width
+     is never an exact multiple of --rule, so one edge column is always a
+     partial square; centring splits that leftover evenly onto both edges
+     instead of a full square on the left and an odd sliver on the right. */
+  background-position: center var(--rule-baseline);
   padding-top: 0;
   margin-top: var(--sp-2);
 }
@@ -628,6 +636,17 @@ button {
      drifted off the ruling by the same couple of px. Give it a third square
      instead of letting it overflow an uncounted amount. */
   min-height: calc(var(--rule) * 3);
+}
+:root[data-theme='notebook'] .step-body {
+  /* A step with a margin annotation used to be a whole square taller than
+     one without — the annotation is a real block that adds its own height
+     on top of step-expr's, rather than sharing space already reserved for
+     it. Reserving that square on every step, used or not, makes the gap to
+     the next line the same whether this one has a note or not. */
+  min-height: calc(var(--rule) * 3);
+}
+:root[data-theme='notebook'] .step-body:has(.mfrac) {
+  min-height: calc(var(--rule) * 4);
 }
 :root[data-theme='notebook'] .step-expr .katex-display {
   /*
@@ -664,7 +683,9 @@ button {
 }
 :root[data-theme='notebook'] .step {
   /* A badge exactly one square across, so it sits in the ruling like a
-     margin number. */
+     margin number. Kept at one square even though the column below is
+     wider now — the connector's own vertical position is still measured
+     from this, and that was tuned against a one-square badge. */
   --badge: var(--rule);
   /* The number labels the line of maths, so it centres on it — which is
      half a square down when the maths comes first, and a square and a half
@@ -675,15 +696,43 @@ button {
      measures its start from --step-pad, so pin it back to the old spacing
      rather than letting the tightened default shift it on ruled paper. */
   --step-pad: var(--sp-4);
+  /* The margin column itself is wider than one square: a handwritten "12."
+     needs more room than a single printed digit did. Widening the column
+     here (rather than --badge, which the connector's position above is
+     still measured from) keeps that vertical anchor unchanged. */
+  grid-template-columns: calc(var(--rule) * 1.5) 1fr;
 }
 :root[data-theme='notebook'] .step:has(.step-note) {
   --badge-offset: calc(var(--rule) * 1.5);
 }
 :root[data-theme='notebook'] .step::before {
+  /* A margin number, not a printed badge: "3." in the same hand as the
+     maths, sat in the margin next to the rule rather than boxed in a
+     printed circle — a circle reads as UI chrome, which is exactly what
+     this theme is trying not to look like. */
+  content: counter(step) ".";
   margin-top: var(--badge-offset);
+  width: auto;
+  height: auto;
+  display: block;
+  text-align: right;
+  padding-right: 5px;
+  font-family: var(--font-hand);
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--accent);
+  background: none;
+  border: none;
+  border-radius: 0;
 }
 :root[data-theme='notebook'] .step:not(:last-child)::after {
   bottom: calc(var(--rule) * -1);
+  /* Fixed near the column's left edge instead of centred under the badge —
+     the handwritten number now sits to the right of this rule, like a
+     margin line with numbers written just after it, rather than a circle
+     straddling it. */
+  left: 4px;
 }
 
 /* Multi-part questions ---------------------------------------------------- */

@@ -258,19 +258,6 @@ export function Workspace({
               Show the working
             </button>
           </form>
-
-          {/* Nothing to choose a method for until a topic is settled — showing
-              it on a blank page named a topic nobody asked about. */}
-          {(detected || pin) && (
-            <div className="panel-section">
-              <TopicMethodPicker
-                solverId={solverId}
-                input={input}
-                methodId={methodId}
-                onSelectMethod={chooseMethod}
-              />
-            </div>
-          )}
         </section>
       </aside>
 
@@ -325,6 +312,10 @@ export function Workspace({
             onCompare={() => setComparing(true)}
             onCopyLink={copyLink}
             copied={copied}
+            solverId={solverId}
+            input={input}
+            methodId={methodId}
+            onSelectMethod={chooseMethod}
           />
         )}
       </section>
@@ -341,6 +332,10 @@ function SolutionView({
   onCompare,
   onCopyLink,
   copied,
+  solverId,
+  input,
+  methodId,
+  onSelectMethod,
 }: {
   result: SolveResult | null;
   revealMode: RevealMode;
@@ -349,6 +344,10 @@ function SolutionView({
   onCompare: () => void;
   onCopyLink: () => void;
   copied: boolean;
+  solverId: string;
+  input: string;
+  methodId: string;
+  onSelectMethod: (id: string) => void;
 }) {
   if (!result) {
     return (
@@ -381,19 +380,6 @@ function SolutionView({
           <div className="solution-title">
             <RichText text={solution.headline} />
           </div>
-          <div className="solution-sub">
-            Method: <em>{solution.methodName}</em>
-          </div>
-          <div className="solution-tools" style={{ marginTop: 'var(--sp-3)' }}>
-            {canCompare && (
-              <button type="button" className="btn" onClick={onCompare}>
-                Compare all methods
-              </button>
-            )}
-            <button type="button" className="btn" onClick={onCopyLink}>
-              {copied ? 'Link copied ✓' : 'Copy link'}
-            </button>
-          </div>
         </div>
         {solution.answerLatex && (
           <div className="answer-card">
@@ -404,7 +390,25 @@ function SolutionView({
           </div>
         )}
       </header>
-      <StepList solution={solution} revealMode={revealMode} showNotes={showNotes} />
+
+      <div className="solution-methods">
+        <TopicMethodPicker
+          solverId={solverId}
+          input={input}
+          methodId={methodId}
+          onSelectMethod={onSelectMethod}
+        />
+      </div>
+
+      <StepList
+        solution={solution}
+        revealMode={revealMode}
+        showNotes={showNotes}
+        canCompare={canCompare}
+        onCompare={onCompare}
+        onCopyLink={onCopyLink}
+        copied={copied}
+      />
     </div>
   );
 }

@@ -8,11 +8,20 @@ export function StepList({
   solution,
   revealMode,
   showNotes,
+  canCompare,
+  onCompare,
+  onCopyLink,
+  copied,
 }: {
   solution: Solution;
   revealMode: RevealMode;
   /** Whether each line's "why" is shown. Off by default; see App. */
   showNotes: boolean;
+  /** Omitted by callers (e.g. one part of a multi-part question) that don't offer these. */
+  canCompare?: boolean;
+  onCompare?: () => void;
+  onCopyLink?: () => void;
+  copied?: boolean;
 }) {
   const total = solution.steps.length;
   const [revealed, setRevealed] = useState(total);
@@ -67,6 +76,16 @@ export function StepList({
       </ol>
 
       <div className="reveal-controls">
+        {canCompare && onCompare && (
+          <button type="button" className="btn" onClick={onCompare}>
+            Compare all methods
+          </button>
+        )}
+        {onCopyLink && (
+          <button type="button" className="btn" onClick={onCopyLink}>
+            {copied ? 'Link copied ✓' : 'Copy link'}
+          </button>
+        )}
         {revealMode === 'step' && !allShown && (
           <button type="button" className="btn" onClick={() => setRevealed((r) => r + 1)}>
             Reveal next step
