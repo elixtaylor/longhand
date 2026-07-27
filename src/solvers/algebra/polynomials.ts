@@ -9,7 +9,7 @@ import type { Solver, Step, SolveResult } from '../../lib/engine/types';
  */
 
 /** Evaluate P(x) at a rational value. */
-function evaluate(p: Poly, x: Rational): Rational {
+export function evaluate(p: Poly, x: Rational): Rational {
   let out = Rational.int(0);
   for (const { power, coeff } of p.terms()) {
     out = out.add(coeff.mul(x.pow(power)));
@@ -18,7 +18,7 @@ function evaluate(p: Poly, x: Rational): Rational {
 }
 
 /** Divide P(x) by (x − a) using synthetic division. Returns quotient + remainder. */
-function syntheticDivide(p: Poly, a: Rational): { quotient: Poly; remainder: Rational; working: Rational[] } {
+export function syntheticDivide(p: Poly, a: Rational): { quotient: Poly; remainder: Rational; working: Rational[] } {
   const deg = p.degree();
   const coeffs: Rational[] = [];
   for (let k = deg; k >= 0; k--) coeffs.push(p.get(k));
@@ -51,7 +51,7 @@ function divisors(n: number): number[] {
 }
 
 /** Candidate rational roots p/q from the rational root theorem. */
-function candidates(p: Poly): Rational[] {
+export function candidates(p: Poly): Rational[] {
   const deg = p.degree();
   // Clear denominators so the theorem applies to integer coefficients.
   let mult = 1;
