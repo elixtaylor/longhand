@@ -30,11 +30,17 @@ describe('arithmetic is not folded across a term boundary', () => {
    * rewriting a cubic as `x^2 = 0` and answering x = 0 for a root of 1.
    */
   it('leaves an exponent alone', () => {
-    for (const q of ['x^3 - 1 = 0', 'x^3 - 2 = 6', '2x^3 - 1 = 0', 'x^4 - 2 = 0', 'x^10 - 8 = 0']) {
-      // Cubics are not supported; the point is that it says so rather than
-      // inventing an answer to a question it rewrote.
-      refused(q);
-    }
+    /*
+     * These are now solved by undoing the layers, so the check is no longer
+     * "does it refuse" but "does it answer the question that was asked". The
+     * wrong answer this guards against is x = 0, which is what rewriting
+     * `x^3 - 1` as `x^2` produces.
+     */
+    expect(answer('x^3 - 1 = 0')).toBe('x = 1');
+    expect(answer('x^3 - 2 = 6')).toBe('x = 2');
+    expect(answer('x^4 - 2 = 0')).toBe('x = 1.189207, \\quad x = -1.189207');
+    expect(answer('2x^3 - 1 = 0')).toBe('x = 0.793701'); // the cube root of a half
+    expect(answer('x^10 - 8 = 0')).toBe('x = 1.231144, \\quad x = -1.231144');
   });
 
   it('still folds a value that stands on its own', () => {

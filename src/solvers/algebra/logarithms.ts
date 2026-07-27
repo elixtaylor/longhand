@@ -178,7 +178,10 @@ export const logarithmsSolver: Solver = {
     if (p.kind === 'log-equation') {
       const { base, value } = p;
       const bNum = base === 'e' ? Math.E : base;
-      const x = Math.pow(bNum, value);
+      // Math.pow(Math.E, n) compounds the rounding already in Math.E; Math.exp
+      // is computed directly and is what the expression engine uses, so the
+      // same question routed two ways gives the same number.
+      const x = base === 'e' ? Math.exp(value) : Math.pow(bNum, value);
       const b = baseTex(base);
       const L = logName(base);
 

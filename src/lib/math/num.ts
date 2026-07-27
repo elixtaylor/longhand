@@ -16,6 +16,10 @@
 export function round(x: number, dp = 2): number {
   const f = Math.pow(10, dp);
   const scaled = x * f;
+  // Past 2^53 the scaled value has no fractional bits left, so rounding it
+  // invents digits: e^25 printed as …337.45789 when it is …337.38587. Let
+  // toFixed do it at that size, which works from the decimal expansion.
+  if (!Number.isSafeInteger(Math.round(scaled))) return Number(x.toFixed(Math.min(dp, 100)));
   const nudged = scaled + Math.sign(scaled) * Math.abs(scaled) * 1e-12;
   return Math.round(nudged) / f;
 }

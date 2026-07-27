@@ -24,6 +24,7 @@ import { distributionsSolver } from '../../solvers/statistics/distributions';
 import { percentageSolver } from '../../solvers/arithmetic/percentages';
 import { indicesSolver } from '../../solvers/algebra/indices';
 import { inequalitySolver } from '../../solvers/algebra/inequalities';
+import { inverseSolver } from '../../solvers/algebra/inverse';
 import { functionsSolver } from '../../solvers/algebra/functions';
 import { probabilitySolver } from '../../solvers/statistics/probability';
 import { countingSolver } from '../../solvers/statistics/counting';
@@ -42,6 +43,7 @@ export const solvers: Solver[] = [
   fractionsSolver,
   percentageSolver,
   linearSolver,
+  inverseSolver,
   simultaneousSolver,
   inequalitySolver,
   quadraticsSolver,
