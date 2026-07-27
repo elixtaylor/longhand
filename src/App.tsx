@@ -85,10 +85,6 @@ export default function App() {
         onShowNotes={setShowNotes}
       />
 
-      <footer className="colophon">
-        <span>Longhand</span>
-      </footer>
-
       {settingsOpen && (
         <SettingsPanel
           theme={theme}

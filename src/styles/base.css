@@ -45,7 +45,7 @@ button {
 .app {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
 }
 
 .masthead {
@@ -539,6 +539,21 @@ button {
   font-size: 1rem;
   color: var(--marker);
   border-left: 2px solid var(--marker);
+}
+:root[data-theme='notebook'] .step-annotation {
+  /* One ruled square, not a text-height sliver, so the red border-left
+     reads as ruling off a square for the note rather than an arbitrary
+     underline. .step-line's flex-end alignment (see above) lands this
+     box's bottom on .step-expr's own bottom edge — but that edge is the
+     *line box's* bottom, sitting --rule-baseline short of --rule below the
+     actual glyph baseline (see that variable's definition), not the ruling
+     the maths is written on. The margin pulls the visible box up by that
+     same gap so it lines up with the ruling instead, landing this square
+     exactly over the one the equation sits in. */
+  display: flex;
+  align-items: center;
+  height: var(--rule);
+  margin-bottom: calc(var(--rule) - var(--rule-baseline));
 }
 .step.is-hidden {
   display: none;
@@ -1289,21 +1304,6 @@ button {
   color: var(--ink-2);
 }
 
-/* Footer ------------------------------------------------------------------ */
-.colophon {
-  padding: var(--sp-5) var(--sp-6);
-  border-top: 1px solid var(--line);
-  color: var(--ink-3);
-  font-size: 0.82rem;
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--sp-3);
-}
-.colophon a {
-  color: var(--ink-2);
-}
-
 /* KaTeX sizing ------------------------------------------------------------ */
 .katex {
   font-size: 1.04em;
@@ -1527,7 +1527,6 @@ button {
 @media print {
   .masthead,
   .controls,
-  .colophon,
   .reveal-controls,
   .solution-tools {
     display: none !important;
