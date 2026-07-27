@@ -138,8 +138,13 @@ button {
   box-shadow: var(--shadow-1);
   padding: var(--sp-5);
 }
-.panel + .panel {
-  margin-top: 0;
+/* A second, conditional section within the same panel (e.g. the method
+   picker, once a topic is settled) — a rule rather than a whole new card,
+   so choosing a method doesn't read as a second, separate box appearing. */
+.panel-section {
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--line);
 }
 .panel-title {
   font-family: var(--font-ui);
@@ -409,7 +414,7 @@ button {
   justify-content: space-between;
   gap: var(--sp-4);
   padding-bottom: var(--sp-4);
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-4);
   border-bottom: 2px solid var(--line-strong);
 }
 .solution-title {
@@ -461,15 +466,18 @@ button {
   /* One number drives the badge, the column it sits in, and the rule that
      joins the badges. They used to be set separately, so changing the badge
      size in a theme left the connector running down beside it instead of
-     through it. */
+     through it. --step-pad gets the same treatment, for the same reason:
+     the connector's start position below has to track whatever padding is
+     actually applied, not a second copy of the number. */
   --badge: 28px;
   --connector: 1.5px;
+  --step-pad: var(--sp-3);
   counter-increment: step;
   position: relative;
   display: grid;
   grid-template-columns: var(--badge) 1fr;
   gap: var(--sp-4);
-  padding: var(--sp-4) 0;
+  padding: var(--step-pad) 0;
 }
 .step::before {
   content: counter(step);
@@ -493,10 +501,10 @@ button {
   content: "";
   position: absolute;
   left: calc(var(--badge) / 2 - var(--connector) / 2);
-  top: calc(var(--badge) + var(--sp-4) + var(--badge-offset, 0px));
+  top: calc(var(--badge) + var(--step-pad) + var(--badge-offset, 0px));
   bottom: 0;
   width: var(--connector);
-  background: var(--accent-soft);
+  background: var(--line-strong);
 }
 .step-body {
   grid-column: 2;
@@ -662,6 +670,11 @@ button {
      half a square down when the maths comes first, and a square and a half
      when an explanation is shown above it. */
   --badge-offset: calc(var(--rule) / 2);
+  /* This theme's own padding is 0 (the paper rulings come from .steps's
+     background-image, not box padding) — but the connector above still
+     measures its start from --step-pad, so pin it back to the old spacing
+     rather than letting the tightened default shift it on ruled paper. */
+  --step-pad: var(--sp-4);
 }
 :root[data-theme='notebook'] .step:has(.step-note) {
   --badge-offset: calc(var(--rule) * 1.5);

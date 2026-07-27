@@ -258,17 +258,20 @@ export function Workspace({
               Show the working
             </button>
           </form>
-        </section>
 
-        <section className="panel">
-          <TopicMethodPicker
-            solverId={solverId}
-            input={input}
-            methodId={methodId}
-            onSelectMethod={chooseMethod}
-          />
+          {/* Nothing to choose a method for until a topic is settled — showing
+              it on a blank page named a topic nobody asked about. */}
+          {(detected || pin) && (
+            <div className="panel-section">
+              <TopicMethodPicker
+                solverId={solverId}
+                input={input}
+                methodId={methodId}
+                onSelectMethod={chooseMethod}
+              />
+            </div>
+          )}
         </section>
-
       </aside>
 
       <section className="solution" aria-live="polite">
