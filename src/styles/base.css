@@ -615,9 +615,37 @@ button {
 }
 :root[data-theme='notebook'] .step-expr {
   /* Two squares tall, and the KaTeX baseline sits on the lower one. */
-  line-height: calc(var(--rule) * 2);
+  position: relative;
+  display: block;
   padding: 0;
   min-height: calc(var(--rule) * 2);
+}
+:root[data-theme='notebook'] .step-expr:has(.mfrac) {
+  /* A fraction's numerator-over-denominator stack is taller than two squares
+     can fit as a min-height — line-height only sets a floor, so a fraction
+     simply overflowed it by a couple of px, and everything after that step
+     drifted off the ruling by the same couple of px. Give it a third square
+     instead of letting it overflow an uncounted amount. */
+  min-height: calc(var(--rule) * 3);
+}
+:root[data-theme='notebook'] .step-expr .katex-display {
+  /*
+   * Anchoring the maths to the bottom of its box by *position*, not by
+   * line-height centering, is what actually makes it content-independent.
+   * Line-height centering splits the leftover space using the *total*
+   * height of the rendered maths — and a superscript or a fraction changes
+   * that total, which shifted the split by a couple of px per line and
+   * compounded into visible drift over several steps. The distance from the
+   * bottom of KaTeX's own box to its baseline is a fixed metric of KaTeX's
+   * font, the same for "2x" as for "x^2" as for a fraction — so pinning the
+   * box's bottom edge with position:absolute, unaffected by anything above
+   * it, pins the baseline just as exactly, for any content.
+   */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
 }
 :root[data-theme='notebook'] .step-note {
   line-height: var(--rule);
@@ -1244,9 +1272,34 @@ button {
 /* An exercise book is handwritten — so, in that theme, is the maths itself.
    KaTeX's structural glyphs (the fraction bar, the radical sign) are drawn
    from borders and SVG paths rather than font characters, so overriding the
-   font here reaches the letters and digits without redrawing those. */
-:root[data-theme="notebook"] .katex {
-  font-family: var(--font-hand);
+   font here reaches the letters and digits without redrawing those.
+
+   Plain digits and operators (class "mord"/"mbin"/"mrel", no font class of
+   their own) inherit font-family from .katex, so the rule below was enough
+   for those. But every variable letter is *italic*, and KaTeX gives italic
+   text its own class ("mathnormal") with an explicit font-family — same
+   specificity as this rule, so it was a coin-flip on import order which
+   one actually won, and it was losing: every x, a, b, c stayed in KaTeX's
+   own italic serif while the digits around it went handwritten. Naming
+   every text-style class KaTeX has and forcing it, rather than relying on
+   the .katex ancestor rule to cascade down, is what makes the letters
+   match. font-style is reset too — a cursive face has no italic variant of
+   its own, so leaving KaTeX's italic flag on would browser-synthesise a
+   slant on top of it. */
+:root[data-theme="notebook"] .katex,
+:root[data-theme="notebook"] .katex .mathnormal,
+:root[data-theme="notebook"] .katex .mathit,
+:root[data-theme="notebook"] .katex .mathrm,
+:root[data-theme="notebook"] .katex .mathbf,
+:root[data-theme="notebook"] .katex .mathsf,
+:root[data-theme="notebook"] .katex .mathtt,
+:root[data-theme="notebook"] .katex .mainrm,
+:root[data-theme="notebook"] .katex .textrm,
+:root[data-theme="notebook"] .katex .textit,
+:root[data-theme="notebook"] .katex .textsf,
+:root[data-theme="notebook"] .katex .texttt {
+  font-family: var(--font-hand) !important;
+  font-style: normal !important;
 }
 .step-expr .katex-display {
   margin: 0;

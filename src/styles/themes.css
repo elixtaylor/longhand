@@ -11,10 +11,13 @@
   --rule: 24px;
   /* Where a ruling has to sit so it lands on the maths baseline rather than
      through the middle of the glyphs. Measured with a zero-size inline probe
-     appended to a rendered .katex node. Depends on the font the maths is set
-     in (see the notebook theme's .katex rule in base.css) as well as --rule
-     and .step-expr's font-size — re-measure if any of those change. */
-  --rule-baseline: 2.73px;
+     appended to a rendered .katex node — now the same for every line
+     regardless of content (a superscript, a fraction), because the maths is
+     bottom-anchored by position rather than line-height centred; see
+     .step-expr .katex-display in base.css. Depends on the font the maths is
+     set in (the notebook theme's .katex rule in base.css) — re-measure if
+     that font or --rule changes. */
+  --rule-baseline: 14.2656px;
   /* Typography — system stacks chosen for character, not the Inter/Google default */
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
     Georgia, "Times New Roman", serif;
