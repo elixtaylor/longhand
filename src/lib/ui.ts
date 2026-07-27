@@ -2,6 +2,7 @@
 
 export type ThemeId = 'editorial' | 'notebook' | 'warm';
 export type RevealMode = 'all' | 'step';
+export type TextSize = 'sm' | 'md' | 'lg';
 
 export interface ThemeMeta {
   id: ThemeId;

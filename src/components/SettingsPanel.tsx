@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { THEMES, type ThemeId, type RevealMode } from '../lib/ui';
+import { THEMES, type ThemeId, type RevealMode, type TextSize } from '../lib/ui';
 
 export function SettingsPanel({
   theme,
@@ -8,6 +8,8 @@ export function SettingsPanel({
   onRevealMode,
   dark,
   onDark,
+  textSize,
+  onTextSize,
   onClose,
 }: {
   theme: ThemeId;
@@ -16,6 +18,8 @@ export function SettingsPanel({
   onRevealMode: (m: RevealMode) => void;
   dark: boolean;
   onDark: (d: boolean) => void;
+  textSize: TextSize;
+  onTextSize: (s: TextSize) => void;
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -85,6 +89,22 @@ export function SettingsPanel({
             </button>
             <button type="button" aria-pressed={dark} onClick={() => onDark(true)}>
               Dark
+            </button>
+          </div>
+        </div>
+
+        <div className="setting-row">
+          <span className="field-label">Text size</span>
+          <span className="setting-hint">How large the working itself renders.</span>
+          <div className="segmented" role="group" aria-label="Text size">
+            <button type="button" aria-pressed={textSize === 'sm'} onClick={() => onTextSize('sm')}>
+              Small
+            </button>
+            <button type="button" aria-pressed={textSize === 'md'} onClick={() => onTextSize('md')}>
+              Medium
+            </button>
+            <button type="button" aria-pressed={textSize === 'lg'} onClick={() => onTextSize('lg')}>
+              Large
             </button>
           </div>
         </div>

@@ -12,13 +12,20 @@ interface Key {
 const KEYS: Key[] = [
   { label: 'x', insert: 'x' },
   { label: 'x²', insert: 'x^2' },
+  { label: 'x³', insert: 'x^3' },
   { label: 'xⁿ', insert: 'x^', },
   { label: '( )', insert: '()', caretBack: 1 },
+  { label: '| |', insert: '||', caretBack: 1 },
   { label: '+', insert: '+' },
   { label: '−', insert: '-' },
   { label: '×', insert: '*' },
   { label: '÷', insert: '/' },
   { label: '=', insert: '=' },
+  { label: '√', insert: 'sqrt()', caretBack: 1 },
+  { label: 'π', insert: 'π' },
+  { label: '°', insert: '°' },
+  { label: '≤', insert: '≤' },
+  { label: '≥', insert: '≥' },
 ];
 
 // Prose would be set by KaTeX as a run of italic letters — unreadable. It is

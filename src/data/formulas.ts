@@ -8,6 +8,28 @@ export interface Formula {
 }
 
 export const FORMULAS: Record<string, Formula[]> = {
+  linear: [
+    { name: 'Solving by balancing', latex: 'ax + b = c \\;\\Rightarrow\\; x = \\dfrac{c-b}{a}' },
+  ],
+  simultaneous: [
+    { name: 'Elimination', latex: '\\text{scale so a variable matches, then add or subtract}' },
+    { name: 'Substitution', latex: '\\text{make } y \\text{ the subject of one equation, then substitute into the other}' },
+  ],
+  collect: [
+    { name: 'Like terms', latex: 'ax + bx = (a+b)x' },
+    { name: 'Expand a bracket', latex: 'a(x+b) = ax + ab' },
+  ],
+  absolute: [
+    { name: 'Absolute value equation', latex: '|x| = a \\;(a \\ge 0) \\;\\Rightarrow\\; x = a \\text{ or } x = -a' },
+    { name: 'Equal magnitudes', latex: '|A| = |B| \\;\\Rightarrow\\; A = B \\text{ or } A = -B' },
+  ],
+  inverse: [
+    { name: 'Undoing an equation', latex: '\\text{apply the inverse of each operation, working from the outside in}' },
+    { name: 'Inverse operations', latex: '+ \\leftrightarrow -, \\quad \\times \\leftrightarrow \\div, \\quad x^{2} \\leftrightarrow \\sqrt{x}, \\quad e^{x} \\leftrightarrow \\ln x' },
+  ],
+  reduce: [
+    { name: 'Removing a repeated function', latex: '\\sqrt{a} = \\sqrt{b} \\;\\Rightarrow\\; a = b, \\quad \\log a + \\log b = \\log(ab)' },
+  ],
   quadratics: [
     { name: 'Quadratic formula', latex: 'x = \\dfrac{-b \\pm \\sqrt{b^{2} - 4ac}}{2a}' },
     { name: 'Discriminant', latex: '\\Delta = b^{2} - 4ac' },
@@ -81,6 +103,11 @@ export const FORMULAS: Record<string, Formula[]> = {
     { name: 'Exponential', latex: '\\int e^{kx}\\,dx = \\dfrac{1}{k}e^{kx} + C' },
     { name: 'Reciprocal', latex: '\\int \\dfrac{1}{x}\\,dx = \\ln|x| + C' },
   ],
+  'calculus-applications': [
+    { name: 'Stationary points', latex: "f'(x) = 0" },
+    { name: 'Nature of a stationary point', latex: "f''(x) > 0 \\Rightarrow \\text{min}, \\quad f''(x) < 0 \\Rightarrow \\text{max}" },
+    { name: 'Power rule', latex: '\\dfrac{d}{dx}\\left(ax^{n}\\right) = nax^{\\,n-1}' },
+  ],
   rates: [
     { name: 'Exponential model', latex: '\\dfrac{dy}{dt} = ky \\;\\Rightarrow\\; y = y_{0}e^{kt}' },
     { name: 'Half-life', latex: 'k = \\dfrac{-\\ln 2}{t_{1/2}}' },
@@ -142,6 +169,11 @@ export const FORMULAS: Record<string, Formula[]> = {
     { name: 'Percentage of', latex: '\\dfrac{p}{100} \\times A' },
     { name: 'Percentage change', latex: '\\dfrac{\\text{new} - \\text{old}}{\\text{old}} \\times 100\\%' },
     { name: 'Reverse percentage', latex: '\\text{original} = \\dfrac{\\text{new}}{1 \\pm \\frac{p}{100}}' },
+  ],
+  fractions: [
+    { name: 'Add or subtract', latex: '\\dfrac{a}{b} \\pm \\dfrac{c}{d} = \\dfrac{ad \\pm bc}{bd}' },
+    { name: 'Multiply', latex: '\\dfrac{a}{b} \\times \\dfrac{c}{d} = \\dfrac{ac}{bd}' },
+    { name: 'Divide', latex: '\\dfrac{a}{b} \\div \\dfrac{c}{d} = \\dfrac{a}{b} \\times \\dfrac{d}{c}' },
   ],
   inequalities: [
     { name: 'Sign flip', latex: 'a < b \\;\\Rightarrow\\; -a > -b' },

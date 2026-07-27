@@ -1,4 +1,4 @@
-import { parseExpr, differentiate, simplify, toLatex, ExprError } from './expr';
+import { parseExpr, differentiate, simplify, toLatex, evaluateExpr, ExprError } from './expr';
 
 /** Differentiate a source string and render the simplified result. */
 const d = (src: string): string => toLatex(simplify(differentiate(parseExpr(src))));
@@ -20,6 +20,15 @@ describe('parseExpr', () => {
   });
   it('rejects unbalanced brackets', () => {
     expect(() => parseExpr('(x+1')).toThrow(ExprError);
+  });
+  it('reads π as a constant, like e', () => {
+    expect(show('π')).toBe('\\pi');
+    expect(show('2π')).toBe('2\\pi');
+    expect(evaluateExpr(parseExpr('π'))).toBeCloseTo(Math.PI, 10);
+    expect(evaluateExpr(parseExpr('2*π'))).toBeCloseTo(2 * Math.PI, 10);
+  });
+  it('treats π as a constant when differentiating', () => {
+    expect(d('π*x')).toBe('\\pi');
   });
 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Solution } from '../lib/engine/types';
 import type { RevealMode } from '../lib/ui';
 import { TeX, RichText } from './TeX';
@@ -25,11 +25,118 @@ export function StepList({
 }) {
   const total = solution.steps.length;
   const [revealed, setRevealed] = useState(total);
+  const listRef = useRef<HTMLOListElement>(null);
 
   // Reset the reveal counter whenever a new solution arrives or the mode changes.
   useEffect(() => {
     setRevealed(revealMode === 'all' ? total : Math.min(1, total));
   }, [solution, revealMode, total]);
+
+  /**
+   * .step-expr now shares a flex row with .step-annotation (see .step-line
+   * in base.css), so it needs a real width to offer that row. In the
+   * notebook theme its content is taken out of flow by position:absolute
+   * (an annotation sitting beside a *content-independent, bottom-anchored*
+   * line of maths, rather than below it, needs that positioning — see
+   * base.css for why), and out-of-flow content never contributes to a
+   * parent's size — .step-expr collapsed to zero width and its maths
+   * vanished entirely.
+   *
+   * The obvious fix — measure the katex-display's own rendered width — does
+   * not work: KaTeX's own stylesheet makes display-mode .katex itself
+   * `display: block`, sized to *its* container in exactly the same way,
+   * rather than to its content. Every element in this chain fills its
+   * parent; none of them shrink-wraps, so getBoundingClientRect().width is
+   * 0 all the way down. scrollWidth is different — with white-space:nowrap
+   * (which KaTeX sets) it reports the width the unwrapped content actually
+   * needs regardless of how narrow the box computed itself to be, which is
+   * exactly the real content width this needs.
+   *
+   * Only step in where the browser actually got zero, rather than always
+   * overriding: outside the notebook theme, .katex-display is a normal
+   * in-flow block, and flexbox's own auto-sizing already measures it
+   * correctly — including surviving a web font swapping in after this
+   * effect has already run once, which a one-time inline width would not.
+   * Forcing the same measured width there caused exactly that: a snapshot
+   * narrower than the KaTeX web font's real, slightly wider metrics,
+   * clipping the ends of longer lines once the font finished loading.
+   */
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    list.querySelectorAll<HTMLElement>('.step-expr').forEach((exprEl) => {
+      if (exprEl.getBoundingClientRect().width > 2) return;
+      const katex = exprEl.querySelector<HTMLElement>('.katex-display > .katex');
+      if (katex) exprEl.style.width = `${katex.scrollWidth}px`;
+    });
+  }, [solution]);
+
+  /**
+   * The notebook theme's squared paper tiles at a fixed --rule (24px) in
+   * both directions, and the list's own width is essentially never an exact
+   * multiple of that — so one edge column was always a partial square.
+   * Centring (see .steps in base.css) split that partial column evenly
+   * onto both edges, which reads as tidier, but a partial square is still a
+   * partial square.
+   *
+   * The vertical tile size can't be adjusted to fix this the same way —
+   * every other measurement in this theme (.step-expr's min-height, the
+   * badge column, the connector) is quantised to the *literal* --rule value
+   * in themes.css, and the baseline sits on the ruling at a fixed offset
+   * from it (--rule-baseline). Changing the tile height, even slightly,
+   * would decouple the drawn ruling from where the maths actually sits —
+   * reintroducing the exact drift bug --rule-baseline exists to prevent.
+   *
+   * Horizontally there's no such constraint: nothing else keys off a
+   * specific vertical *line's* position. So the fix has two, independent
+   * halves — measured, because neither is knowable from CSS alone:
+   *  - Divide the list's actual width by the nearest whole number of
+   *    columns, and use that (not --rule) as the tile width. The squares
+   *    end up ~24px rather than exactly 24px, invisibly so, but an exact
+   *    number of them now fits with no partial column at either edge.
+   *  - Pad the bottom up to the next whole multiple of --rule, so the
+   *    background tiles a complete (blank) final row instead of a partial
+   *    one — the padding is inert; nothing is anchored to the list's own
+   *    bottom edge, unlike the horizontal case.
+   */
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const RULE = 24;
+
+    function measureGrid() {
+      if (!list) return;
+      if (document.documentElement.dataset.theme !== 'notebook') {
+        list.style.removeProperty('--grid-col-w');
+        list.style.paddingBottom = '';
+        return;
+      }
+      // Reset before measuring — otherwise a previous run's own padding
+      // would be counted as part of the "natural" content height below.
+      // getBoundingClientRect, not scrollHeight, for the height: scrollHeight
+      // rounds to a whole pixel, and that alone was enough to leave a
+      // fraction-of-a-pixel sliver at the bottom on some content.
+      list.style.paddingBottom = '0px';
+      const width = list.clientWidth;
+      const naturalHeight = list.getBoundingClientRect().height;
+      const cols = Math.max(1, Math.round(width / RULE));
+      const remainder = naturalHeight % RULE;
+      list.style.setProperty('--grid-col-w', `${width / cols}px`);
+      list.style.paddingBottom = `${remainder < 0.01 ? 0 : RULE - remainder}px`;
+    }
+
+    const resizeObserver = new ResizeObserver(measureGrid);
+    resizeObserver.observe(list);
+    // Toggling the theme in Settings changes data-theme without resizing
+    // anything, but still needs this to switch on/off or re-measure.
+    const themeObserver = new MutationObserver(measureGrid);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    measureGrid();
+    return () => {
+      resizeObserver.disconnect();
+      themeObserver.disconnect();
+    };
+  }, []);
 
   const allShown = revealed >= total;
 
@@ -51,7 +158,7 @@ export function StepList({
 
   return (
     <div>
-      <ol className="steps">
+      <ol className="steps" ref={listRef}>
         {solution.steps.map((step, i) => {
           const hidden = i >= revealed;
           return (
@@ -62,13 +169,17 @@ export function StepList({
                     <RichText text={step.note} />
                   </p>
                 )}
-                {step.latex && (
-                  <div className="step-expr">
-                    <TeX tex={step.latex} display />
+                {(step.latex || step.annotation) && (
+                  <div className="step-line">
+                    {step.latex && (
+                      <div className="step-expr">
+                        <TeX tex={step.latex} display />
+                      </div>
+                    )}
+                    {step.annotation && <span className="step-annotation">{step.annotation}</span>}
                   </div>
                 )}
                 {step.visual && <StepVisualView visual={step.visual} />}
-                {step.annotation && <span className="step-annotation">{step.annotation}</span>}
               </div>
             </li>
           );

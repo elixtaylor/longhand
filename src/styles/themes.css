@@ -49,6 +49,17 @@
 
   /* Motion */
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* Size of the working itself, independent of theme — set from Settings. */
+  --text-scale: 1;
+}
+
+/* ------------------------------------------------------------- Text size */
+:root[data-text-size="sm"] {
+  --text-scale: 0.87;
+}
+:root[data-text-size="lg"] {
+  --text-scale: 1.18;
 }
 
 /* ---------------------------------------------------------------- Editorial */
@@ -86,6 +97,14 @@
 /* ----------------------------------------------------------------- Notebook */
 /* Squared exercise-book paper, fountain-pen ink blue, red-pen annotations. */
 :root[data-theme="notebook"] {
+  /* The Settings text-size control is deliberately inert here. --rule-baseline
+     is a pixel constant measured against one specific rendered font size —
+     everything from the ruled squares to the badge column is quantised
+     against it in base.css. Scaling the maths without re-deriving that
+     constant (and the square size itself, to keep content actually fitting
+     inside a fixed number of squares) would reopen the exact drift bug this
+     theme's whole layout exists to prevent. */
+  --text-scale: 1;
   --bg: #eef1f4;
   --bg-tint: #e6eaef;
   --surface: #fcfdff;

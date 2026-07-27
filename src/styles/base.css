@@ -467,14 +467,12 @@ button {
   flex-direction: column;
 }
 .step {
-  /* One number drives the badge, the column it sits in, and the rule that
-     joins the badges. They used to be set separately, so changing the badge
-     size in a theme left the connector running down beside it instead of
-     through it. --step-pad gets the same treatment, for the same reason:
-     the connector's start position below has to track whatever padding is
-     actually applied, not a second copy of the number. */
+  /* One number drives the badge and the column it sits in — they used to
+     be set separately, so changing the badge size in a theme left the
+     column out of step with it. --step-pad gets the same treatment: the
+     notebook theme's inline step number is anchored from it, so it has to
+     track whatever padding is actually applied, not a second copy of it. */
   --badge: 28px;
-  --connector: 1.5px;
   --step-pad: var(--sp-3);
   counter-increment: step;
   position: relative;
@@ -499,17 +497,6 @@ button {
   border: 1.5px solid var(--accent-soft);
   border-radius: 50%;
 }
-/* Continuous rule joining the steps, like margin working. Runs from the
-   bottom of one badge to the top of the next, down the badge's centre. */
-.step:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  left: calc(var(--badge) / 2 - var(--connector) / 2);
-  top: calc(var(--badge) + var(--step-pad) + var(--badge-offset, 0px));
-  bottom: 0;
-  width: var(--connector);
-  background: var(--line-strong);
-}
 .step-body {
   grid-column: 2;
   min-width: 0;
@@ -520,16 +507,33 @@ button {
   margin-bottom: 6px;
   line-height: 1.5;
 }
+/* The line of maths and its side-note share a row — the note reads as a
+   comment beside the line rather than a caption underneath it. flex-end
+   rather than baseline: the notebook theme's .step-expr is itself a flex
+   column bottom-anchoring its own content (see below), and a flex item's
+   baseline for alignment purposes is its content's baseline only when that
+   content is simple text — nested flex contexts make that ambiguous. Every
+   item's bottom margin edge lining up is unambiguous in any theme, and
+   close enough to baseline for a short annotation beside a line of maths.
+   No wrapping: a wrapped annotation wound up on its own row with nothing
+   pinning the notebook theme's inline step-number to the equation above it
+   rather than the note beside it. The equation absorbs the squeeze instead
+   — see .step-expr's own overflow-x below — so the row stays one row. */
+.step-line {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+}
 .step-expr {
-  font-size: 1.28rem;
+  min-width: 0;
+  font-size: calc(1.28rem * var(--text-scale));
   color: var(--ink);
   overflow-x: auto;
   overflow-y: hidden;
   padding: 4px 0;
 }
 .step-annotation {
-  display: inline-block;
-  margin-top: 6px;
+  flex-shrink: 0;
   padding-left: 10px;
   font-family: var(--font-annotation);
   font-size: 1rem;
@@ -604,26 +608,42 @@ button {
      above it (a heading of some other height, an answer card) can knock the
      rulings out of step with the maths. */
   background-image: var(--paper-grid);
-  background-size: var(--rule) var(--rule);
+  /* Width comes from StepList's own measureGrid effect, not --rule: the
+     list's width is essentially never an exact multiple of 24px, so a fixed
+     tile always left one edge column partial. The measured value is
+     ~24px — invisibly different — but divides the actual width exactly, so
+     no column is ever partial. Falls back to --rule before that effect's
+     first run. See measureGrid for why the vertical tile can't get the same
+     treatment. */
+  background-size: var(--grid-col-w, var(--rule)) var(--rule);
   /* On paper you write *on* a line, so the rulings are shifted down by the
      distance from the top of a step's line box to the maths baseline. That
      puts a ruling under every line of working rather than through the middle
      of it. Measured against the current KaTeX size — if --rule or
      .step-expr's font-size changes, re-measure. */
-  /* Centred horizontally rather than anchored at 0 — the container's width
-     is never an exact multiple of --rule, so one edge column is always a
-     partial square; centring splits that leftover evenly onto both edges
-     instead of a full square on the left and an odd sliver on the right. */
-  background-position: center var(--rule-baseline);
+  background-position: 0 var(--rule-baseline);
   padding-top: 0;
   margin-top: var(--sp-2);
 }
 :root[data-theme='notebook'] .step {
   padding: 0;
   margin-bottom: var(--rule);
+  /* Wide enough that a handwritten "12." (see .step-line::before below),
+     set at the same size as the maths, has room to sit in it without
+     reaching the card's own edge. */
+  --badge: calc(var(--rule) * 1.75);
 }
 :root[data-theme='notebook'] .step-expr {
-  /* Two squares tall, and the KaTeX baseline sits on the lower one. */
+  /* Two squares tall, and the KaTeX baseline sits on the lower one. Width is
+     set inline by StepList (see its measureWidths effect) — .step-expr is a
+     flex item of .step-line now, and its own content is positioned via
+     position:absolute below, which by spec never contributes to a parent's
+     size. Without an explicit width it collapsed to zero and the maths
+     vanished; a flex-column/justify-content alternative was tried instead
+     of position:absolute, but that turned out to *not* be content-height
+     independent the way position:absolute is proven to be — a fraction's
+     extra height shifted its baseline relative to a plain line's, which is
+     the exact drift bug this anchoring exists to prevent. */
   position: relative;
   display: block;
   padding: 0;
@@ -660,6 +680,12 @@ button {
    * font, the same for "2x" as for "x^2" as for a fraction — so pinning the
    * box's bottom edge with position:absolute, unaffected by anything above
    * it, pins the baseline just as exactly, for any content.
+   *
+   * This takes the element out of flow, so it contributes nothing to
+   * .step-expr's own width — .step-expr is a flex item now (see
+   * .step-line), and needs a real width to offer that row. StepList sets
+   * one inline after measuring this element's own rendered width (its
+   * measureWidths effect), which is unaffected by being taken out of flow.
    */
   position: absolute;
   left: 0;
@@ -672,67 +698,31 @@ button {
   margin-bottom: 0;
   font-size: 0.86rem;
 }
-:root[data-theme='notebook'] .step-annotation {
-  /* Inline-block would sit in a line box governed by the parent's
-     line-height, adding a stray 1.5px per step that accumulates into visible
-     drift. As a block it occupies exactly one square. */
-  display: block;
-  line-height: var(--rule);
-  height: var(--rule);
-  margin-top: 0;
-}
-:root[data-theme='notebook'] .step {
-  /* A badge exactly one square across, so it sits in the ruling like a
-     margin number. Kept at one square even though the column below is
-     wider now — the connector's own vertical position is still measured
-     from this, and that was tuned against a one-square badge. */
-  --badge: var(--rule);
-  /* The number labels the line of maths, so it centres on it — which is
-     half a square down when the maths comes first, and a square and a half
-     when an explanation is shown above it. */
-  --badge-offset: calc(var(--rule) / 2);
-  /* This theme's own padding is 0 (the paper rulings come from .steps's
-     background-image, not box padding) — but the connector above still
-     measures its start from --step-pad, so pin it back to the old spacing
-     rather than letting the tightened default shift it on ruled paper. */
-  --step-pad: var(--sp-4);
-  /* The margin column itself is wider than one square: a handwritten "12."
-     needs more room than a single printed digit did. Widening the column
-     here (rather than --badge, which the connector's position above is
-     still measured from) keeps that vertical anchor unchanged. */
-  grid-template-columns: calc(var(--rule) * 1.5) 1fr;
-}
-:root[data-theme='notebook'] .step:has(.step-note) {
-  --badge-offset: calc(var(--rule) * 1.5);
-}
 :root[data-theme='notebook'] .step::before {
-  /* A margin number, not a printed badge: "3." in the same hand as the
-     maths, sat in the margin next to the rule rather than boxed in a
-     printed circle — a circle reads as UI chrome, which is exactly what
-     this theme is trying not to look like. */
-  content: counter(step) ".";
-  margin-top: var(--badge-offset);
-  width: auto;
-  height: auto;
-  display: block;
-  text-align: right;
-  padding-right: 5px;
-  font-family: var(--font-hand);
-  font-size: 0.95rem;
-  font-weight: 400;
-  line-height: 1;
-  color: var(--accent);
-  background: none;
-  border: none;
-  border-radius: 0;
+  /* The printed circular badge is replaced by an inline number set in the
+     maths's own hand — see .step-line::before below — rather than shown
+     alongside it. */
+  content: none;
 }
-:root[data-theme='notebook'] .step:not(:last-child)::after {
-  bottom: calc(var(--rule) * -1);
-  /* Fixed near the column's left edge instead of centred under the badge —
-     the handwritten number now sits to the right of this rule, like a
-     margin line with numbers written just after it, rather than a circle
-     straddling it. */
-  left: 4px;
+:root[data-theme='notebook'] .step-line {
+  position: relative;
+}
+:root[data-theme='notebook'] .step-line::before {
+  /* A margin number in the same hand as the maths: same font, same size,
+     same ink — sat just to the left of the line it labels, the way a
+     student numbers their own working, rather than a separately-styled
+     printed badge. Anchored to this box's own bottom edge, the same
+     reference point .step-expr's baseline is pinned to below, so the two
+     line up regardless of content. */
+  content: counter(step) '.';
+  position: absolute;
+  bottom: 0;
+  right: 100%;
+  margin-right: 6px;
+  white-space: nowrap;
+  font-family: var(--font-hand);
+  font-size: calc(1.28rem * 1.04);
+  color: var(--ink);
 }
 
 /* Multi-part questions ---------------------------------------------------- */
@@ -1015,7 +1005,8 @@ button {
   gap: 6px var(--sp-5);
 }
 .formula-grid {
-  gap: var(--sp-4) var(--sp-5);
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--sp-3) var(--sp-4);
   margin: 0;
   align-items: start;
 }
@@ -1047,25 +1038,19 @@ button {
 }
 
 /* Formula reference ------------------------------------------------------- */
-.formula-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  margin: 0;
-}
 .formula-row {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 .formula-row dt {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--ink-3);
 }
 .formula-row dd {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--ink);
   overflow-x: auto;
 }
@@ -1196,7 +1181,7 @@ button {
   line-height: 1.45;
 }
 .compare-expr {
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--text-scale));
   overflow-x: auto;
 }
 

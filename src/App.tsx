@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocalStorage } from './lib/useLocalStorage';
-import type { ThemeId, RevealMode } from './lib/ui';
+import type { ThemeId, RevealMode, TextSize } from './lib/ui';
 import { Workspace } from './components/Workspace';
 import { SettingsPanel } from './components/SettingsPanel';
 
@@ -8,6 +8,7 @@ export default function App() {
   const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'editorial');
   const [revealMode, setRevealMode] = useLocalStorage<RevealMode>('longhand.reveal', 'all');
   const [dark, setDark] = useLocalStorage<boolean>('longhand.dark', false);
+  const [textSize, setTextSize] = useLocalStorage<TextSize>('longhand.textSize', 'md');
   /**
    * Off by default: the working itself is what a student came for, and a
    * sentence above every line pushes the maths apart. The toggle sits with
@@ -21,7 +22,8 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.dark = dark ? 'on' : 'off';
-  }, [theme, dark]);
+    document.documentElement.dataset.textSize = textSize;
+  }, [theme, dark, textSize]);
 
   // Keyboard shortcuts: "/" focuses the problem box, "," opens settings.
   useEffect(() => {
@@ -95,6 +97,8 @@ export default function App() {
           onRevealMode={setRevealMode}
           dark={dark}
           onDark={setDark}
+          textSize={textSize}
+          onTextSize={setTextSize}
           onClose={() => setSettingsOpen(false)}
         />
       )}

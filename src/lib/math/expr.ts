@@ -55,6 +55,12 @@ function tokenise(src: string): Token[] {
       if (!Number.isFinite(v)) throw new ExprError(`Couldn't read the number "${s.slice(i, j)}".`);
       out.push({ k: 'num', v });
       i = j;
+    } else if (c === 'π') {
+      // A constant, not a letter run — 'π' can't join with a neighbouring
+      // letter the way a function name does, so it gets its own branch
+      // rather than falling into the a-z scan below.
+      out.push({ k: 'id', v: 'π' });
+      i++;
     } else if (/[a-zA-Z]/.test(c)) {
       let j = i;
       while (j < s.length && /[a-zA-Z]/.test(s[j])) j++;
@@ -300,7 +306,7 @@ export function evaluateExpr(e: Expr, vars: Record<string, number> = {}): number
     case 'num':
       return e.v;
     case 'var':
-      return e.name in vars ? vars[e.name] : e.name === 'e' ? Math.E : NaN;
+      return e.name in vars ? vars[e.name] : e.name === 'e' ? Math.E : e.name === 'π' ? Math.PI : NaN;
     case 'neg':
       return -evaluateExpr(e.a, vars);
     case 'add':
@@ -502,7 +508,7 @@ export function toLatex(e: Expr): string {
       return String(Math.round(v * 1e10) / 1e10);
     }
     case 'var':
-      return e.name;
+      return e.name === 'π' ? '\\pi' : e.name;
     case 'neg':
       return `-${wrap(e.a, 3)}`;
     case 'add': {
