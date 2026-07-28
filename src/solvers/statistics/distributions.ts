@@ -1,5 +1,5 @@
-import { fmt, parseParams, nCr } from '../../lib/math/num';
-import type { Solver, Step, SolveResult } from '../../lib/engine/types';
+import { fmt, parseParams, formatParams, nCr } from '../../lib/math/num';
+import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
 
 /**
  * Discrete and continuous random variables, and confidence intervals
@@ -32,6 +32,23 @@ function zStar(confidence: number): number {
   return table[Math.round(confidence)] ?? 1.96;
 }
 
+const BINOMIAL_FIELDS: FieldSchema[] = [
+  { id: 'n', label: 'Trials (n)', kind: 'number' },
+  { id: 'p', label: 'Probability (p)', kind: 'number' },
+  { id: 'x', label: 'Successes (x)', kind: 'number', optional: true },
+];
+const NORMAL_FIELDS: FieldSchema[] = [
+  { id: 'mean', label: 'Mean (μ)', kind: 'number' },
+  { id: 'sd', label: 'SD (σ)', kind: 'number' },
+  { id: 'x', label: 'Value (x)', kind: 'number' },
+];
+const CONFIDENCE_FIELDS: FieldSchema[] = [
+  { id: 'mean', label: 'Sample mean', kind: 'number' },
+  { id: 'sd', label: 'Sample SD', kind: 'number' },
+  { id: 'n', label: 'Sample size (n)', kind: 'number' },
+  { id: 'confidence', label: 'Confidence %', kind: 'number', optional: true },
+];
+
 export const distributionsSolver: Solver = {
   id: 'distributions',
   title: 'Random variables',
@@ -39,9 +56,27 @@ export const distributionsSolver: Solver = {
   blurb: 'Binomial and normal distributions, and confidence intervals.',
   placeholder: 'e.g.  binomial n=10, p=0.5, x=3',
   methods: [
-    { id: 'binomial', name: 'Binomial', blurb: 'P(X = x) = ⁿCₓ pˣ(1−p)ⁿ⁻ˣ for a fixed number of independent trials.' },
-    { id: 'normal', name: 'Normal', blurb: 'Standardise to a z-score, then read the probability.' },
-    { id: 'confidence', name: 'Confidence interval', blurb: 'x̄ ± z* σ/√n for a population mean.' },
+    {
+      id: 'binomial',
+      name: 'Binomial',
+      blurb: 'P(X = x) = ⁿCₓ pˣ(1−p)ⁿ⁻ˣ for a fixed number of independent trials.',
+      fields: BINOMIAL_FIELDS,
+      serialize: formatParams,
+    },
+    {
+      id: 'normal',
+      name: 'Normal',
+      blurb: 'Standardise to a z-score, then read the probability.',
+      fields: NORMAL_FIELDS,
+      serialize: formatParams,
+    },
+    {
+      id: 'confidence',
+      name: 'Confidence interval',
+      blurb: 'x̄ ± z* σ/√n for a population mean. Leave confidence blank for 95%.',
+      fields: CONFIDENCE_FIELDS,
+      serialize: formatParams,
+    },
   ],
   defaultMethodId: 'binomial',
   detect(input) {

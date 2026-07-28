@@ -1,5 +1,5 @@
 import { factorial, nCr, fmt } from '../../lib/math/num';
-import type { Solver, Step, SolveResult } from '../../lib/engine/types';
+import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
 
 /**
  * Counting techniques (SACE Stage 1 Mathematical Methods): factorials,
@@ -44,6 +44,12 @@ function parse(input: string, methodId: string): Query {
 
 const MAX_N = 170; // beyond this a factorial overflows to Infinity
 
+const NR_FIELDS: FieldSchema[] = [
+  { id: 'n', label: 'n', kind: 'number' },
+  { id: 'r', label: 'r', kind: 'number' },
+];
+const N_FIELD: FieldSchema[] = [{ id: 'n', label: 'n', kind: 'number' }];
+
 export const countingSolver: Solver = {
   id: 'counting',
   title: 'Counting & combinations',
@@ -51,9 +57,27 @@ export const countingSolver: Solver = {
   blurb: 'Factorials, permutations and combinations.',
   placeholder: 'e.g.  10C3   or   choose 3 from 10   or   5!',
   methods: [
-    { id: 'combination', name: 'Combination (nCr)', blurb: 'Order does not matter — picking a team from a group.' },
-    { id: 'permutation', name: 'Permutation (nPr)', blurb: 'Order matters — arranging people in a line.' },
-    { id: 'factorial', name: 'Factorial (n!)', blurb: 'Arrange every item — n × (n−1) × … × 1.' },
+    {
+      id: 'combination',
+      name: 'Combination (nCr)',
+      blurb: 'Order does not matter — picking a team from a group.',
+      fields: NR_FIELDS,
+      serialize: (v) => `${v.n[0]}C${v.r[0]}`,
+    },
+    {
+      id: 'permutation',
+      name: 'Permutation (nPr)',
+      blurb: 'Order matters — arranging people in a line.',
+      fields: NR_FIELDS,
+      serialize: (v) => `${v.n[0]}P${v.r[0]}`,
+    },
+    {
+      id: 'factorial',
+      name: 'Factorial (n!)',
+      blurb: 'Arrange every item — n × (n−1) × … × 1.',
+      fields: N_FIELD,
+      serialize: (v) => `${v.n[0]}!`,
+    },
   ],
   defaultMethodId: 'combination',
   detect(input) {

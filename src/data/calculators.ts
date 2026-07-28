@@ -51,4 +51,20 @@ export const CALCULATORS: CalculatorGroup[] = [
       { solverId: 'vectors', methodId: 'ratio' },
     ],
   },
+  {
+    heading: 'Random variables',
+    items: [
+      { solverId: 'distributions', methodId: 'binomial' },
+      { solverId: 'distributions', methodId: 'normal' },
+      { solverId: 'distributions', methodId: 'confidence' },
+    ],
+  },
+  {
+    heading: 'Counting & combinations',
+    items: [
+      { solverId: 'counting', methodId: 'combination' },
+      { solverId: 'counting', methodId: 'permutation' },
+      { solverId: 'counting', methodId: 'factorial' },
+    ],
+  },
 ];
