@@ -1,5 +1,5 @@
-import { fmt, parseParams, deg2rad, rad2deg } from '../../lib/math/num';
-import type { Solver, Step, SolveResult } from '../../lib/engine/types';
+import { fmt, parseParams, formatParams, deg2rad, rad2deg } from '../../lib/math/num';
+import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
 
 /**
  * Right-angled triangles. Sides a and b are the legs, c the hypotenuse;
@@ -232,6 +232,17 @@ function byTrigRatio(rt: RT): SolveResult {
   return { ok: false, error: 'Give an angle and a side (e.g. A=30, c=10), or two sides (e.g. a=5, c=13).' };
 }
 
+// Shared by both methods below: which technique applies follows from which
+// two of these are filled in, not from which tab is open, so both tabs offer
+// the same fields rather than each defining their own.
+const RT_FIELDS: FieldSchema[] = [
+  { id: 'a', label: 'a', kind: 'number' },
+  { id: 'b', label: 'b', kind: 'number' },
+  { id: 'c', label: 'c', kind: 'number' },
+  { id: 'A', label: 'A', kind: 'number' },
+  { id: 'B', label: 'B', kind: 'number' },
+];
+
 export const rightTriangleSolver: Solver = {
   id: 'right-triangle',
   title: 'Right-angled triangles',
@@ -239,8 +250,20 @@ export const rightTriangleSolver: Solver = {
   blurb: 'Pythagoras and SOH CAH TOA in a right-angled triangle.',
   placeholder: 'e.g.  a=3, b=4   or   A=30, c=10',
   methods: [
-    { id: 'pythagoras', name: 'Pythagoras', blurb: 'a² + b² = c². Use it when you know two sides and want the third.' },
-    { id: 'trig-ratio', name: 'SOH CAH TOA', blurb: 'Sine, cosine and tangent ratios — when an angle is involved.' },
+    {
+      id: 'pythagoras',
+      name: 'Pythagoras',
+      blurb: 'a² + b² = c². Use it when you know two sides and want the third.',
+      fields: RT_FIELDS,
+      serialize: formatParams,
+    },
+    {
+      id: 'trig-ratio',
+      name: 'SOH CAH TOA',
+      blurb: 'Sine, cosine and tangent ratios — when an angle is involved.',
+      fields: RT_FIELDS,
+      serialize: formatParams,
+    },
   ],
   defaultMethodId: 'pythagoras',
   detect(input) {

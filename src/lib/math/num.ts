@@ -93,6 +93,19 @@ export function parseParams(input: string): Record<string, number> {
   return out;
 }
 
+/**
+ * The inverse of `parseParams`: keys with a value become "key=value" pairs,
+ * joined the same way a student would type them. A key with no value (an
+ * empty array — see StructuredInputForm's optional number fields) is left
+ * out entirely rather than serialised as blank or zero.
+ */
+export function formatParams(values: Record<string, number[]>): string {
+  return Object.entries(values)
+    .filter(([, v]) => v.length > 0)
+    .map(([k, v]) => `${k}=${v[0]}`)
+    .join(', ');
+}
+
 /** n! for small non-negative integers. */
 export function factorial(n: number): number {
   let r = 1;

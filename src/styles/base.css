@@ -402,6 +402,26 @@ button {
   font-size: 1.1rem;
   color: var(--ink-3);
 }
+/* A solver's "fill in what you know" fields (e.g. a right triangle's a, b,
+   c, A, B) — several small optional boxes, so a compact grid reads better
+   than stacking each one full-width like a required point/ratio field. */
+.number-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--sp-3);
+}
+.number-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.number-field .field-label {
+  margin-bottom: 0;
+  text-align: center;
+}
+.number-field .num-input {
+  text-align: center;
+}
 
 /* Buttons ----------------------------------------------------------------- */
 .btn-primary {

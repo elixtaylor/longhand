@@ -1,4 +1,4 @@
-import { round, money, fmt, parseParams, parseNumberList, nCr } from './num';
+import { round, money, fmt, parseParams, formatParams, parseNumberList, nCr } from './num';
 
 describe('round', () => {
   it('rounds half away from zero', () => {
@@ -43,6 +43,18 @@ describe('parseParams', () => {
   });
   it('handles negatives and decimals', () => {
     expect(parseParams('r=-0.5, n=10')).toEqual({ r: -0.5, n: 10 });
+  });
+});
+
+describe('formatParams', () => {
+  it('formats filled fields as key=value pairs, skipping blanks', () => {
+    expect(formatParams({ a: [3], b: [], c: [4] })).toBe('a=3, c=4');
+  });
+  it('keeps negatives and decimals exactly as given', () => {
+    expect(formatParams({ A: [30.5], c: [-10] })).toBe('A=30.5, c=-10');
+  });
+  it('returns an empty string when nothing is filled', () => {
+    expect(formatParams({ a: [], b: [] })).toBe('');
   });
 });
 

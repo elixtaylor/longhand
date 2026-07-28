@@ -22,6 +22,28 @@ export interface CalculatorGroup {
 
 export const CALCULATORS: CalculatorGroup[] = [
   {
+    heading: 'Right-angled triangles',
+    items: [
+      {
+        solverId: 'right-triangle',
+        methodId: 'pythagoras',
+        label: 'Right-angled triangle',
+        blurb: 'Fill in any two of a, b, c, A, B — Pythagoras or SOH CAH TOA, whichever applies.',
+      },
+    ],
+  },
+  {
+    heading: 'Sine & cosine rules',
+    items: [
+      {
+        solverId: 'triangle-rules',
+        methodId: 'cosine-rule',
+        label: 'Any triangle',
+        blurb: 'Fill in any three of a, b, c, A, B, C — sine rule, cosine rule or area, whichever applies.',
+      },
+    ],
+  },
+  {
     heading: 'Vectors',
     items: [
       { solverId: 'vectors', methodId: 'component', label: 'Vector arithmetic' },

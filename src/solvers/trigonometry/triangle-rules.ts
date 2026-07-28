@@ -1,5 +1,5 @@
-import { fmt, parseParams, deg2rad, rad2deg, round } from '../../lib/math/num';
-import type { Solver, Step, SolveResult } from '../../lib/engine/types';
+import { fmt, parseParams, formatParams, deg2rad, rad2deg, round } from '../../lib/math/num';
+import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
 
 /**
  * Non-right-angled triangles: the sine rule, the cosine rule, and area.
@@ -342,6 +342,18 @@ function byArea(t: Tri): SolveResult {
   return { ok: false, error: 'For area, give two sides and the angle between them, or all three sides.' };
 }
 
+// Shared by all three methods below: which one applies follows from which
+// values are filled in, not from which tab is open, so every tab offers the
+// same six fields rather than each defining their own.
+const TRI_FIELDS: FieldSchema[] = [
+  { id: 'a', label: 'a', kind: 'number' },
+  { id: 'b', label: 'b', kind: 'number' },
+  { id: 'c', label: 'c', kind: 'number' },
+  { id: 'A', label: 'A', kind: 'number' },
+  { id: 'B', label: 'B', kind: 'number' },
+  { id: 'C', label: 'C', kind: 'number' },
+];
+
 export const triangleRulesSolver: Solver = {
   id: 'triangle-rules',
   title: 'Sine & cosine rules',
@@ -349,9 +361,27 @@ export const triangleRulesSolver: Solver = {
   blurb: 'Solve any triangle — sine rule, cosine rule, and area.',
   placeholder: 'e.g.  a=7, b=9, C=40',
   methods: [
-    { id: 'sine-rule', name: 'Sine rule', blurb: 'a/sin A = b/sin B. Use it with a matching side–angle pair.' },
-    { id: 'cosine-rule', name: 'Cosine rule', blurb: 'c² = a² + b² − 2ab cos C. Use it for two sides + included angle, or three sides.' },
-    { id: 'area', name: 'Area', blurb: '½ab sin C when you have the included angle, otherwise Heron’s formula.' },
+    {
+      id: 'sine-rule',
+      name: 'Sine rule',
+      blurb: 'a/sin A = b/sin B. Use it with a matching side–angle pair.',
+      fields: TRI_FIELDS,
+      serialize: formatParams,
+    },
+    {
+      id: 'cosine-rule',
+      name: 'Cosine rule',
+      blurb: 'c² = a² + b² − 2ab cos C. Use it for two sides + included angle, or three sides.',
+      fields: TRI_FIELDS,
+      serialize: formatParams,
+    },
+    {
+      id: 'area',
+      name: 'Area',
+      blurb: '½ab sin C when you have the included angle, otherwise Heron’s formula.',
+      fields: TRI_FIELDS,
+      serialize: formatParams,
+    },
   ],
   defaultMethodId: 'cosine-rule',
   detect(input) {
