@@ -4,6 +4,10 @@ import type { RevealMode } from '../lib/ui';
 import { TeX, RichText } from './TeX';
 import { StepVisualView } from './visuals';
 
+/** The notebook theme's squared-paper tile, in px — literally, not measured;
+ * see measureGrid's own doc comment below for why it can't be. */
+const RULE = 24;
+
 export function StepList({
   solution,
   revealMode,
@@ -81,6 +85,18 @@ export function StepList({
    * nothing else would ever prompt a re-measure — the box just quietly kept
    * the wrong, too-narrow number for the rest of the session. Re-running
    * once those fonts actually finish loading is the only way to catch it.
+   *
+   * Height is measured here too, and for the same reason width is: a plain
+   * line and a 3×3 determinant both need to sit in a box quantised to whole
+   * --rule squares (see base.css), but they don't need the *same* box — a
+   * fixed guess is always either wasted space on short lines or a clipped
+   * determinant. base.css's own min-height covers the ordinary case (two
+   * squares) as the default this falls back to before the first measurement
+   * and if this ever measures zero; scrollHeight (unlike scrollWidth, this
+   * one isn't fighting a stretched box — .katex-display's height was never
+   * the problem, only its width was) reports what the content actually
+   * needs, rounded up to the next whole square so the ruling still lands
+   * under the maths.
    */
   useEffect(() => {
     const list = listRef.current;
@@ -89,12 +105,20 @@ export function StepList({
     function measure() {
       const exprs = list!.querySelectorAll<HTMLElement>('.step-expr');
       if (document.documentElement.dataset.theme !== 'notebook') {
-        exprs.forEach((exprEl) => exprEl.style.removeProperty('width'));
+        exprs.forEach((exprEl) => {
+          exprEl.style.removeProperty('width');
+          exprEl.style.removeProperty('height');
+        });
         return;
       }
       exprs.forEach((exprEl) => {
         const katex = exprEl.querySelector<HTMLElement>('.katex-display > .katex');
-        if (katex) exprEl.style.width = `${katex.scrollWidth}px`;
+        if (!katex) return;
+        exprEl.style.width = `${katex.scrollWidth}px`;
+        if (katex.scrollHeight > 0) {
+          const squares = Math.max(2, Math.ceil(katex.scrollHeight / RULE));
+          exprEl.style.height = `${squares * RULE}px`;
+        }
       });
     }
 
@@ -140,7 +164,6 @@ export function StepList({
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const RULE = 24;
 
     function measureGrid() {
       if (!list) return;

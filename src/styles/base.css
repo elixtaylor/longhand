@@ -96,19 +96,23 @@ button {
 }
 
 /* Worksheet layout -------------------------------------------------------- */
+/* One centred column — the problem on top, its working below — rather than
+   the old side-by-side split. A max-width narrower than the page rather
+   than a grid column is what actually makes this "centred": it reads as a
+   single focused document instead of a dashboard of panels, and it already
+   degrades to full-width on a narrow viewport with no separate breakpoint
+   needed for that alone. */
 .worksheet {
   width: 100%;
-  max-width: 1180px;
+  max-width: 760px;
   margin: 0 auto;
   padding: var(--sp-6);
-  display: grid;
-  grid-template-columns: minmax(320px, 400px) 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-6);
-  align-items: start;
 }
-@media (max-width: 900px) {
+@media (max-width: 600px) {
   .worksheet {
-    grid-template-columns: 1fr;
     padding: var(--sp-4);
     gap: var(--sp-4);
   }
@@ -118,16 +122,9 @@ button {
 }
 
 .controls {
-  position: sticky;
-  top: var(--sp-5);
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
-}
-@media (max-width: 900px) {
-  .controls {
-    position: static;
-  }
 }
 
 /* Panels ------------------------------------------------------------------ */
@@ -505,9 +502,13 @@ button {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
   padding: var(--sp-6);
-  min-height: 60vh;
+  /* Enough to centre the empty state comfortably without the placeholder
+     card dominating the page before anything's been asked — 60vh made
+     sense stretched the full height of a side column, less so stacked
+     under the problem box. */
+  min-height: 380px;
 }
-@media (max-width: 900px) {
+@media (max-width: 600px) {
   .solution {
     padding: var(--sp-4);
   }
@@ -758,39 +759,32 @@ button {
   --badge: calc(var(--rule) * 1.75);
 }
 :root[data-theme='notebook'] .step-expr {
-  /* Two squares tall, and the KaTeX baseline sits on the lower one. Width is
-     set inline by StepList (see its measureWidths effect) — .step-expr is a
-     flex item of .step-line now, and its own content is positioned via
-     position:absolute below, which by spec never contributes to a parent's
-     size. Without an explicit width it collapsed to zero and the maths
-     vanished; a flex-column/justify-content alternative was tried instead
-     of position:absolute, but that turned out to *not* be content-height
-     independent the way position:absolute is proven to be — a fraction's
-     extra height shifted its baseline relative to a plain line's, which is
-     the exact drift bug this anchoring exists to prevent. */
+  /* Two squares tall by default, and the KaTeX baseline sits on the lower
+     one — StepList measures the actual content afterward (see its own doc
+     comment) and sets an explicit height when something needs more than
+     that, so this is a fallback, not the only word on the subject. Width is
+     set inline the same way — .step-expr is a flex item of .step-line now,
+     and its own content is positioned via position:absolute below, which by
+     spec never contributes to a parent's size. Without an explicit width it
+     collapsed to zero and the maths vanished; a flex-column/justify-content
+     alternative was tried instead of position:absolute, but that turned out
+     to *not* be content-height independent the way position:absolute is
+     proven to be — a fraction's extra height shifted its baseline relative
+     to a plain line's, which is the exact drift bug this anchoring exists
+     to prevent. */
   position: relative;
   display: block;
   padding: 0;
   min-height: calc(var(--rule) * 2);
 }
-:root[data-theme='notebook'] .step-expr:has(.mfrac) {
-  /* A fraction's numerator-over-denominator stack is taller than two squares
-     can fit as a min-height — line-height only sets a floor, so a fraction
-     simply overflowed it by a couple of px, and everything after that step
-     drifted off the ruling by the same couple of px. Give it a third square
-     instead of letting it overflow an uncounted amount. */
-  min-height: calc(var(--rule) * 3);
-}
 :root[data-theme='notebook'] .step-body {
-  /* Mirrors .step-expr's own min-height exactly — no spare square held
-     back for a .step-note above it. That note, when shown, has a
-     line-height of one square and adds its own height on top of this the
-     ordinary way, so the gap to the next line stays whatever .step's
-     margin-bottom says (one square) whether or not this step has a note. */
+  /* Mirrors .step-expr's own height exactly (fallback and measured alike) —
+     no spare square held back for a .step-note above it. That note, when
+     shown, has a line-height of one square and adds its own height on top
+     of this the ordinary way, so the gap to the next line stays whatever
+     .step's margin-bottom says (one square) whether or not this step has a
+     note. */
   min-height: calc(var(--rule) * 2);
-}
-:root[data-theme='notebook'] .step-body:has(.mfrac) {
-  min-height: calc(var(--rule) * 3);
 }
 :root[data-theme='notebook'] .step-expr .katex-display {
   /*
