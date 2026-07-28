@@ -231,8 +231,17 @@ export function Workspace({
   const solver = getSolver(solverId)!;
   const activeMethod = solver.methods.find((m) => m.id === methodId);
   // A method better filled in than typed (a handful of named values rather
-  // than one free-text expression) — see StructuredInputForm.
-  const structuredMethod = activeMethod?.fields ? activeMethod : null;
+  // than one free-text expression) — see StructuredInputForm. Gated on `pin`,
+  // not just on the current method having fields: live detection updates
+  // methodId on every keystroke (see the effect above), and several topics
+  // now have no free-text-only method left at all — without this gate,
+  // typing a plain sentence that happens to detect as e.g. a right triangle
+  // would swap the textbox for a blank fielded form mid-keystroke, and
+  // whatever was typed would simply vanish. `pin` is only ever set alongside
+  // methodId by an actual choice — the sidebar directory or a method tab —
+  // never by detection alone, so gating here is what actually distinguishes
+  // "the student chose this form" from "the student is still just typing".
+  const structuredMethod = pin && activeMethod?.fields ? activeMethod : null;
   // Only say we cannot read it when nothing has been worked out either —
   // otherwise a solved question could show its topic and "not sure what this
   // is" at the same time.
@@ -285,7 +294,7 @@ export function Workspace({
                 commit(serialized, pin);
               }}
             />
-          ) : activeMethod?.opForm === 'vector' ? (
+          ) : pin && activeMethod?.opForm === 'vector' ? (
             <VectorOperationForm
               onSubmit={(serialized) => {
                 setInput(serialized);
@@ -402,6 +411,7 @@ export function Workspace({
             input={input}
             methodId={methodId}
             onSelectMethod={chooseMethod}
+            pinned={!!pin}
           />
         )}
       </section>
@@ -422,6 +432,7 @@ function SolutionView({
   input,
   methodId,
   onSelectMethod,
+  pinned,
 }: {
   result: SolveResult | null;
   revealMode: RevealMode;
@@ -434,6 +445,9 @@ function SolutionView({
   input: string;
   methodId: string;
   onSelectMethod: (id: string) => void;
+  /** Whether methodId reflects an actual choice (sidebar or a tab click)
+   * rather than live detection alone — see Workspace's structuredMethod. */
+  pinned: boolean;
 }) {
   const solver = getSolver(solverId)!;
   // A structured method (see StructuredInputForm) is chosen from its tab
@@ -441,9 +455,13 @@ function SolutionView({
   // its tabs and prompt have to render without a result to key off. Only
   // topics that actually offer one need this: everywhere else, the method
   // picker stays exactly where it's always been, alongside solved working.
-  const hasStructuredMethod = solver.methods.some((m) => m.fields || m.opForm);
+  // Gated on `pinned` for the same reason Workspace's own structuredMethod
+  // is: without it, live detection into a topic with no free-text method
+  // left would show empty structured tabs before the student has chosen
+  // anything, or a stale free-text result under the wrong tab template.
+  const hasStructuredMethod = pinned && solver.methods.some((m) => m.fields || m.opForm);
   const currentMethod = solver.methods.find((m) => m.id === methodId);
-  const structured = !!(currentMethod?.fields || currentMethod?.opForm);
+  const structured = pinned && !!(currentMethod?.fields || currentMethod?.opForm);
 
   const methodPicker = solver.methods.length > 1 && (
     <div className="solution-methods">
