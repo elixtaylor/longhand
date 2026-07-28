@@ -236,11 +236,11 @@ function byTrigRatio(rt: RT): SolveResult {
 // two of these are filled in, not from which tab is open, so both tabs offer
 // the same fields rather than each defining their own.
 const RT_FIELDS: FieldSchema[] = [
-  { id: 'a', label: 'a', kind: 'number' },
-  { id: 'b', label: 'b', kind: 'number' },
-  { id: 'c', label: 'c', kind: 'number' },
-  { id: 'A', label: 'A', kind: 'number' },
-  { id: 'B', label: 'B', kind: 'number' },
+  { id: 'a', label: 'a', kind: 'number', optional: true },
+  { id: 'b', label: 'b', kind: 'number', optional: true },
+  { id: 'c', label: 'c', kind: 'number', optional: true },
+  { id: 'A', label: 'A', kind: 'number', optional: true },
+  { id: 'B', label: 'B', kind: 'number', optional: true },
 ];
 
 export const rightTriangleSolver: Solver = {

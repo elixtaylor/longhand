@@ -346,12 +346,12 @@ function byArea(t: Tri): SolveResult {
 // values are filled in, not from which tab is open, so every tab offers the
 // same six fields rather than each defining their own.
 const TRI_FIELDS: FieldSchema[] = [
-  { id: 'a', label: 'a', kind: 'number' },
-  { id: 'b', label: 'b', kind: 'number' },
-  { id: 'c', label: 'c', kind: 'number' },
-  { id: 'A', label: 'A', kind: 'number' },
-  { id: 'B', label: 'B', kind: 'number' },
-  { id: 'C', label: 'C', kind: 'number' },
+  { id: 'a', label: 'a', kind: 'number', optional: true },
+  { id: 'b', label: 'b', kind: 'number', optional: true },
+  { id: 'c', label: 'c', kind: 'number', optional: true },
+  { id: 'A', label: 'A', kind: 'number', optional: true },
+  { id: 'B', label: 'B', kind: 'number', optional: true },
+  { id: 'C', label: 'C', kind: 'number', optional: true },
 ];
 
 export const triangleRulesSolver: Solver = {

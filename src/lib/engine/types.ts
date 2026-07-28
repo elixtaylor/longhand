@@ -50,14 +50,17 @@ export interface Solution {
  * One input a structured-input method asks for. `point` renders as 2-3
  * boxed numbers sharing a label (dimension follows the form's own 2D/3D
  * toggle); `ratio` renders as a pair, "m : n"; `number` renders as one box
- * and, unlike the other two kinds, is optional — for solvers built around
- * "fill in what you know" (e.g. a right triangle solved from any two of
- * a, b, c, A, B) rather than one fixed set of required values.
+ * and, like the other two kinds, is required — unless `optional` is set,
+ * for solvers built around "fill in what you know" (e.g. a right triangle
+ * solved from any two of a, b, c, A, B) rather than one fixed set of
+ * required values. A method mixing optional fields needs only enough of
+ * them filled, not all — see StructuredInputForm.
  */
 export interface FieldSchema {
   id: string;
   label: string;
   kind: 'point' | 'ratio' | 'number';
+  optional?: boolean;
 }
 
 export interface Method {

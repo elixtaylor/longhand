@@ -14,11 +14,10 @@ function blank(field: FieldSchema): string[] {
  * Submitting serializes the values into the same canonical string `solve`
  * already parses for this method — see `Method.serialize`.
  *
- * `point`/`ratio` fields are all required, same as ever. `number` fields are
- * individually optional — for a solver built around "fill in what you know"
- * (e.g. a right triangle solved from any two of a, b, c, A, B) rather than
- * one fixed set of required values — so submitting needs only enough of them
- * filled, not all.
+ * Every field is required unless marked `optional` — for a solver built
+ * around "fill in what you know" (e.g. a right triangle solved from any two
+ * of a, b, c, A, B) rather than one fixed set of required values, where
+ * submitting needs only enough of them filled, not all.
  */
 export function StructuredInputForm({
   method,
@@ -29,7 +28,7 @@ export function StructuredInputForm({
 }) {
   const fields = method.fields ?? [];
   const hasPoint = fields.some((f) => f.kind === 'point');
-  const hasOptional = fields.some((f) => f.kind === 'number');
+  const hasOptional = fields.some((f) => f.optional);
   // Specialist's own vector work is mostly 3D — 2D is the one click away.
   const [dims, setDims] = useState<Dims>(3);
   const [values, setValues] = useState<Record<string, string[]>>(() =>
@@ -63,7 +62,7 @@ export function StructuredInputForm({
   let complete = fields.length > 0;
   for (const f of fields) {
     const comps = values[f.id].slice(0, widthFor(f));
-    if (f.kind === 'number') {
+    if (f.kind === 'number' && f.optional) {
       // Blank is a value not given, not a reason to disable submitting.
       const raw = (comps[0] ?? '').trim();
       if (raw === '') {
@@ -79,8 +78,8 @@ export function StructuredInputForm({
     if (comps.some((s) => s.trim() === '') || nums.some((n) => !Number.isFinite(n))) complete = false;
     parsed[f.id] = nums;
   }
-  // "Fill in what you know" needs enough, not all of them.
-  if (hasOptional && !fields.some((f) => f.kind === 'number' && parsed[f.id].length > 0)) {
+  // "Fill in what you know" needs enough of the optional fields, not all.
+  if (hasOptional && !fields.some((f) => f.optional && parsed[f.id].length > 0)) {
     complete = false;
   }
 
