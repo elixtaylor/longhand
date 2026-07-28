@@ -35,10 +35,30 @@ export const probabilitySolver: Solver = {
   blurb: 'Single events, complements, unions and conditional probability.',
   placeholder: 'e.g.  3 out of 8   or   P(A)=0.4, P(B)=0.3 union',
   methods: [
-    { id: 'single', name: 'Single event', blurb: 'Favourable outcomes over total outcomes, plus the complement.' },
-    { id: 'union', name: 'Union (or)', blurb: 'P(A∪B) = P(A) + P(B) − P(A∩B) — the addition rule.' },
-    { id: 'intersection', name: 'Intersection (and)', blurb: 'P(A∩B) = P(A)×P(B) for independent events.' },
-    { id: 'conditional', name: 'Conditional', blurb: 'P(A|B) = P(A∩B) / P(B) — probability given something already happened.' },
+    {
+      id: 'single',
+      name: 'Single event',
+      blurb: 'Favourable outcomes over total outcomes, plus the complement.',
+      opForm: 'probability',
+    },
+    {
+      id: 'union',
+      name: 'Union (or)',
+      blurb: 'P(A∪B) = P(A) + P(B) − P(A∩B) — the addition rule.',
+      opForm: 'probability',
+    },
+    {
+      id: 'intersection',
+      name: 'Intersection (and)',
+      blurb: 'P(A∩B) = P(A)×P(B) for independent events.',
+      opForm: 'probability',
+    },
+    {
+      id: 'conditional',
+      name: 'Conditional',
+      blurb: 'P(A|B) = P(A∩B) / P(B) — probability given something already happened.',
+      opForm: 'probability',
+    },
   ],
   defaultMethodId: 'single',
   detect(input) {

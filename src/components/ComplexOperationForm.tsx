@@ -44,7 +44,17 @@ function serialize(op: CxOp, a: { re: number; im: number }, b: { re: number; im:
  * complex number is always exactly a re/im pair, unlike a vector, so there's
  * no dimension toggle here.
  */
-export function ComplexOperationForm({ onSubmit }: { onSubmit: (serialized: string) => void }) {
+export function ComplexOperationForm({
+  onSubmit,
+  onOperationChange,
+}: {
+  onSubmit: (serialized: string) => void;
+  /** The solver's two methods (rectangular/polar) both render this same
+   * form, but the tab highlighted (and its blurb) should still track which
+   * family the pick belongs to, rather than staying wherever it was when
+   * this form was opened. */
+  onOperationChange?: (methodId: 'rectangular' | 'polar') => void;
+}) {
   const [op, setOp] = useState<CxOp>('+');
   const [a, setA] = useState(['', '']);
   const [b, setB] = useState(['', '']);
@@ -116,7 +126,15 @@ export function ComplexOperationForm({ onSubmit }: { onSubmit: (serialized: stri
     <form className="structured-form" onSubmit={submit}>
       <div className="op-picker" role="radiogroup" aria-label="Operation">
         {OPS.map((o) => (
-          <button key={o.id} type="button" aria-pressed={op === o.id} onClick={() => setOp(o.id)}>
+          <button
+            key={o.id}
+            type="button"
+            aria-pressed={op === o.id}
+            onClick={() => {
+              setOp(o.id);
+              onOperationChange?.(o.id === 'polar' ? 'polar' : 'rectangular');
+            }}
+          >
             {o.label}
           </button>
         ))}

@@ -18,6 +18,7 @@ import { ProblemInput } from './ProblemInput';
 import { StructuredInputForm } from './StructuredInputForm';
 import { VectorOperationForm } from './VectorOperationForm';
 import { ComplexOperationForm } from './ComplexOperationForm';
+import { ProbabilityOperationForm } from './ProbabilityOperationForm';
 import { StepList } from './StepList';
 import { CompareMethods } from './CompareMethods';
 import { Sidebar } from './Sidebar';
@@ -304,6 +305,19 @@ export function Workspace({
             />
           ) : pin && activeMethod?.opForm === 'complex' ? (
             <ComplexOperationForm
+              onSubmit={(serialized) => {
+                setInput(serialized);
+                commit(serialized, pin);
+              }}
+              onOperationChange={(id) => {
+                if (id !== methodId) chooseMethod(id);
+              }}
+            />
+          ) : pin && activeMethod?.opForm === 'probability' ? (
+            <ProbabilityOperationForm
+              onOperationChange={(id) => {
+                if (id !== methodId) chooseMethod(id);
+              }}
               onSubmit={(serialized) => {
                 setInput(serialized);
                 commit(serialized, pin);

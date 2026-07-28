@@ -78,4 +78,15 @@ export const CALCULATORS: CalculatorGroup[] = [
       },
     ],
   },
+  {
+    heading: 'Probability',
+    items: [
+      {
+        solverId: 'probability',
+        methodId: 'single',
+        label: 'Probability',
+        blurb: 'Single event, union, intersection or conditional probability.',
+      },
+    ],
+  },
 ];
