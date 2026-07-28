@@ -80,6 +80,15 @@ export interface Method {
    */
   fields?: FieldSchema[];
   serialize?: (values: Record<string, number[]>) => string;
+  /**
+   * Present on a method rendered by a bespoke "pick an operation, then fill
+   * in the numbers" form instead of StructuredInputForm's fixed fields —
+   * for a solver whose free-text grammar picks between several operations
+   * first (e.g. Vectors' component form: add/subtract/dot/cross/…), where
+   * which fields are needed depends on that choice rather than being fixed
+   * per method. See VectorOperationForm.
+   */
+  opForm?: 'vector';
 }
 
 export type SolveResult =

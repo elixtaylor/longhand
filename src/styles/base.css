@@ -358,6 +358,30 @@ button {
 .structured-form .diagram {
   margin: 0 auto var(--sp-2);
 }
+/* A solver whose free-text grammar picks between several operations first
+   (see VectorOperationForm) rather than one fixed set of fields. */
+.op-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.op-picker button {
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--bg-tint);
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+}
+.op-picker button[aria-pressed='true'] {
+  background: var(--surface-raised);
+  color: var(--accent);
+  border-color: var(--line);
+  box-shadow: var(--shadow-1);
+}
+
 .dims-toggle {
   display: inline-flex;
   align-self: flex-start;

@@ -104,7 +104,12 @@ export const vectorsSolver: Solver = {
   blurb: 'Add, scale, dot and cross products, magnitude and angles.',
   placeholder: 'e.g.  (3,4) + (1,2)   or   (1,2,3) . (4,5,6)',
   methods: [
-    { id: 'component', name: 'Component form', blurb: 'Work with the components directly — the everyday method.' },
+    {
+      id: 'component',
+      name: 'Component form',
+      blurb: 'Work with the components directly — the everyday method.',
+      opForm: 'vector',
+    },
     {
       id: 'collinear',
       name: 'Collinearity',

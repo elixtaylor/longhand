@@ -16,6 +16,7 @@ import {
 import { TopicMethodPicker } from './TopicMethodPicker';
 import { ProblemInput } from './ProblemInput';
 import { StructuredInputForm } from './StructuredInputForm';
+import { VectorOperationForm } from './VectorOperationForm';
 import { StepList } from './StepList';
 import { CompareMethods } from './CompareMethods';
 import { Sidebar } from './Sidebar';
@@ -181,7 +182,7 @@ export function Workspace({
     const nextMethod = solver.methods.find((m) => m.id === id);
     setMethodId(id);
     setPin({ solverId, methodId: id });
-    if (prevMethod?.fields || nextMethod?.fields) {
+    if (prevMethod?.fields || nextMethod?.fields || prevMethod?.opForm || nextMethod?.opForm) {
       setInput('');
       setWorked(null);
       hasSolved.current = false;
@@ -279,6 +280,13 @@ export function Workspace({
               // for why an effect-based reset isn't safe here.
               key={structuredMethod.fields!.map((f) => f.id).join('|')}
               method={structuredMethod}
+              onSubmit={(serialized) => {
+                setInput(serialized);
+                commit(serialized, pin);
+              }}
+            />
+          ) : activeMethod?.opForm === 'vector' ? (
+            <VectorOperationForm
               onSubmit={(serialized) => {
                 setInput(serialized);
                 commit(serialized, pin);
@@ -433,8 +441,9 @@ function SolutionView({
   // its tabs and prompt have to render without a result to key off. Only
   // topics that actually offer one need this: everywhere else, the method
   // picker stays exactly where it's always been, alongside solved working.
-  const hasStructuredMethod = solver.methods.some((m) => m.fields);
-  const structured = !!solver.methods.find((m) => m.id === methodId)?.fields;
+  const hasStructuredMethod = solver.methods.some((m) => m.fields || m.opForm);
+  const currentMethod = solver.methods.find((m) => m.id === methodId);
+  const structured = !!(currentMethod?.fields || currentMethod?.opForm);
 
   const methodPicker = solver.methods.length > 1 && (
     <div className="solution-methods">
