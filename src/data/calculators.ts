@@ -67,4 +67,15 @@ export const CALCULATORS: CalculatorGroup[] = [
       { solverId: 'counting', methodId: 'factorial' },
     ],
   },
+  {
+    heading: 'Complex numbers',
+    items: [
+      {
+        solverId: 'complex',
+        methodId: 'rectangular',
+        label: 'Complex numbers',
+        blurb: 'Add, subtract, multiply, divide, modulus, conjugate or polar form.',
+      },
+    ],
+  },
 ];

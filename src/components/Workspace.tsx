@@ -17,6 +17,7 @@ import { TopicMethodPicker } from './TopicMethodPicker';
 import { ProblemInput } from './ProblemInput';
 import { StructuredInputForm } from './StructuredInputForm';
 import { VectorOperationForm } from './VectorOperationForm';
+import { ComplexOperationForm } from './ComplexOperationForm';
 import { StepList } from './StepList';
 import { CompareMethods } from './CompareMethods';
 import { Sidebar } from './Sidebar';
@@ -296,6 +297,13 @@ export function Workspace({
             />
           ) : pin && activeMethod?.opForm === 'vector' ? (
             <VectorOperationForm
+              onSubmit={(serialized) => {
+                setInput(serialized);
+                commit(serialized, pin);
+              }}
+            />
+          ) : pin && activeMethod?.opForm === 'complex' ? (
+            <ComplexOperationForm
               onSubmit={(serialized) => {
                 setInput(serialized);
                 commit(serialized, pin);

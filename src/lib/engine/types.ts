@@ -86,9 +86,9 @@ export interface Method {
    * for a solver whose free-text grammar picks between several operations
    * first (e.g. Vectors' component form: add/subtract/dot/cross/…), where
    * which fields are needed depends on that choice rather than being fixed
-   * per method. See VectorOperationForm.
+   * per method. See VectorOperationForm/ComplexOperationForm.
    */
-  opForm?: 'vector';
+  opForm?: 'vector' | 'complex';
 }
 
 export type SolveResult =

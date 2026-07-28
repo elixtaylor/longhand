@@ -86,8 +86,18 @@ export const complexSolver: Solver = {
   blurb: 'Arithmetic, conjugates, modulus, argument and polar form.',
   placeholder: 'e.g.  (3+4i)*(1-2i)   or   polar 3+4i',
   methods: [
-    { id: 'rectangular', name: 'Rectangular form', blurb: 'Work in a + bi, using i² = −1 and the conjugate for division.' },
-    { id: 'polar', name: 'Polar form', blurb: 'Write as r cis θ with modulus and argument.' },
+    {
+      id: 'rectangular',
+      name: 'Rectangular form',
+      blurb: 'Work in a + bi, using i² = −1 and the conjugate for division.',
+      opForm: 'complex',
+    },
+    {
+      id: 'polar',
+      name: 'Polar form',
+      blurb: 'Write as r cis θ with modulus and argument.',
+      opForm: 'complex',
+    },
   ],
   defaultMethodId: 'rectangular',
   detect(input) {
