@@ -1,5 +1,5 @@
 import { fmt, rad2deg } from '../../lib/math/num';
-import type { Solver, Step, SolveResult } from '../../lib/engine/types';
+import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
 
 /**
  * Vectors in the plane and in three dimensions
@@ -12,6 +12,9 @@ function vecTex(v: Vec, dp = 4): string {
 }
 function colTex(v: Vec, dp = 4): string {
   return `\\begin{pmatrix} ${v.map((x) => fmt(x, dp)).join(' \\\\ ')} \\end{pmatrix}`;
+}
+function pointTex(label: string, v: Vec, dp = 4): string {
+  return `${label}\\left(${v.map((x) => fmt(x, dp)).join(',\\, ')}\\right)`;
 }
 
 function parseVec(s: string): Vec {
@@ -26,10 +29,16 @@ function parseVec(s: string): Vec {
 const VEC = '\\(?\\[?<?\\s*-?\\d*\\.?\\d+\\s*(?:,\\s*-?\\d*\\.?\\d+\\s*){1,2}\\)?\\]?>?';
 
 interface Problem {
-  op: 'add' | 'sub' | 'scale' | 'dot' | 'cross' | 'magnitude' | 'unit' | 'angle';
+  op: 'add' | 'sub' | 'scale' | 'dot' | 'cross' | 'magnitude' | 'unit' | 'angle' | 'collinear' | 'ratio';
   a: Vec;
   b?: Vec;
+  /** Third point, for collinear. */
+  c?: Vec;
+  /** Scalar, for scale. */
   k?: number;
+  /** Ratio parts m:n, for ratio (P divides AB so AP:PB = m:n). */
+  m?: number;
+  n?: number;
 }
 
 function parse(input: string): Problem {
@@ -43,6 +52,22 @@ function parse(input: string): Problem {
 
   const angle = s.match(new RegExp(`^angle\\s*(?:between\\s*)?(${VEC})\\s*(?:and|,)?\\s*(${VEC})$`, 'i'));
   if (angle) return { op: 'angle', a: parseVec(angle[1]), b: parseVec(angle[2]) };
+
+  const collinear = s.match(new RegExp(`^collinear\\s+(${VEC})\\s+(${VEC})\\s+(${VEC})$`, 'i'));
+  if (collinear) {
+    return { op: 'collinear', a: parseVec(collinear[1]), b: parseVec(collinear[2]), c: parseVec(collinear[3]) };
+  }
+
+  const ratio = s.match(new RegExp(`^ratio\\s+(${VEC})\\s+(${VEC})\\s+(-?\\d+)\\s*:\\s*(-?\\d+)$`, 'i'));
+  if (ratio) {
+    return {
+      op: 'ratio',
+      a: parseVec(ratio[1]),
+      b: parseVec(ratio[2]),
+      m: Number(ratio[3]),
+      n: Number(ratio[4]),
+    };
+  }
 
   const scale = s.match(new RegExp(`^(-?\\d*\\.?\\d+)\\s*[*×]?\\s*(${VEC})$`));
   if (scale) return { op: 'scale', a: parseVec(scale[2]), k: Number(scale[1]) };
@@ -61,6 +86,17 @@ function parse(input: string): Problem {
 const dot = (a: Vec, b: Vec) => a.reduce((s, x, i) => s + x * b[i], 0);
 const mag = (a: Vec) => Math.sqrt(dot(a, a));
 
+const POINT_FIELDS_3: FieldSchema[] = [
+  { id: 'a', label: 'Point A', kind: 'point' },
+  { id: 'b', label: 'Point B', kind: 'point' },
+  { id: 'c', label: 'Point C', kind: 'point' },
+];
+const RATIO_FIELDS: FieldSchema[] = [
+  { id: 'a', label: 'Point A', kind: 'point' },
+  { id: 'b', label: 'Point B', kind: 'point' },
+  { id: 'ratio', label: 'Ratio m : n', kind: 'ratio' },
+];
+
 export const vectorsSolver: Solver = {
   id: 'vectors',
   title: 'Vectors',
@@ -69,6 +105,20 @@ export const vectorsSolver: Solver = {
   placeholder: 'e.g.  (3,4) + (1,2)   or   (1,2,3) . (4,5,6)',
   methods: [
     { id: 'component', name: 'Component form', blurb: 'Work with the components directly — the everyday method.' },
+    {
+      id: 'collinear',
+      name: 'Collinearity',
+      blurb: 'Test whether three points all lie on one straight line.',
+      fields: POINT_FIELDS_3,
+      serialize: (v) => `collinear (${v.a.join(',')}) (${v.b.join(',')}) (${v.c.join(',')})`,
+    },
+    {
+      id: 'ratio',
+      name: 'Ratio of division',
+      blurb: 'Find the point that divides a segment AB in a given ratio.',
+      fields: RATIO_FIELDS,
+      serialize: (v) => `ratio (${v.a.join(',')}) (${v.b.join(',')}) ${v.ratio[0]}:${v.ratio[1]}`,
+    },
   ],
   defaultMethodId: 'component',
   detect(input) {
@@ -79,12 +129,28 @@ export const vectorsSolver: Solver = {
       return 0;
     }
   },
-  solve(input): SolveResult {
+  solve(input, methodId): SolveResult {
     let p: Problem;
     try {
       p = parse(input);
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : 'Could not read those vectors.' };
+    }
+    // Each method owns a disjoint set of ops — collinear/ratio input isn't a
+    // wrong answer under 'component', it's simply not what that method
+    // does. Without this, every method "succeeds" identically on any input
+    // that parses at all, and distinctMethods (which probes each method id
+    // against the same text to see whether they actually differ) collapses
+    // all three into one, silently switching back to Component form the
+    // moment a structured form's own submission is fingerprinted against it.
+    if (methodId === 'collinear' && p.op !== 'collinear') {
+      return { ok: false, error: 'Enter three points to test for collinearity.' };
+    }
+    if (methodId === 'ratio' && p.op !== 'ratio') {
+      return { ok: false, error: 'Enter two points and a ratio.' };
+    }
+    if (methodId === 'component' && (p.op === 'collinear' || p.op === 'ratio')) {
+      return { ok: false, error: 'Use the Collinearity or Ratio of division method for that.' };
     }
     const { a, b, k } = p;
     if (b && a.length !== b.length) {
@@ -217,6 +283,110 @@ export const vectorsSolver: Solver = {
             { note: 'Substitute and take the inverse cosine.', latex: `\\theta = \\cos^{-1}\\!\\left(\\dfrac{${fmt(d)}}{${fmt(ma * mb, 4)}}\\right) = ${fmt(deg, 2)}^{\\circ}`, annotation: 'angle between' },
           ],
           answerLatex: `\\theta = ${fmt(deg, 2)}^{\\circ}`,
+        },
+      };
+    }
+
+    if (p.op === 'collinear') {
+      const [A, B, C] = [a, b!, p.c!];
+      if (![B, C].every((v) => v.length === A.length)) {
+        return { ok: false, error: 'All three points need the same number of components.' };
+      }
+      const ab = B.map((x, i) => x - A[i]);
+      const ac = C.map((x, i) => x - A[i]);
+      const EPS = 1e-9;
+      const pivot = ab.findIndex((x) => Math.abs(x) > EPS);
+      if (pivot === -1) {
+        return { ok: false, error: 'A and B must be different points to test collinearity.' };
+      }
+      const k = ac[pivot] / ab[pivot];
+      const collinear = ac.every((x, j) => Math.abs(x - k * ab[j]) < EPS);
+      const steps: Step[] = [
+        {
+          note: 'If three points are collinear, the vectors between them all point along the same line. Find two vectors that start from the same point, A.',
+          latex: `\\vec{AB} = B - A, \\quad \\vec{AC} = C - A`,
+        },
+        {
+          note: 'Substitute the coordinates.',
+          latex: `\\vec{AB} = ${colTex(B)} - ${colTex(A)}, \\quad \\vec{AC} = ${colTex(C)} - ${colTex(A)}`,
+        },
+        {
+          note: 'Work out each one.',
+          latex: `\\vec{AB} = ${colTex(ab)}, \\quad \\vec{AC} = ${colTex(ac)}`,
+        },
+        {
+          note: 'If A, B, C are collinear, AC is a scalar multiple of AB. Try matching one component to find that scalar.',
+          latex: `k = \\dfrac{${fmt(ac[pivot])}}{${fmt(ab[pivot])}} = ${fmt(k, 4)}`,
+          annotation: `component ${pivot + 1}`,
+        },
+      ];
+      if (collinear) {
+        steps.push({
+          note: 'Check that the same k works for every other component too — it does.',
+          latex: `\\vec{AC} = ${fmt(k, 4)}\\,\\vec{AB}`,
+          annotation: 'true for every component',
+        });
+        steps.push({
+          note: 'AB and AC point along the same line through A, so the three points are collinear.',
+          latex: `A,\\ B,\\ C\\ \\text{are collinear}`,
+          annotation: 'collinear',
+        });
+      } else {
+        steps.push({
+          note: 'Check the other components — at least one does not match, so no single k works for all of them.',
+          latex: `\\vec{AC} \\neq ${fmt(k, 4)}\\,\\vec{AB}`,
+          annotation: 'fails for another component',
+        });
+        steps.push({
+          note: 'AB and AC are not parallel, so the three points do not all lie on one line.',
+          latex: `A,\\ B,\\ C\\ \\text{are not collinear}`,
+          annotation: 'not collinear',
+        });
+      }
+      return {
+        ok: true,
+        solution: {
+          headline: `Test whether $${pointTex('A', A)}, ${pointTex('B', B)}, ${pointTex('C', C)}$ are collinear`,
+          methodName: 'Collinearity',
+          steps,
+          answerLatex: collinear ? `A,\\ B,\\ C\\ \\text{are collinear}` : `A,\\ B,\\ C\\ \\text{are not collinear}`,
+        },
+      };
+    }
+
+    if (p.op === 'ratio') {
+      const [A, B] = [a, b!];
+      const { m, n } = p;
+      if (m === undefined || n === undefined || !Number.isFinite(m) || !Number.isFinite(n) || m <= 0 || n <= 0) {
+        return { ok: false, error: 'Both parts of the ratio must be positive numbers.' };
+      }
+      const numerator = A.map((x, i) => n * x + m * B[i]);
+      const P = numerator.map((x) => x / (m + n));
+      return {
+        ok: true,
+        solution: {
+          headline: `Find the point $P$ dividing $AB$ in the ratio $${fmt(m)}:${fmt(n)}$`,
+          methodName: 'Ratio of division',
+          steps: [
+            {
+              note: `The section formula for the point P dividing AB internally so that AP : PB = ${fmt(m)} : ${fmt(n)}.`,
+              latex: `P = \\dfrac{n\\,A + m\\,B}{m + n}`,
+            },
+            {
+              note: 'Substitute the ratio and the two points.',
+              latex: `P = \\dfrac{${fmt(n)}${colTex(A)} + ${fmt(m)}${colTex(B)}}{${fmt(m)} + ${fmt(n)}}`,
+            },
+            {
+              note: 'Work out the numerator.',
+              latex: `P = \\dfrac{${colTex(numerator)}}{${fmt(m + n)}}`,
+            },
+            {
+              note: `Divide every component by ${fmt(m + n)}.`,
+              latex: `P = ${colTex(P)} = ${pointTex('P', P)}`,
+              annotation: 'point of division',
+            },
+          ],
+          answerLatex: pointTex('P', P),
         },
       };
     }

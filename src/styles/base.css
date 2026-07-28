@@ -346,6 +346,63 @@ button {
   padding: 0 2px;
 }
 
+/* Structured input form ---------------------------------------------------- */
+/* For methods better filled in than typed (a handful of named values, not
+   one free-text expression) — replaces ProblemInput in the left panel. See
+   StructuredInputForm. */
+.structured-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.structured-form .diagram {
+  margin: 0 auto var(--sp-2);
+}
+.dims-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-tint);
+  border-radius: var(--control-radius);
+}
+.dims-toggle button {
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  border-radius: calc(var(--control-radius) - 2px);
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+}
+.dims-toggle button[aria-pressed='true'] {
+  background: var(--surface-raised);
+  color: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.point-inputs,
+.ratio-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.num-input {
+  text-align: center;
+  padding: 10px 8px;
+}
+.point-inputs .num-input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ratio-inputs .num-input {
+  flex: 0 0 64px;
+}
+.ratio-colon {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink-3);
+}
+
 /* Buttons ----------------------------------------------------------------- */
 .btn-primary {
   display: inline-flex;

@@ -15,6 +15,7 @@ import {
 } from '../lib/history';
 import { TopicMethodPicker } from './TopicMethodPicker';
 import { ProblemInput } from './ProblemInput';
+import { StructuredInputForm } from './StructuredInputForm';
 import { StepList } from './StepList';
 import { CompareMethods } from './CompareMethods';
 import { ReferenceTabs } from './ReferenceTabs';
@@ -150,10 +151,23 @@ export function Workspace({
   /**
    * Choosing a method is a decision about *this* question, so it pins the
    * topic too — otherwise re-detection on the next keystroke would reset it.
+   *
+   * Switching to or from a structured-input method (see StructuredInputForm)
+   * clears the question instead of re-solving it: the free text and a
+   * form's serialized string are different vocabularies, so re-solving old
+   * text under the new method's grammar would just fail with a parse error
+   * that has nothing to do with what the student is about to fill in.
    */
   function chooseMethod(id: string) {
+    const prevMethod = solver.methods.find((m) => m.id === methodId);
+    const nextMethod = solver.methods.find((m) => m.id === id);
     setMethodId(id);
     setPin({ solverId, methodId: id });
+    if (prevMethod?.fields || nextMethod?.fields) {
+      setInput('');
+      setWorked(null);
+      hasSolved.current = false;
+    }
   }
 
   function loadImported(solverIdIn: string, methodIdIn: string, value: string) {
@@ -180,6 +194,10 @@ export function Workspace({
   }
 
   const solver = getSolver(solverId)!;
+  const activeMethod = solver.methods.find((m) => m.id === methodId);
+  // A method better filled in than typed (a handful of named values rather
+  // than one free-text expression) — see StructuredInputForm.
+  const structuredMethod = activeMethod?.fields ? activeMethod : null;
   // Only say we cannot read it when nothing has been worked out either —
   // otherwise a solved question could show its topic and "not sure what this
   // is" at the same time.
@@ -208,56 +226,66 @@ export function Workspace({
       <main className="worksheet">
       <aside className="controls">
         <section className="panel">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              commit(input, pin);
-            }}
-          >
-            <ProblemInput
-              value={input}
-              onChange={(v) => {
-                // A new question is a new question: stop forcing the topic and
-                // method that were chosen for the last one.
-                setInput(v);
-                setPin(null);
+          {structuredMethod ? (
+            <StructuredInputForm
+              method={structuredMethod}
+              onSubmit={(serialized) => {
+                setInput(serialized);
+                commit(serialized, pin);
               }}
-              placeholder="Ask in plain English — “area of a circle with radius 5”"
-              preview={reading}
             />
-
-            {reading && (
-              <p className="reading" role="status">
-                <span className="reading-label">Read as</span>
-                <code className="reading-text">{reading}</code>
-              </p>
-            )}
-
-            {/* Name the topics and nothing else. Once a question has been
-                worked, use what it actually turned out to be: live detection
-                only ever sees one topic, so on a split question it would name
-                whichever half it liked best. */}
-            {topics.length > 0 && (
-              <p className="detected" role="status">
-                <span className="detected-dot" aria-hidden="true" />
-                <strong>{topics.join(' → ')}</strong>
-              </p>
-            )}
-            {unknown && (
-              <p className="detected detected-unknown" role="status">
-                Not sure what this one is yet — try rewording it.
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="btn-primary"
-              style={{ marginTop: 'var(--sp-4)' }}
-              disabled={input.trim() === '' || (!detected && !pin)}
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                commit(input, pin);
+              }}
             >
-              Show the working
-            </button>
-          </form>
+              <ProblemInput
+                value={input}
+                onChange={(v) => {
+                  // A new question is a new question: stop forcing the topic and
+                  // method that were chosen for the last one.
+                  setInput(v);
+                  setPin(null);
+                }}
+                placeholder="Ask in plain English — “area of a circle with radius 5”"
+                preview={reading}
+              />
+
+              {reading && (
+                <p className="reading" role="status">
+                  <span className="reading-label">Read as</span>
+                  <code className="reading-text">{reading}</code>
+                </p>
+              )}
+
+              {/* Name the topics and nothing else. Once a question has been
+                  worked, use what it actually turned out to be: live detection
+                  only ever sees one topic, so on a split question it would name
+                  whichever half it liked best. */}
+              {topics.length > 0 && (
+                <p className="detected" role="status">
+                  <span className="detected-dot" aria-hidden="true" />
+                  <strong>{topics.join(' → ')}</strong>
+                </p>
+              )}
+              {unknown && (
+                <p className="detected detected-unknown" role="status">
+                  Not sure what this one is yet — try rewording it.
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ marginTop: 'var(--sp-4)' }}
+                disabled={input.trim() === '' || (!detected && !pin)}
+              >
+                Show the working
+              </button>
+            </form>
+          )}
         </section>
       </aside>
 
@@ -349,25 +377,94 @@ function SolutionView({
   methodId: string;
   onSelectMethod: (id: string) => void;
 }) {
+  const solver = getSolver(solverId)!;
+  // A structured method (see StructuredInputForm) is chosen from its tab
+  // before there's anything to solve, so — unlike the free-text case below —
+  // its tabs and prompt have to render without a result to key off. Only
+  // topics that actually offer one need this: everywhere else, the method
+  // picker stays exactly where it's always been, alongside solved working.
+  const hasStructuredMethod = solver.methods.some((m) => m.fields);
+  const structured = !!solver.methods.find((m) => m.id === methodId)?.fields;
+
+  const methodPicker = solver.methods.length > 1 && (
+    <div className="solution-methods">
+      <TopicMethodPicker
+        solverId={solverId}
+        input={input}
+        methodId={methodId}
+        onSelectMethod={onSelectMethod}
+        forceAll={hasStructuredMethod}
+      />
+    </div>
+  );
+
+  if (structured) {
+    return (
+      <div>
+        {result?.ok && (
+          <header className="solution-head">
+            <div>
+              <div className="solution-title">
+                <RichText text={result.solution.headline} />
+              </div>
+            </div>
+            {result.solution.answerLatex && (
+              <div className="answer-card">
+                <span className="answer-label">Answer</span>
+                <span className="answer-value">
+                  <TeX tex={result.solution.answerLatex} />
+                </span>
+              </div>
+            )}
+          </header>
+        )}
+        {methodPicker}
+        {result?.ok ? (
+          <StepList
+            solution={result.solution}
+            revealMode={revealMode}
+            showNotes={showNotes}
+            canCompare={canCompare}
+            onCompare={onCompare}
+            onCopyLink={onCopyLink}
+            copied={copied}
+          />
+        ) : (
+          <div className="empty-state">
+            <div className="empty-glyph">∴</div>
+            <h2>Fill in the values on the left</h2>
+            <p>{result && !result.ok ? result.error : 'Once every field has a number, press “Show the working”.'}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!result) {
     return (
-      <div className="empty-state">
-        <div className="empty-glyph">∴</div>
-        <h2>Your working will appear here</h2>
-        <p>
-          Type your problem and Longhand works out what topic it is, then shows every line —
-          worked out exactly, using the method you were taught.
-        </p>
+      <div>
+        {hasStructuredMethod && methodPicker}
+        <div className="empty-state">
+          <div className="empty-glyph">∴</div>
+          <h2>Your working will appear here</h2>
+          <p>
+            Type your problem and Longhand works out what topic it is, then shows every line —
+            worked out exactly, using the method you were taught.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!result.ok) {
     return (
-      <div className="empty-state">
-        <div className="empty-glyph">≠</div>
-        <h2>I couldn’t read that one</h2>
-        <p>{result.error}</p>
+      <div>
+        {hasStructuredMethod && methodPicker}
+        <div className="empty-state">
+          <div className="empty-glyph">≠</div>
+          <h2>I couldn’t read that one</h2>
+          <p>{result.error}</p>
+        </div>
       </div>
     );
   }
@@ -391,14 +488,7 @@ function SolutionView({
         )}
       </header>
 
-      <div className="solution-methods">
-        <TopicMethodPicker
-          solverId={solverId}
-          input={input}
-          methodId={methodId}
-          onSelectMethod={onSelectMethod}
-        />
-      </div>
+      {methodPicker}
 
       <StepList
         solution={solution}

@@ -62,6 +62,59 @@ describe('vectorsSolver', () => {
   });
 });
 
+describe('vectorsSolver — collinearity', () => {
+  it('confirms three collinear points in 2D', () => {
+    // (0,0), (1,2), (2,4) all lie on y = 2x
+    const s = sol(vectorsSolver, 'collinear (0,0) (1,2) (2,4)', 'collinear');
+    expect(s.answerLatex).toContain('collinear');
+    expect(s.answerLatex).not.toContain('not collinear');
+  });
+  it('rejects three non-collinear points in 2D', () => {
+    const s = sol(vectorsSolver, 'collinear (0,0) (1,2) (2,5)', 'collinear');
+    expect(s.answerLatex).toContain('not collinear');
+  });
+  it('confirms three collinear points in 3D', () => {
+    // (2,4,6) and (4,8,12) are both scalar multiples of (1,2,3)
+    const s = sol(vectorsSolver, 'collinear (1,2,3) (2,4,6) (4,8,12)', 'collinear');
+    expect(s.answerLatex).toContain('collinear');
+    expect(s.answerLatex).not.toContain('not collinear');
+  });
+  it('rejects three non-collinear points in 3D', () => {
+    const s = sol(vectorsSolver, 'collinear (1,2,3) (2,4,6) (4,8,13)', 'collinear');
+    expect(s.answerLatex).toContain('not collinear');
+  });
+  it('is collinear when C coincides with A (degenerate but valid)', () => {
+    const s = sol(vectorsSolver, 'collinear (1,1) (3,5) (1,1)', 'collinear');
+    expect(s.answerLatex).toContain('collinear');
+    expect(s.answerLatex).not.toContain('not collinear');
+  });
+  it('errors when A and B coincide — no direction to test against', () => {
+    const r = vectorsSolver.solve('collinear (1,1) (1,1) (2,2)', 'collinear');
+    expect(r.ok).toBe(false);
+  });
+});
+
+describe('vectorsSolver — ratio of division', () => {
+  it('finds the midpoint for a 1:1 ratio', () => {
+    const s = sol(vectorsSolver, 'ratio (0,0) (4,6) 1:1', 'ratio');
+    expect(s.answerLatex).toContain('2');
+    expect(s.answerLatex).toContain('3');
+  });
+  it('divides a segment in a 2:3 ratio', () => {
+    // P = (3·A + 2·B)/5 = (3·(0,0) + 2·(5,10))/5 = (2,4)
+    const s = sol(vectorsSolver, 'ratio (0,0) (5,10) 2:3', 'ratio');
+    expect(s.answerLatex).toContain('2,\\, 4');
+  });
+  it('works in three dimensions', () => {
+    // P = (4·A + 1·B)/5 = (4·(0,0,0) + (10,10,10))/5 = (2,2,2)
+    const s = sol(vectorsSolver, 'ratio (0,0,0) (10,10,10) 1:4', 'ratio');
+    expect(s.answerLatex).toContain('2,\\, 2,\\, 2');
+  });
+  it('rejects a zero ratio part', () => {
+    expect(vectorsSolver.solve('ratio (0,0) (4,6) 0:1', 'ratio').ok).toBe(false);
+  });
+});
+
 describe('matricesSolver', () => {
   it('multiplies two 2×2 matrices', () => {
     // [[1,2],[3,4]]·[[5,6],[7,8]] = [[19,22],[43,50]]

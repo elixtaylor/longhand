@@ -14,14 +14,28 @@ export function TopicMethodPicker({
   input,
   methodId,
   onSelectMethod,
+  forceAll,
 }: {
   solverId: string;
   input: string;
   methodId: string;
   onSelectMethod: (id: string) => void;
+  /**
+   * Skip the distinct-working filter and always offer every method. For a
+   * solver where a method can be a structured form (see StructuredInputForm)
+   * rather than a technique choice, its methods parse disjoint, mutually
+   * exclusive input — every other method "fails" on whichever one just
+   * solved, by design, not because it doesn't apply. Filtering on that
+   * would hide the very tabs a student needs to switch to a different kind
+   * of question.
+   */
+  forceAll?: boolean;
 }) {
   const solver = getSolver(solverId)!;
-  const methods = useMemo(() => distinctMethods(solver, input), [solver, input]);
+  const methods = useMemo(
+    () => (forceAll ? solver.methods : distinctMethods(solver, input)),
+    [solver, input, forceAll],
+  );
 
   // If the selected method was folded into another, move the selection to the
   // one still on screen rather than leaving nothing highlighted.

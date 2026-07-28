@@ -46,11 +46,34 @@ export interface Solution {
   answerLatex?: string;
 }
 
+/**
+ * One input a structured-input method asks for. `point` renders as 2-3
+ * boxed numbers sharing a label (dimension follows the form's own 2D/3D
+ * toggle); `ratio` renders as a pair, "m : n".
+ */
+export interface FieldSchema {
+  id: string;
+  label: string;
+  kind: 'point' | 'ratio';
+}
+
 export interface Method {
   id: string;
   name: string;
   /** One line on when/why you'd use this method. */
   blurb: string;
+  /**
+   * Present on methods better filled in than typed — a handful of named
+   * values (points, a ratio) rather than one free-text expression. When
+   * set, the UI shows a form built from these fields instead of the
+   * ordinary textbox. `serialize` turns the filled values (one number[]
+   * per field id — a point's components, or a ratio's [m, n]) into the
+   * same canonical string `solve` already parses for this method, so the
+   * form is just a friendlier way to build that string, not a second
+   * input path through the engine.
+   */
+  fields?: FieldSchema[];
+  serialize?: (values: Record<string, number[]>) => string;
 }
 
 export type SolveResult =
