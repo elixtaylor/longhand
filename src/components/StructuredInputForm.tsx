@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FieldSchema, Method } from '../lib/engine/types';
 import { MethodDiagram } from './MethodDiagram';
 
@@ -18,6 +18,16 @@ function blank(field: FieldSchema): string[] {
  * around "fill in what you know" (e.g. a right triangle solved from any two
  * of a, b, c, A, B) rather than one fixed set of required values, where
  * submitting needs only enough of them filled, not all.
+ *
+ * The caller must remount this (via a `key` derived from the field ids —
+ * see Workspace) whenever the field *set* changes, e.g. switching Vectors'
+ * Collinearity to Ratio of division. Resetting `values` in an effect instead
+ * looks equivalent but isn't: the render in between the method-prop
+ * changing and the effect running still has the old values keyed by the old
+ * field ids, so `values[newFieldId]` is undefined for one render — enough to
+ * crash. A method whose tabs share one field set (a right triangle's
+ * Pythagoras and SOH CAH TOA) keeps the same key, so switching between them
+ * never remounts and never loses what was typed.
  */
 export function StructuredInputForm({
   method,
@@ -28,23 +38,17 @@ export function StructuredInputForm({
 }) {
   const fields = method.fields ?? [];
   const hasPoint = fields.some((f) => f.kind === 'point');
-  const hasOptional = fields.some((f) => f.optional);
+  // A method can mix required and optional fields (e.g. a confidence
+  // interval needs the sample stats but defaults the confidence level when
+  // left blank) — "give me at least one" only makes sense when *nothing*
+  // else is required, otherwise the required fields already guarantee
+  // there's something to solve.
+  const allOptional = fields.length > 0 && fields.every((f) => f.kind === 'number' && f.optional);
   // Specialist's own vector work is mostly 3D — 2D is the one click away.
   const [dims, setDims] = useState<Dims>(3);
   const [values, setValues] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(fields.map((f) => [f.id, blank(f)])),
   );
-
-  // A method's own fields never change shape, but switching to a *different*
-  // method can — e.g. Vectors' Collinearity vs Ratio of division. Reset only
-  // when the set of field ids actually changes, not on every switch: a right
-  // triangle's Pythagoras and SOH CAH TOA tabs share the same five fields, and
-  // switching between them should not throw away what was just typed.
-  const fieldKey = fields.map((f) => f.id).join('|');
-  useEffect(() => {
-    setValues(Object.fromEntries(fields.map((f) => [f.id, blank(f)])));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldKey]);
 
   function widthFor(field: FieldSchema): number {
     return field.kind === 'ratio' ? 2 : field.kind === 'number' ? 1 : dims;
@@ -78,8 +82,10 @@ export function StructuredInputForm({
     if (comps.some((s) => s.trim() === '') || nums.some((n) => !Number.isFinite(n))) complete = false;
     parsed[f.id] = nums;
   }
-  // "Fill in what you know" needs enough of the optional fields, not all.
-  if (hasOptional && !fields.some((f) => f.optional && parsed[f.id].length > 0)) {
+  // "Fill in what you know" needs enough of the optional fields, not all —
+  // but only when every field is optional; a required field already
+  // guarantees there's something to solve.
+  if (allOptional && !fields.some((f) => parsed[f.id].length > 0)) {
     complete = false;
   }
 
@@ -107,7 +113,7 @@ export function StructuredInputForm({
         </div>
       )}
 
-      {hasOptional && <p className="setting-hint">Fill in whatever you know — the rest gets worked out.</p>}
+      {allOptional && <p className="setting-hint">Fill in whatever you know — the rest gets worked out.</p>}
 
       {fixedFields.map((f) => (
         <div className="structured-field" key={f.id}>

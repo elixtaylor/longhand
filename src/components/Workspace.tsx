@@ -274,6 +274,10 @@ export function Workspace({
         <section className="panel">
           {structuredMethod ? (
             <StructuredInputForm
+              // Remount whenever the field *set* changes (not on every
+              // method switch) — see StructuredInputForm's own doc comment
+              // for why an effect-based reset isn't safe here.
+              key={structuredMethod.fields!.map((f) => f.id).join('|')}
               method={structuredMethod}
               onSubmit={(serialized) => {
                 setInput(serialized);
