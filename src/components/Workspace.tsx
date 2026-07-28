@@ -368,7 +368,7 @@ export function Workspace({
               <button
                 type="submit"
                 className="btn-primary"
-                style={{ marginTop: 'var(--sp-4)' }}
+                style={{ marginTop: 'var(--sp-3)' }}
                 disabled={input.trim() === '' || (!detected && !pin)}
               >
                 Show the working

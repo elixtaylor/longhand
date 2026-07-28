@@ -104,7 +104,7 @@ button {
    needed for that alone. */
 .worksheet {
   width: 100%;
-  max-width: 760px;
+  max-width: 860px;
   margin: 0 auto;
   padding: var(--sp-6);
   display: flex;
@@ -133,7 +133,7 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
-  padding: var(--sp-5);
+  padding: var(--sp-4);
 }
 .panel-title {
   font-family: var(--font-ui);
@@ -176,7 +176,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-2);
 }
 .palette-key {
   min-width: 38px;
@@ -196,9 +196,9 @@ button {
 
 /* Live preview ------------------------------------------------------------ */
 .preview {
-  margin-top: var(--sp-4);
-  padding: var(--sp-4);
-  min-height: 62px;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  min-height: 48px;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -241,8 +241,8 @@ button {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: var(--sp-3);
-  padding: 10px 12px;
+  margin-top: var(--sp-2);
+  padding: 8px 12px;
   font-size: 0.9rem;
   color: var(--ink-2);
   background: var(--accent-soft);
@@ -268,7 +268,7 @@ button {
   display: flex;
   align-items: baseline;
   gap: var(--sp-2);
-  margin-top: var(--sp-3);
+  margin-top: var(--sp-2);
   padding: 8px 12px;
   background: var(--bg-tint);
   border-left: 2.5px solid var(--line-strong);
@@ -350,7 +350,7 @@ button {
 .structured-form {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
 }
 .structured-form .diagram {
   margin: 0 auto var(--sp-2);
