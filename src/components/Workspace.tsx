@@ -3,7 +3,7 @@ import { solvers, getSolver } from '../lib/engine/registry';
 import { interpret, runWorked, type Worked } from '../lib/engine/run';
 import { hasMethodChoice } from '../lib/engine/methods';
 import type { SolveResult, Solver } from '../lib/engine/types';
-import type { RevealMode } from '../lib/ui';
+import type { ThemeId, RevealMode, TextSize } from '../lib/ui';
 import {
   loadHistory,
   pushHistory,
@@ -18,7 +18,7 @@ import { ProblemInput } from './ProblemInput';
 import { StructuredInputForm } from './StructuredInputForm';
 import { StepList } from './StepList';
 import { CompareMethods } from './CompareMethods';
-import { ReferenceTabs } from './ReferenceTabs';
+import { Sidebar } from './Sidebar';
 import { PartedSolution } from './PartedSolution';
 import { TeX, RichText } from './TeX';
 
@@ -32,12 +32,30 @@ type Pin = { solverId: string; methodId: string } | null;
 
 export function Workspace({
   revealMode,
+  onRevealMode,
   showNotes,
   onShowNotes,
+  sidebarOpen,
+  onSidebarClose,
+  theme,
+  onTheme,
+  dark,
+  onDark,
+  textSize,
+  onTextSize,
 }: {
   revealMode: RevealMode;
+  onRevealMode: (m: RevealMode) => void;
   showNotes: boolean;
   onShowNotes: (v: boolean) => void;
+  sidebarOpen: boolean;
+  onSidebarClose: () => void;
+  theme: ThemeId;
+  onTheme: (t: ThemeId) => void;
+  dark: boolean;
+  onDark: (d: boolean) => void;
+  textSize: TextSize;
+  onTextSize: (s: TextSize) => void;
 }) {
   const shared = typeof window !== 'undefined' ? decodeShare(window.location.hash) : null;
 
@@ -177,10 +195,26 @@ export function Workspace({
     setPin(pinned);
     setInput(value);
     commit(value, pinned);
+    onSidebarClose();
   }
 
   function loadHistoryEntry(h: HistoryEntry) {
     loadImported(h.solverId, h.methodId, h.input);
+  }
+
+  /**
+   * A calculator picked from the sidebar directory lands on its form empty,
+   * same as switching to a structured method mid-question (see chooseMethod):
+   * there is nothing to solve yet, so this clears rather than re-solves.
+   */
+  function jumpToCalculator(solverIdIn: string, methodIdIn: string) {
+    setSolverId(solverIdIn);
+    setMethodId(methodIdIn);
+    setPin({ solverId: solverIdIn, methodId: methodIdIn });
+    setInput('');
+    setWorked(null);
+    hasSolved.current = false;
+    onSidebarClose();
   }
 
   async function copyLink() {
@@ -214,15 +248,27 @@ export function Workspace({
 
   return (
     <>
-      <ReferenceTabs
-        solver={solver}
-        onLoadImported={(p) =>
-          loadImported(p.solverId, p.methodId ?? getSolver(p.solverId)!.defaultMethodId, p.input)
-        }
-        history={history}
-        onLoadHistory={loadHistoryEntry}
-        onClearHistory={() => setHistory(clearHistory())}
-      />
+      {sidebarOpen && (
+        <Sidebar
+          onClose={onSidebarClose}
+          solver={solver}
+          onLoadImported={(p) =>
+            loadImported(p.solverId, p.methodId ?? getSolver(p.solverId)!.defaultMethodId, p.input)
+          }
+          history={history}
+          onLoadHistory={loadHistoryEntry}
+          onClearHistory={() => setHistory(clearHistory())}
+          onJumpToCalculator={jumpToCalculator}
+          theme={theme}
+          onTheme={onTheme}
+          revealMode={revealMode}
+          onRevealMode={onRevealMode}
+          dark={dark}
+          onDark={onDark}
+          textSize={textSize}
+          onTextSize={onTextSize}
+        />
+      )}
       <main className="worksheet">
       <aside className="controls">
         <section className="panel">

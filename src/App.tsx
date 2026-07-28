@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useLocalStorage } from './lib/useLocalStorage';
 import type { ThemeId, RevealMode, TextSize } from './lib/ui';
 import { Workspace } from './components/Workspace';
-import { SettingsPanel } from './components/SettingsPanel';
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'notebook');
@@ -16,7 +15,7 @@ export default function App() {
    * mid-question and put back.
    */
   const [showNotes, setShowNotes] = useLocalStorage<boolean>('longhand.notes', false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Apply the theme to <html> so the token sets in themes.css take effect.
   useEffect(() => {
@@ -25,7 +24,7 @@ export default function App() {
     document.documentElement.dataset.textSize = textSize;
   }, [theme, dark, textSize]);
 
-  // Keyboard shortcuts: "/" focuses the problem box, "," opens settings.
+  // Keyboard shortcuts: "/" focuses the problem box, "," opens the menu.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
@@ -36,7 +35,7 @@ export default function App() {
         document.getElementById('problem')?.focus();
       } else if (e.key === ',') {
         e.preventDefault();
-        setSettingsOpen(true);
+        setSidebarOpen(true);
       }
     }
     window.addEventListener('keydown', onKey);
@@ -54,11 +53,12 @@ export default function App() {
           <button
             type="button"
             className="icon-btn"
-            aria-label="Open settings"
+            aria-label="Open menu"
             aria-haspopup="dialog"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setSidebarOpen((o) => !o)}
           >
-            {/* gear glyph */}
+            {/* hamburger glyph — the drawer now holds calculators, formulas,
+                textbook questions and recent work, not just settings */}
             <svg
               width="20"
               height="20"
@@ -70,10 +70,7 @@ export default function App() {
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <circle cx="12" cy="12" r="3" />
-              <path
-                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
-              />
+              <path d="M3 6h18M3 12h18M3 18h18" />
             </svg>
           </button>
         </div>
@@ -81,23 +78,18 @@ export default function App() {
 
       <Workspace
         revealMode={revealMode}
+        onRevealMode={setRevealMode}
         showNotes={showNotes}
         onShowNotes={setShowNotes}
+        sidebarOpen={sidebarOpen}
+        onSidebarClose={() => setSidebarOpen(false)}
+        theme={theme}
+        onTheme={setTheme}
+        dark={dark}
+        onDark={setDark}
+        textSize={textSize}
+        onTextSize={setTextSize}
       />
-
-      {settingsOpen && (
-        <SettingsPanel
-          theme={theme}
-          onTheme={setTheme}
-          revealMode={revealMode}
-          onRevealMode={setRevealMode}
-          dark={dark}
-          onDark={setDark}
-          textSize={textSize}
-          onTextSize={setTextSize}
-          onClose={() => setSettingsOpen(false)}
-        />
-      )}
     </div>
   );
 }

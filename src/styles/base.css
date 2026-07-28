@@ -1003,70 +1003,9 @@ button {
   font-weight: 600;
 }
 
-/* Reference tabs ---------------------------------------------------------- */
-/* Formulas, examples and past work, kept one click from the top of the page
-   rather than a scroll below the working. */
-.reference {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 var(--sp-6);
-}
-.ref-strip {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: var(--sp-3) 0 0;
-}
-.ref-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
-  font-family: var(--font-ui);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--ink-3);
-  border: 1px solid transparent;
-  border-radius: var(--control-radius);
-  transition:
-    background 0.12s var(--ease),
-    color 0.12s var(--ease);
-}
-.ref-tab:hover {
-  color: var(--ink);
-  background: var(--bg-tint);
-}
-.ref-tab[aria-selected='true'] {
-  color: var(--accent);
-  background: var(--surface);
-  border-color: var(--line);
-  box-shadow: var(--shadow-1);
-}
-.ref-count {
-  font-size: 0.68rem;
-  font-variant-numeric: tabular-nums;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--bg-tint);
-  color: var(--ink-3);
-}
-.ref-tab[aria-selected='true'] .ref-count {
-  background: var(--accent-tint, var(--bg-tint));
-  color: var(--accent);
-}
-.ref-panel {
-  margin-top: var(--sp-3);
-  padding: var(--sp-5);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-1);
-  max-height: 42vh;
-  overflow-y: auto;
-}
+/* Sidebar content ---------------------------------------------------------- */
+/* Shared by several of the sidebar's accordion sections (see Sidebar):
+   formulas, textbook questions, recent work and the calculator directory. */
 .ref-panel-title {
   font-family: var(--font-ui);
   font-size: 0.74rem;
@@ -1076,8 +1015,16 @@ button {
   color: var(--ink-3);
   margin-bottom: var(--sp-3);
 }
-/* Wide panels can hold several columns, which is the point of moving them
-   out of a narrow sidebar. */
+.ref-count {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg-tint);
+  color: var(--ink-3);
+}
+/* One column at the sidebar's width — the grid still earns its keep should
+   this content ever sit somewhere wider (e.g. printed output). */
 .examples-grid,
 .formula-grid {
   display: grid;
@@ -1090,13 +1037,36 @@ button {
   margin: 0;
   align-items: start;
 }
-@media (max-width: 900px) {
-  .reference {
-    padding: 0 var(--sp-4);
-  }
-  .ref-panel {
-    max-height: 50vh;
-  }
+
+/* The calculator directory, grouped by subject heading. */
+.calc-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.calc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  border-radius: var(--control-radius);
+  border: 1px solid transparent;
+  transition: background 0.12s var(--ease);
+}
+.calc-item:hover {
+  background: var(--bg-tint);
+  border-color: var(--line);
+}
+.calc-item-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.calc-item-blurb {
+  font-size: 0.76rem;
+  color: var(--ink-3);
 }
 
 /* Imported question attribution ------------------------------------------- */
@@ -1265,13 +1235,15 @@ button {
   overflow-x: auto;
 }
 
-/* Settings ---------------------------------------------------------------- */
+/* Sidebar ------------------------------------------------------------------ */
+/* The collapsible drawer — calculators, formulas, textbook questions, recent
+   work and settings, one accordion section open at a time (see Sidebar). */
 .scrim {
   position: fixed;
   inset: 0;
   background: rgba(20, 18, 14, 0.28);
   display: grid;
-  place-items: start end;
+  place-items: start start;
   z-index: 40;
   animation: fade 0.18s var(--ease);
 }
@@ -1280,12 +1252,12 @@ button {
     opacity: 0;
   }
 }
-.settings-panel {
+.sidebar-panel {
   width: min(380px, 92vw);
   height: 100vh;
   overflow-y: auto;
   background: var(--surface);
-  border-left: 1px solid var(--line-strong);
+  border-right: 1px solid var(--line-strong);
   box-shadow: var(--shadow-2);
   padding: var(--sp-6);
   display: flex;
@@ -1295,19 +1267,76 @@ button {
 }
 @keyframes slideIn {
   from {
-    transform: translateX(24px);
+    transform: translateX(-24px);
     opacity: 0.4;
   }
 }
-.settings-head {
+.sidebar-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.settings-head h2 {
+.sidebar-head h2 {
   font-family: var(--font-display);
   font-weight: var(--display-weight);
   font-size: 1.3rem;
+}
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.accordion-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--surface);
+  transition: background 0.12s var(--ease);
+}
+.accordion-trigger:hover {
+  background: var(--bg-tint);
+}
+.accordion-trigger[aria-expanded='true'] {
+  color: var(--accent);
+  background: var(--bg-tint);
+}
+.accordion-trigger[aria-expanded='true'] .ref-count {
+  background: var(--accent-tint, var(--bg-tint));
+  color: var(--accent);
+}
+.accordion-trigger span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.accordion-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s var(--ease);
+}
+.accordion-trigger[aria-expanded='true'] .accordion-chevron {
+  transform: rotate(90deg);
+}
+.accordion-panel {
+  padding: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+
+.settings-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
 }
 .setting-row {
   display: flex;
