@@ -1,14 +1,20 @@
-import { fmt } from '../../lib/math/num';
+import { fmt, par } from '../../lib/math/num';
+import { quadraticRoots } from '../quadratics';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /**
  * Logarithmic and exponential equations
  * (SACE Stage 2 Mathematical Methods, Topic 4).
  */
+type QuadTerm =
+  | { kind: 'exp'; coeff: number; base: number; mult: number; k: number }
+  | { kind: 'const'; value: number };
+
 type Problem =
   | { kind: 'exponential'; coeff: number; base: number | 'e'; mult: number; value: number }
   | { kind: 'evaluate'; base: number | 'e'; value: number }
-  | { kind: 'log-equation'; base: number | 'e'; value: number };
+  | { kind: 'log-equation'; base: number | 'e'; value: number }
+  | { kind: 'exponential-quadratic'; terms: QuadTerm[]; rhs: number; unitBase: number; a: number; b: number; c: number };
 
 const clean = (s: string) => s.replace(/\s+/g, '');
 
@@ -26,6 +32,11 @@ function parse(inputRaw: string): Problem {
       value: Number(exp[4]),
     };
   }
+
+  // Several exponential terms that reduce to a quadratic once one of them
+  // is recognised as a common base's square: 4^x+2^(x+1)-15=0
+  const quad = parseExpQuadratic(s);
+  if (quad) return quad;
 
   // log_b(x) = c  /  ln(x) = c   → solve for x
   const logEq = s.match(/^(?:log_?(\d*\.?\d+)?|ln)\(?x\)?=(-?\d*\.?\d+)$/i);
@@ -49,7 +60,155 @@ function parse(inputRaw: string): Problem {
     };
   }
 
+  // Change-of-base written out as a fraction of two logs, e.g. log16/log8 —
+  // this is exactly log_8(16), whichever common base the two logs share.
+  const fracIdx = s.indexOf('/');
+  if (fracIdx > 0) {
+    const numTerm = parseLogTerm(s.slice(0, fracIdx));
+    const denTerm = parseLogTerm(s.slice(fracIdx + 1));
+    if (numTerm && denTerm && numTerm.isLn === denTerm.isLn && numTerm.base === denTerm.base) {
+      return { kind: 'evaluate', base: denTerm.value, value: numTerm.value };
+    }
+  }
+
   throw new Error('Try  2^x = 32,  log2(32),  or  ln x = 2.');
+}
+
+/** Parses one log/ln call for use on each side of a log16/log8-style
+ * fraction. Unlike the `evalLog` pattern above, a base is only ever read
+ * from digits directly before a *mandatory* paren (log2(16) is base 2) —
+ * without parens there is no way to tell "log16" apart from "log₁6", so a
+ * bare term (log16, ln16) is always the default base with the digits as
+ * the value. */
+function parseLogTerm(raw: string): { isLn: boolean; base: number; value: number } | null {
+  const isLn = /^ln/i.test(raw);
+  const withParens = raw.match(/^(?:log_?(\d*\.?\d+)?|ln)\((\d*\.?\d+)\)$/i);
+  if (withParens) {
+    return { isLn, base: isLn ? Math.E : withParens[1] ? Number(withParens[1]) : 10, value: Number(withParens[2]) };
+  }
+  const bare = raw.match(/^(?:log|ln)(\d*\.?\d+)$/i);
+  if (bare) {
+    return { isLn, base: isLn ? Math.E : 10, value: Number(bare[1]) };
+  }
+  return null;
+}
+
+/** Splits "4^x+2^(x+1)-15" into ["4^x", "+2^(x+1)", "-15"] — a sign inside
+ * the exponent's own parentheses is not a split point, only one at depth 0. */
+function splitTerms(s: string): string[] {
+  const terms: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if ((c === '+' || c === '-') && depth === 0 && i > start) {
+      terms.push(s.slice(start, i));
+      start = i;
+    }
+  }
+  terms.push(s.slice(start));
+  return terms.filter(Boolean);
+}
+
+/** Parses one signed term as a plain number or coeff·base^(mult·x+k). */
+function parseTerm(raw: string): QuadTerm | null {
+  let s = raw;
+  let sign = 1;
+  if (s[0] === '+') s = s.slice(1);
+  else if (s[0] === '-') {
+    sign = -1;
+    s = s.slice(1);
+  }
+  if (!s) return null;
+
+  if (!s.includes('^')) {
+    if (!/^\d*\.?\d+$/.test(s)) return null;
+    return { kind: 'const', value: sign * Number(s) };
+  }
+
+  const caret = s.indexOf('^');
+  const left = s.slice(0, caret);
+  let right = s.slice(caret + 1);
+
+  let coeff = 1;
+  let baseStr = left;
+  const coefMatch = left.match(/^(\d*\.?\d+)[*×](\d*\.?\d+)$/);
+  if (coefMatch) {
+    coeff = Number(coefMatch[1]);
+    baseStr = coefMatch[2];
+  } else if (!/^\d*\.?\d+$/.test(left)) {
+    return null;
+  }
+  const base = Number(baseStr);
+  if (!Number.isFinite(base) || base <= 0 || base === 1) return null;
+
+  if (right.startsWith('(') && right.endsWith(')')) right = right.slice(1, -1);
+  const expMatch = right.match(/^([+-]?\d*)x([+-]\d+(?:\.\d+)?)?$/);
+  if (!expMatch) return null;
+  const multStr = expMatch[1];
+  const mult = multStr === '' || multStr === '+' ? 1 : multStr === '-' ? -1 : Number(multStr);
+  const k = expMatch[2] ? Number(expMatch[2]) : 0;
+
+  return { kind: 'exp', coeff: sign * coeff, base, mult, k };
+}
+
+/** Finds the smallest base that every exponential term's own base is an
+ * exact power of — 1 or 2, enough to reduce the equation to a quadratic. */
+function findUnitBase(effBases: number[]): { unitBase: number; degrees: number[] } | null {
+  const candidates = Array.from(new Set(effBases)).sort((x, y) => x - y);
+  for (const ub of candidates) {
+    const degrees = effBases.map((eb) => exactPower(ub, eb));
+    if (degrees.every((d) => d === 1 || d === 2) && degrees.some((d) => d === 2)) {
+      return { unitBase: ub, degrees: degrees as number[] };
+    }
+  }
+  return null;
+}
+
+/** e.g. "4^x+2^(x+1)-15=0" — several exponential terms sharing a common base
+ * (here 2, since 4 = 2²) reduce to a quadratic in u = base^x. Not every
+ * multi-term exponential equation qualifies; when it doesn't, this returns
+ * null and the caller falls through to try other problem shapes. */
+function parseExpQuadratic(s: string): Extract<Problem, { kind: 'exponential-quadratic' }> | null {
+  const eqIdx = s.indexOf('=');
+  if (eqIdx < 0) return null;
+  const lhsRaw = s.slice(0, eqIdx);
+  const rhsRaw = s.slice(eqIdx + 1);
+  if (!/^-?\d*\.?\d+$/.test(rhsRaw)) return null;
+  const rhs = Number(rhsRaw);
+
+  const termStrs = splitTerms(lhsRaw);
+  if (termStrs.length < 2) return null;
+
+  const terms: QuadTerm[] = [];
+  for (const raw of termStrs) {
+    const t = parseTerm(raw);
+    if (!t) return null;
+    terms.push(t);
+  }
+  const expTerms = terms.filter((t): t is Extract<QuadTerm, { kind: 'exp' }> => t.kind === 'exp');
+  if (expTerms.length < 2) return null;
+
+  const effBases = expTerms.map((t) => Math.pow(t.base, t.mult));
+  const found = findUnitBase(effBases);
+  if (!found) return null;
+  const { unitBase, degrees } = found;
+
+  let a = 0;
+  let b = 0;
+  expTerms.forEach((t, i) => {
+    const uCoeff = t.coeff * Math.pow(t.base, t.k);
+    if (degrees[i] === 2) a += uCoeff;
+    else b += uCoeff;
+  });
+  let c = -rhs;
+  terms.forEach((t) => {
+    if (t.kind === 'const') c += t.value;
+  });
+
+  return { kind: 'exponential-quadratic', terms, rhs, unitBase, a, b, c };
 }
 
 const baseTex = (b: number | 'e') => (b === 'e' ? 'e' : fmt(b));
@@ -146,12 +305,139 @@ function solveExponential(p: Extract<Problem, { kind: 'exponential' }>, methodId
   };
 }
 
+function expLatex(mult: number, k: number): string {
+  const mPart = mult === 1 ? 'x' : mult === -1 ? '-x' : `${fmt(mult)}x`;
+  if (k === 0) return mPart;
+  return `${mPart} ${k > 0 ? '+' : '-'} ${fmt(Math.abs(k))}`;
+}
+
+function termTex(t: QuadTerm, leading: boolean): string {
+  if (t.kind === 'const') {
+    const sign = t.value < 0 ? '-' : leading ? '' : '+';
+    return `${sign} ${fmt(Math.abs(t.value))}`;
+  }
+  const sign = t.coeff < 0 ? '-' : leading ? '' : '+';
+  const absCoeff = Math.abs(t.coeff);
+  const coeffTex = absCoeff === 1 ? '' : `${fmt(absCoeff)} \\times `;
+  return `${sign} ${coeffTex}${fmt(t.base)}^{${expLatex(t.mult, t.k)}}`;
+}
+
+/** "u^{2} + 2u - 15 = 0" — the reduced quadratic, in standard signed form. */
+function quadInULatex(a: number, b: number, c: number): string {
+  const aPart = `${a === 1 ? '' : a === -1 ? '-' : fmt(a)}u^{2}`;
+  const bPart = b === 0 ? '' : ` ${b > 0 ? '+' : '-'} ${Math.abs(b) === 1 ? '' : fmt(Math.abs(b))}u`;
+  const cPart = c === 0 ? '' : ` ${c > 0 ? '+' : '-'} ${fmt(Math.abs(c))}`;
+  return `${aPart}${bPart}${cPart} = 0`;
+}
+
+/**
+ * Several exponential terms sharing a common base reduce to an ordinary
+ * quadratic once substituted — e.g. 4^x + 2^(x+1) - 15 = 0 becomes
+ * u² + 2u - 15 = 0 with u = 2^x. This is genuinely two SACE topics chained
+ * together (quadratics, then logs), so the steps below show both halves
+ * rather than folding the quadratic-solving into one opaque line.
+ */
+function solveExponentialQuadratic(p: Extract<Problem, { kind: 'exponential-quadratic' }>, methodId: string): SolveResult {
+  const { terms, rhs, unitBase, a, b, c } = p;
+
+  const original = `${terms.map((t, i) => termTex(t, i === 0)).join(' ')} = ${fmt(rhs)}`;
+  const steps: Step[] = [{ note: 'Write down the equation.', latex: original }];
+
+  const expTerms = terms.filter((t): t is Extract<QuadTerm, { kind: 'exp' }> => t.kind === 'exp');
+  const effBases = expTerms.map((t) => Math.pow(t.base, t.mult));
+  const degrees = effBases.map((eb) => exactPower(unitBase, eb)!);
+
+  const rewrites = expTerms
+    .map((t, i) => {
+      const degree = degrees[i];
+      if (degree === 1 && t.mult === 1 && t.k === 0) return null;
+      const baseToK = Math.pow(t.base, t.k);
+      const uPart = degree === 1 ? `${fmt(unitBase)}^{x}` : `(${fmt(unitBase)}^{x})^{${degree}}`;
+      const rhsTex = t.k === 0 ? uPart : `${fmt(baseToK)} \\times ${uPart}`;
+      return `${fmt(t.base)}^{${expLatex(t.mult, t.k)}} = ${rhsTex}`;
+    })
+    .filter((x): x is string => x !== null);
+
+  if (rewrites.length > 0) {
+    steps.push({
+      note: `Every power here is a power of ${fmt(unitBase)}, so rewrite each one that way.`,
+      latex: rewrites.join(', \\qquad '),
+    });
+  }
+
+  steps.push({
+    note: `Let $u = ${fmt(unitBase)}^{x}$. Substituting turns this into an ordinary quadratic in $u$.`,
+    latex: quadInULatex(a, b, c),
+  });
+
+  const info = quadraticRoots(a, b, c);
+  if (info.nature === 'complex') {
+    return { ok: false, error: 'That quadratic has no real solutions for u, so the original equation has none either.' };
+  }
+
+  steps.push({
+    note: 'Solve this quadratic for $u$ (see the Quadratics topic for the working) using the quadratic formula.',
+    latex: `u = \\dfrac{-(${par(b)}) \\pm \\sqrt{(${par(b)})^{2} - 4(${par(a)})(${par(c)})}}{2(${par(a)})}`,
+  });
+  steps.push({
+    note: 'Work out the roots.',
+    latex:
+      info.nature === 'double'
+        ? `u = ${fmt(info.numericRoots[0], 6)}`
+        : `u = ${fmt(info.numericRoots[0], 6)} \\quad\\text{or}\\quad u = ${fmt(info.numericRoots[1], 6)}`,
+  });
+
+  const uRoots = info.nature === 'double' ? [info.numericRoots[0]] : info.numericRoots;
+  const valid = uRoots.filter((u) => u > 1e-9);
+  const rejected = uRoots.filter((u) => u <= 1e-9);
+
+  if (rejected.length > 0) {
+    steps.push({
+      note: `$u = ${fmt(unitBase)}^{x}$ can never be zero or negative — a positive base to any power is always positive — so ${rejected.map((u) => `$u = ${fmt(u, 6)}$`).join(' and ')} ${rejected.length > 1 ? 'are' : 'is'} rejected.`,
+      latex: valid.length > 0 ? valid.map((u) => `u = ${fmt(u, 6)}`).join(', ') : '\\text{no valid values of } u \\text{ remain}',
+    });
+  }
+
+  if (valid.length === 0) {
+    return { ok: false, error: 'Every value of u came out zero or negative, and u can never be negative, so this equation has no real solution.' };
+  }
+
+  const xs = valid.map((u) => {
+    const exact = methodId !== 'logs' ? exactPower(unitBase, u) : null;
+    if (exact !== null) {
+      steps.push({
+        note: `Recognise $${fmt(u, 6)}$ as ${fmt(unitBase)} to the power ${exact}.`,
+        latex: `x = ${exact}`,
+      });
+      return exact;
+    }
+    const x = Math.log(u) / Math.log(unitBase);
+    steps.push({
+      note: `Take logarithms to solve $${fmt(unitBase)}^{x} = ${fmt(u, 6)}$.`,
+      latex: `x = \\log_{${fmt(unitBase)}}(${fmt(u, 6)}) = ${fmt(x, 6)}`,
+    });
+    return x;
+  });
+
+  const answerLatex = xs.length > 1 ? `x = ${fmt(xs[0], 6)} \\quad\\text{or}\\quad x = ${fmt(xs[1], 6)}` : `x = ${fmt(xs[0], 6)}`;
+
+  return {
+    ok: true,
+    solution: {
+      headline: `Solve $${original}$`,
+      methodName: 'Reducible to a quadratic',
+      steps,
+      answerLatex,
+    },
+  };
+}
+
 export const logarithmsSolver: Solver = {
   id: 'logarithms',
   title: 'Logs & exponentials',
   subjects: ['Methods', 'Specialist'],
   blurb: 'Solve exponential equations and evaluate logarithms.',
-  placeholder: 'e.g.  2^x = 32   or   log2(32)',
+  placeholder: 'e.g.  2^x = 32,  log2(32),  or  4^x+2^(x+1)=15',
   methods: [
     { id: 'same-base', name: 'Equating indices', blurb: 'Rewrite both sides with the same base, then match the powers. Exact when it works.' },
     { id: 'logs', name: 'Taking logs', blurb: 'Take logarithms of both sides and use the power law. Always works.' },
@@ -174,6 +460,7 @@ export const logarithmsSolver: Solver = {
     }
 
     if (p.kind === 'exponential') return solveExponential(p, methodId);
+    if (p.kind === 'exponential-quadratic') return solveExponentialQuadratic(p, methodId);
 
     if (p.kind === 'log-equation') {
       const { base, value } = p;

@@ -81,4 +81,45 @@ describe('logarithmsSolver', () => {
   it('rejects an impossible exponential', () => {
     expect(logarithmsSolver.solve('2^x = -8', 'same-base').ok).toBe(false);
   });
+
+  it('solves a two-term exponential equation that reduces to a quadratic', () => {
+    // Let u = 2^x. 4^x = u², 2^(x+1) = 2u → u² + 2u - 15 = 0 → u = 3 or u = -5.
+    // u = -5 is rejected (2^x is always positive), so 2^x = 3 → x = log2(3).
+    const s = sol(logarithmsSolver, '4^x+2^(x+1)-15=0', 'same-base');
+    expect(s.methodName).toBe('Reducible to a quadratic');
+    expect(s.answerLatex).toBe('x = 1.584963');
+    expect(s.steps.some((step: { latex?: string }) => step.latex?.includes('u = 3'))).toBe(true);
+    expect(s.answerLatex).not.toContain('-5');
+  });
+
+  it('gives two exact answers when both roots of u are whole powers', () => {
+    // Let u = 3^x: u² - 4u + 3 = 0 → u = 1 or u = 3 → x = 0 or x = 1.
+    const s = sol(logarithmsSolver, '9^x-4*3^x+3=0', 'same-base');
+    expect(s.answerLatex).toBe('x = 1 \\quad\\text{or}\\quad x = 0');
+  });
+
+  it('reports no real solution when every root of u is non-positive', () => {
+    // u² + 6u + 8 = 0 → u = -2 or u = -4, both impossible for 2^x.
+    const r = logarithmsSolver.solve('4^x+6*2^x+8=0', 'same-base');
+    expect(r.ok).toBe(false);
+  });
+
+  it('leaves an ordinary quadratic alone (no exponential terms)', () => {
+    expect(logarithmsSolver.solve('x^2+2x-15=0', 'same-base').ok).toBe(false);
+  });
+
+  it('evaluates a change-of-base expression written as a fraction of logs', () => {
+    // log16/log8 = log_8(16) by the change-of-base rule = 1.333333.
+    const s = sol(logarithmsSolver, 'log16/log8', 'same-base');
+    expect(s.answerLatex).toBe('\\log_{8}(16) = 1.333333');
+  });
+
+  it('also accepts the natural-log form of the same fraction', () => {
+    const s = sol(logarithmsSolver, 'ln16/ln8', 'same-base');
+    expect(s.answerLatex).toBe('\\log_{8}(16) = 1.333333');
+  });
+
+  it('does not misread a fraction of logs with genuinely different bases', () => {
+    expect(logarithmsSolver.solve('log_2(16)/log_3(8)', 'same-base').ok).toBe(false);
+  });
 });
