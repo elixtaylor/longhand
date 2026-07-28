@@ -54,6 +54,19 @@ describe('reducing before solving', () => {
     expect(2 ** (x + 1)).toBeCloseTo(3 ** x, 3);
   });
 
+  it('shows the power-law expansion and the resulting linear equation, not just the answer', () => {
+    // 2^(x+1) = 3^(x-1) used to jump straight from "take logs" to the answer,
+    // skipping the actual algebra — same underlying gap as the quadratic and
+    // log-fraction cases: a real working needs every step shown, not just
+    // the ones one technique covers.
+    const s = solve('2^(x+1)=3^(x-1)');
+    expect(s.steps.length).toBeGreaterThanOrEqual(4);
+    expect(s.steps.some((step) => step.latex?.includes('\\ln'))).toBe(true);
+    expect(s.steps.some((step) => /^-?\d*\.?\d+x\s*=/.test(step.latex ?? ''))).toBe(true);
+    const x = answers(s.answerLatex)[0];
+    expect(2 ** (x + 1)).toBeCloseTo(3 ** (x - 1), 3);
+  });
+
   it('leaves a single-occurrence log equation to the solver that already owns it', () => {
     // ln(x) - ln(2) = 1 only has x inside one of the two logs — inverse.ts's
     // "undoing" narration is the right fit, not a two-log combination.

@@ -171,7 +171,17 @@ function solveNumeric(coeffs: number[]): number[] {
 
 /* ------------------------------------------------------- a^(px+q)=b^(rx+s) */
 
-function tryExponential(sides: [string, string]): { p: number; qa: number; qb: number } | null {
+/** "x + 1", "x - 1", "2x", "-3" — a linear expression in x for display. */
+function linTex(p: number, q: number): string {
+  const xTerm = p === 0 ? '' : p === 1 ? 'x' : p === -1 ? '-x' : `${fmt(p)}x`;
+  if (q === 0) return xTerm || '0';
+  const sign = q > 0 ? '+' : '-';
+  return xTerm ? `${xTerm} ${sign} ${fmt(Math.abs(q))}` : fmt(q);
+}
+
+function tryExponential(
+  sides: [string, string],
+): { a: number; b: number; pL: number; qL: number; pR: number; qR: number; p: number; qa: number; qb: number } | null {
   let left, right;
   try {
     left = parseExpr(sides[0]);
@@ -192,7 +202,10 @@ function tryExponential(sides: [string, string]): { p: number; qa: number; qb: n
   const pR = atR(1) - qR;
   if (![atL(2), atR(2)].every((v, i) => Math.abs(v - (2 * (i === 0 ? pL : pR) + (i === 0 ? qL : qR))) < 1e-9)) return null;
 
-  return { p: pL * Math.log(a) - pR * Math.log(b), qa: qL * Math.log(a), qb: qR * Math.log(b) };
+  const p = pL * Math.log(a) - pR * Math.log(b);
+  const qa = qL * Math.log(a);
+  const qb = qR * Math.log(b);
+  return { a, b, pL, qL, pR, qR, p, qa, qb };
 }
 
 /* ---------------------------------------------------------------- solver */
@@ -300,7 +313,7 @@ function solveImpl(input: string): SolveResult {
 
   const exp = tryExponential(sides);
   if (exp) {
-    const { p, qa, qb } = exp;
+    const { a, b, pL, qL, pR, qR, p, qa, qb } = exp;
     if (Math.abs(p) < 1e-12) {
       const consistent = Math.abs(qa - qb) < 1e-9;
       steps.push({
@@ -316,11 +329,19 @@ function solveImpl(input: string): SolveResult {
     }
     const x = (qb - qa) / p;
     steps.push({
-      note: 'Take the natural logarithm of both sides, so the powers come down using the power law.',
-      latex: `\\ln\\left(${toLatex(parseExpr(sides[0]))}\\right) = \\ln\\left(${toLatex(parseExpr(sides[1]))}\\right)`,
-      annotation: 'same to both sides',
+      note: 'Take the natural logarithm of both sides, then use the power law $\\ln(m^{n}) = n\\ln m$ to bring the powers down.',
+      latex: `\\left(${linTex(pL, qL)}\\right)\\ln ${fmt(a)} = \\left(${linTex(pR, qR)}\\right)\\ln ${fmt(b)}`,
+      annotation: 'power law',
     });
-    steps.push({ note: 'Collect the x-terms on one side and solve.', latex: `x = ${fmt(x, 6)}`, annotation: 'solved' });
+    steps.push({
+      note: 'Expand the brackets and collect the x-terms on one side — this is now a linear equation in x.',
+      latex: `${fmt(p, 6)}x = ${fmt(qb - qa, 6)}`,
+    });
+    steps.push({
+      note: 'Divide to make x the subject.',
+      latex: `x = \\dfrac{${fmt(qb - qa, 6)}}{${fmt(p, 6)}} = ${fmt(x, 6)}`,
+      annotation: 'solved',
+    });
     return { ok: true, solution: { headline, methodName: 'Taking logarithms', steps, answerLatex: `x = ${fmt(x, 6)}` } };
   }
 
