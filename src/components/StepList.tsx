@@ -52,14 +52,12 @@ export function StepList({
    * needs regardless of how narrow the box computed itself to be, which is
    * exactly the real content width this needs.
    *
-   * Only step in where the browser actually got zero, rather than always
-   * overriding: outside the notebook theme, .katex-display is a normal
-   * in-flow block, and flexbox's own auto-sizing already measures it
-   * correctly — including surviving a web font swapping in after this
-   * effect has already run once, which a one-time inline width would not.
-   * Forcing the same measured width there caused exactly that: a snapshot
-   * narrower than the KaTeX web font's real, slightly wider metrics,
-   * clipping the ends of longer lines once the font finished loading.
+   * Scoped to the notebook theme by checking the theme directly (matching
+   * measureGrid below) rather than the shape of the box: elsewhere
+   * .katex-display is a normal in-flow block and flexbox's own auto-sizing
+   * already measures it correctly, and a switch away from notebook has to
+   * let go of its measured width rather than leave it behind to override
+   * the next theme's own sizing.
    *
    * Also depends on `revealed`, not just `solution`: a step past the old
    * solution's step count starts out `is-hidden` (display:none) for one
@@ -70,15 +68,45 @@ export function StepList({
    * beyond the previous solution's length — the maths was there, just
    * zero-width. Re-running once `revealed` actually reaches that step
    * re-measures it while it's genuinely visible.
+   *
+   * KaTeX's own delimiter fonts (KaTeX_Size1-4 — the big parentheses in a
+   * \binom, a determinant's bars, a tall radical) are a second, independent
+   * reason a first measurement can be wrong, and one no amount of retriggering
+   * on `solution`/`revealed` catches: those fonts aren't in the theme's own
+   * handwriting override (only the letter/digit faces are, see themes.css),
+   * and the browser only *starts* fetching each one the first time a glyph
+   * needs it — typically after this effect's synchronous measurement has
+   * already run and returned a width measured against a fallback glyph.
+   * Nothing about the page visibly changes when that fetch completes, so
+   * nothing else would ever prompt a re-measure — the box just quietly kept
+   * the wrong, too-narrow number for the rest of the session. Re-running
+   * once those fonts actually finish loading is the only way to catch it.
    */
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    list.querySelectorAll<HTMLElement>('.step-expr').forEach((exprEl) => {
-      if (exprEl.getBoundingClientRect().width > 2) return;
-      const katex = exprEl.querySelector<HTMLElement>('.katex-display > .katex');
-      if (katex) exprEl.style.width = `${katex.scrollWidth}px`;
-    });
+
+    function measure() {
+      const exprs = list!.querySelectorAll<HTMLElement>('.step-expr');
+      if (document.documentElement.dataset.theme !== 'notebook') {
+        exprs.forEach((exprEl) => exprEl.style.removeProperty('width'));
+        return;
+      }
+      exprs.forEach((exprEl) => {
+        const katex = exprEl.querySelector<HTMLElement>('.katex-display > .katex');
+        if (katex) exprEl.style.width = `${katex.scrollWidth}px`;
+      });
+    }
+
+    measure();
+    document.fonts.ready.then(measure);
+    document.fonts.addEventListener('loadingdone', measure);
+    const themeObserver = new MutationObserver(measure);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => {
+      document.fonts.removeEventListener('loadingdone', measure);
+      themeObserver.disconnect();
+    };
   }, [solution, revealed]);
 
   /**
