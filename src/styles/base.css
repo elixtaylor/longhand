@@ -1548,8 +1548,8 @@ button {
   align-items: stretch;
 }
 .settings-page .settings-content {
-  width: min(1040px, 100%);
-  margin: var(--sp-5) auto 0;
+  width: min(820px, 100%);
+  margin: var(--sp-4) 0 0;
 }
 .settings-page .settings-fields {
   display: grid;
