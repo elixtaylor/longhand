@@ -1465,16 +1465,18 @@ button {
   align-items: center;
   gap: 8px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--line);
 }
 .setting-row > .field-label {
   width: 100%;
   margin-bottom: 0;
+  font-size: 0.96rem;
   text-align: center;
 }
-.setting-row > .theme-swatches,
-.setting-row > .segmented {
+.setting-row > .theme-swatches {
   width: 100%;
+}
+.setting-row > .segmented {
+  width: min(100%, 280px);
 }
 .setting-hint {
   font-size: 0.82rem;
@@ -1489,8 +1491,8 @@ button {
 }
 .segmented button {
   flex: 1;
-  padding: 8px 10px;
-  font-size: 0.88rem;
+  padding: 6px 8px;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink-2);
   border-radius: calc(var(--control-radius) - 2px);
@@ -1518,7 +1520,7 @@ button {
   border-color: var(--accent);
 }
 .swatch-chip {
-  height: 18px;
+  height: 24px;
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
