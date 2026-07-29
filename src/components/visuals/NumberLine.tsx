@@ -47,9 +47,19 @@ export function NumberLine({ data }: { data: NumberLineData }) {
           );
         })}
 
-        <line x1={PAD / 2} y1={y} x2={W - PAD / 2} y2={y} className="diagram-axis" />
+        <line
+          x1={PAD / 2}
+          y1={y}
+          x2={W - PAD / 2}
+          y2={y}
+          className="diagram-axis"
+        />
         {/* arrowheads */}
-        <polyline points={`${PAD / 2 + 7},${y - 4} ${PAD / 2},${y} ${PAD / 2 + 7},${y + 4}`} className="diagram-axis" fill="none" />
+        <polyline
+          points={`${PAD / 2 + 7},${y - 4} ${PAD / 2},${y} ${PAD / 2 + 7},${y + 4}`}
+          className="diagram-axis"
+          fill="none"
+        />
         <polyline
           points={`${W - PAD / 2 - 7},${y - 4} ${W - PAD / 2},${y} ${W - PAD / 2 - 7},${y + 4}`}
           className="diagram-axis"
@@ -64,7 +74,12 @@ export function NumberLine({ data }: { data: NumberLineData }) {
               r={5.5}
               className={p.filled ? 'diagram-point-key' : 'diagram-point-open'}
             />
-            <text x={sx(p.x)} y={y + 22} className="diagram-label" textAnchor="middle">
+            <text
+              x={sx(p.x)}
+              y={y + 22}
+              className="diagram-label"
+              textAnchor="middle"
+            >
               {String(Math.round(p.x * 100) / 100)}
             </text>
           </g>

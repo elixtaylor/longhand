@@ -18,7 +18,11 @@ function cxStr(re: number, im: number): string {
 }
 
 /** Builds the same text complex.ts's free-text parser already reads. */
-function serialize(op: CxOp, a: { re: number; im: number }, b: { re: number; im: number } | null): string {
+function serialize(
+  op: CxOp,
+  a: { re: number; im: number },
+  b: { re: number; im: number } | null,
+): string {
   const za = `(${cxStr(a.re, a.im)})`;
   switch (op) {
     case '+':
@@ -63,7 +67,11 @@ export function ComplexOperationForm({
 
   function parsePair(values: string[]): { re: number; im: number } | null {
     const nums = values.map((s) => Number(s.trim()));
-    if (values.some((s) => s.trim() === '') || nums.some((n) => !Number.isFinite(n))) return null;
+    if (
+      values.some((s) => s.trim() === '') ||
+      nums.some((n) => !Number.isFinite(n))
+    )
+      return null;
     return { re: nums[0], im: nums[1] };
   }
 

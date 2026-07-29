@@ -21,7 +21,9 @@ export function TeX({
   className?: string;
 }) {
   const html = useMemo(() => texToHtml(tex, display), [tex, display]);
-  return <span className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <span className={className} dangerouslySetInnerHTML={{ __html: html }} />
+  );
 }
 
 /** Text that may contain inline maths delimited by $...$. */
@@ -30,7 +32,11 @@ export function RichText({ text }: { text: string }) {
   return (
     <>
       {parts.map((p, i) =>
-        p.isMath ? <TeX key={i} tex={p.value} /> : <span key={i}>{p.value}</span>,
+        p.isMath ? (
+          <TeX key={i} tex={p.value} />
+        ) : (
+          <span key={i}>{p.value}</span>
+        ),
       )}
     </>
   );
@@ -46,7 +52,8 @@ function splitInlineMath(text: string): Segment[] {
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
-    if (m.index > last) out.push({ isMath: false, value: text.slice(last, m.index) });
+    if (m.index > last)
+      out.push({ isMath: false, value: text.slice(last, m.index) });
     out.push({ isMath: true, value: m[1] });
     last = m.index + m[0].length;
   }

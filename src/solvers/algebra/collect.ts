@@ -4,7 +4,12 @@ import { polyLatex, rl, rlPlain } from '../../lib/math/format';
 import { fmt } from '../../lib/math/num';
 import { realRoots } from '../../lib/math/roots';
 import { parseExpr, toLatex, ExprError } from '../../lib/math/expr';
-import { exprToPolyFrac, polyAscii, ExpandError, type PolyFrac } from '../../lib/math/expand';
+import {
+  exprToPolyFrac,
+  polyAscii,
+  ExpandError,
+  type PolyFrac,
+} from '../../lib/math/expand';
 import { linearSolver } from './linear';
 import { quadraticsSolver, quadraticRoots } from '../quadratics/index';
 import { candidates, syntheticDivide, evaluate } from './polynomials';
@@ -88,7 +93,9 @@ function exclusionsFor(sides: Sides): number[] {
 /* -------------------------------------------------------------- degree ≥ 3 */
 
 /** Peel rational roots one at a time until degree ≤ 2 remains, or give up. */
-function peelToQuadratic(std: Poly): { roots: Rational[]; remaining: Poly; steps: Step[] } | null {
+function peelToQuadratic(
+  std: Poly,
+): { roots: Rational[]; remaining: Poly; steps: Step[] } | null {
   let current = std;
   const roots: Rational[] = [];
   const steps: Step[] = [];
@@ -104,7 +111,10 @@ function peelToQuadratic(std: Poly): { roots: Rational[]; remaining: Poly; steps
     });
     roots.push(root);
     current = quotient;
-    steps.push({ note: 'Divide by that factor to bring the degree down.', latex: `${polyLatex(current)} = 0` });
+    steps.push({
+      note: 'Divide by that factor to bring the degree down.',
+      latex: `${polyLatex(current)} = 0`,
+    });
   }
   return current.degree() > 2 ? null : { roots, remaining: current, steps };
 }
@@ -128,9 +138,14 @@ function integerAbc(std: Poly): { a: number; b: number; c: number } {
 
 function identityOrContradiction(combined: Poly, exclusions: number[]): Step {
   if (!combined.isZeroPoly()) {
-    return { note: 'The two sides can never be equal, whatever x is — there is no solution.', latex: '\\text{No solution}' };
+    return {
+      note: 'The two sides can never be equal, whatever x is — there is no solution.',
+      latex: '\\text{No solution}',
+    };
   }
-  const caveat = exclusions.length ? ` (except $x = ${exclusions.map((v) => fmt(v)).join(', ')}$, where the original is undefined)` : '';
+  const caveat = exclusions.length
+    ? ` (except $x = ${exclusions.map((v) => fmt(v)).join(', ')}$, where the original is undefined)`
+    : '';
   return {
     note: `Both sides are identical, so every value of $x$ works${caveat}.`,
     latex: '\\text{Infinitely many solutions}',
@@ -138,9 +153,14 @@ function identityOrContradiction(combined: Poly, exclusions: number[]): Step {
 }
 
 /** Numeric roots of `combined`, with anything the domain excludes filtered out. */
-function surviving(combined: Poly, exclusions: number[]): { kept: number[]; rejected: number[] } {
+function surviving(
+  combined: Poly,
+  exclusions: number[],
+): { kept: number[]; rejected: number[] } {
   const all = realRoots(combined);
-  const kept = all.filter((v) => !exclusions.some((e) => Math.abs(e - v) < 1e-6));
+  const kept = all.filter(
+    (v) => !exclusions.some((e) => Math.abs(e - v) < 1e-6),
+  );
   return { kept, rejected: all.filter((v) => !kept.includes(v)) };
 }
 
@@ -152,13 +172,20 @@ function exclusionStep(rejected: number[]): Step {
   };
 }
 
-function finalAnswer(kept: number[], rejected: number[], fallback: string | undefined): { steps: Step[]; answerLatex: string | undefined } {
+function finalAnswer(
+  kept: number[],
+  rejected: number[],
+  fallback: string | undefined,
+): { steps: Step[]; answerLatex: string | undefined } {
   if (rejected.length === 0) return { steps: [], answerLatex: fallback };
   if (kept.length === 0) {
     return {
       steps: [
         exclusionStep(rejected),
-        { note: 'Every solution the algebra found is excluded, so this equation has no valid solution.', latex: '\\text{No solution}' },
+        {
+          note: 'Every solution the algebra found is excluded, so this equation has no valid solution.',
+          latex: '\\text{No solution}',
+        },
       ],
       answerLatex: undefined,
     };
@@ -176,7 +203,8 @@ function solveImpl(input: string, methodId: string): SolveResult {
   if (!sides) {
     return {
       ok: false,
-      error: 'Write an equation with one unknown, e.g.  2(x + 3) = 3(x - 1)  or  3/(x + 1) = 2/(x - 1).',
+      error:
+        'Write an equation with one unknown, e.g.  2(x + 3) = 3(x - 1)  or  3/(x + 1) = 2/(x - 1).',
     };
   }
   const { lhs, rhs, lhsLatex, rhsLatex, hadBrackets } = sides;
@@ -187,7 +215,9 @@ function solveImpl(input: string, methodId: string): SolveResult {
   const rightExpanded = rhs.num.mul(lhs.den);
   const combined = leftExpanded.sub(rightExpanded);
 
-  const steps: Step[] = [{ note: 'Write down the equation.', latex: `${lhsLatex} = ${rhsLatex}` }];
+  const steps: Step[] = [
+    { note: 'Write down the equation.', latex: `${lhsLatex} = ${rhsLatex}` },
+  ];
   if (hasVarDenominator) {
     steps.push({
       note: 'Multiply both sides by every denominator to clear the fractions, then expand and collect like terms.',
@@ -206,15 +236,26 @@ function solveImpl(input: string, methodId: string): SolveResult {
 
   if (combined.isZeroPoly() || (deg === 0 && !combined.get(0).isZero())) {
     steps.push(identityOrContradiction(combined, exclusions));
-    return { ok: true, solution: { headline, methodName: 'Term collecting', steps } };
+    return {
+      ok: true,
+      solution: { headline, methodName: 'Term collecting', steps },
+    };
   }
 
   if (deg === 1 || deg === 2) {
     const text = `${polyAscii(combined)} = 0`;
     let inner =
       deg === 1
-        ? linearSolver.solve(text, LINEAR_IDS.has(methodId) ? methodId : linearSolver.defaultMethodId)
-        : quadraticsSolver.solve(text, QUAD_IDS.has(methodId) ? methodId : quadraticsSolver.defaultMethodId);
+        ? linearSolver.solve(
+            text,
+            LINEAR_IDS.has(methodId) ? methodId : linearSolver.defaultMethodId,
+          )
+        : quadraticsSolver.solve(
+            text,
+            QUAD_IDS.has(methodId)
+              ? methodId
+              : quadraticsSolver.defaultMethodId,
+          );
     if (!inner.ok) return inner; // the standard form is always valid input, but stay honest if not
     // "Factorise" is a legitimate dead end on its own — it means "doesn't
     // factor nicely, try a different tab" — but there is no tab picker once
@@ -227,12 +268,19 @@ function solveImpl(input: string, methodId: string): SolveResult {
     }
     steps.push(...inner.solution.steps);
 
-    const { kept, rejected } = hasVarDenominator ? surviving(combined, exclusions) : { kept: [], rejected: [] };
+    const { kept, rejected } = hasVarDenominator
+      ? surviving(combined, exclusions)
+      : { kept: [], rejected: [] };
     const filtered = finalAnswer(kept, rejected, inner.solution.answerLatex);
     steps.push(...filtered.steps);
     return {
       ok: true,
-      solution: { headline, methodName: inner.solution.methodName, steps, answerLatex: filtered.answerLatex },
+      solution: {
+        headline,
+        methodName: inner.solution.methodName,
+        steps,
+        answerLatex: filtered.answerLatex,
+      },
     };
   }
 
@@ -250,8 +298,15 @@ function solveImpl(input: string, methodId: string): SolveResult {
   if (peeled.remaining.degree() === 2) {
     const { a, b, c } = integerAbc(peeled.remaining);
     const info = quadraticRoots(a, b, c);
-    steps.push({ note: 'What is left is a quadratic — solve it with the formula.', latex: info.answerLatex });
-    roots.push(...info.numericRoots.map((n) => Rational.fromDecimal(Math.round(n * 1e9) / 1e9)));
+    steps.push({
+      note: 'What is left is a quadratic — solve it with the formula.',
+      latex: info.answerLatex,
+    });
+    roots.push(
+      ...info.numericRoots.map((n) =>
+        Rational.fromDecimal(Math.round(n * 1e9) / 1e9),
+      ),
+    );
   } else if (peeled.remaining.degree() === 1) {
     const r = peeled.remaining.get(0).neg().div(peeled.remaining.get(1));
     steps.push({ note: 'What is left is linear.', latex: `x = ${rl(r)}` });
@@ -259,12 +314,19 @@ function solveImpl(input: string, methodId: string): SolveResult {
   }
 
   const fallback = roots.map((r) => `x = ${rl(r)}`).join(', \\quad ');
-  const { kept, rejected } = hasVarDenominator ? surviving(combined, exclusions) : { kept: [], rejected: [] };
+  const { kept, rejected } = hasVarDenominator
+    ? surviving(combined, exclusions)
+    : { kept: [], rejected: [] };
   const filtered = finalAnswer(kept, rejected, fallback);
   steps.push(...filtered.steps);
   return {
     ok: true,
-    solution: { headline, methodName: 'Factor theorem', steps, answerLatex: filtered.answerLatex },
+    solution: {
+      headline,
+      methodName: 'Factor theorem',
+      steps,
+      answerLatex: filtered.answerLatex,
+    },
   };
 }
 
@@ -272,7 +334,8 @@ export const collectSolver: Solver = {
   id: 'collect',
   title: 'Term collecting',
   subjects: ['General', 'Methods', 'Specialist'],
-  blurb: 'Expand brackets or clear fractions with x on both sides, then collect like terms.',
+  blurb:
+    'Expand brackets or clear fractions with x on both sides, then collect like terms.',
   placeholder: 'e.g.  2(x + 3) = 3(x - 1)   or   3/(x + 1) = 2/(x - 1)',
   methods: [...linearSolver.methods, ...quadraticsSolver.methods],
   defaultMethodId: linearSolver.defaultMethodId,

@@ -19,8 +19,10 @@ export class Rational {
 
   constructor(n: number, d = 1) {
     if (d === 0) throw new Error('Rational: division by zero');
-    if (!Number.isInteger(n) || !Number.isInteger(d)) {
-      throw new Error('Rational: use Rational.parse / fromDecimal for non-integers');
+    if (!Number.isSafeInteger(n) || !Number.isSafeInteger(d)) {
+      throw new Error(
+        'Rational: values must be safe integers; this keeps exact working exact.',
+      );
     }
     if (d < 0) {
       n = -n;
@@ -65,13 +67,15 @@ export class Rational {
       return new Rational(sign * parseInt(a, 10), parseInt(b, 10));
     }
     if (token.includes('.')) {
-      if (!DECIMAL.test(token)) throw new Error(`Rational.parse: "${tokenRaw}" is not a number`);
+      if (!DECIMAL.test(token))
+        throw new Error(`Rational.parse: "${tokenRaw}" is not a number`);
       const [i, f] = token.split('.');
       const den = Math.pow(10, f.length);
       const num = (parseInt(i || '0', 10) || 0) * den + parseInt(f || '0', 10);
       return new Rational(sign * num, den);
     }
-    if (!DIGITS.test(token)) throw new Error(`Rational.parse: "${tokenRaw}" is not a number`);
+    if (!DIGITS.test(token))
+      throw new Error(`Rational.parse: "${tokenRaw}" is not a number`);
     return new Rational(sign * parseInt(token, 10), 1);
   }
 

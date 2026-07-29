@@ -1,4 +1,12 @@
-import { round, money, fmt, parseParams, formatParams, parseNumberList, nCr } from './num';
+import {
+  round,
+  money,
+  fmt,
+  parseParams,
+  formatParams,
+  parseNumberList,
+  nCr,
+} from './num';
 
 describe('round', () => {
   it('rounds half away from zero', () => {
@@ -32,7 +40,7 @@ describe('fmt', () => {
   it('keeps integers clean and trims trailing zeros', () => {
     expect(fmt(5)).toBe('5');
     expect(fmt(5.5)).toBe('5.5');
-    expect(fmt(5.10)).toBe('5.1');
+    expect(fmt(5.1)).toBe('5.1');
     expect(fmt(1 / 3, 4)).toBe('0.3333');
   });
 });

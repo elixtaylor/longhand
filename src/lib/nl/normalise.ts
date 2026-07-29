@@ -22,19 +22,52 @@ export interface Reading {
 /* ------------------------------------------------------------ word numbers */
 
 const ONES: Record<string, number> = {
-  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
-  eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13,
-  fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18,
+  zero: 0,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  thirteen: 13,
+  fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  seventeen: 17,
+  eighteen: 18,
   nineteen: 19,
 };
 const TENS: Record<string, number> = {
-  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70,
-  eighty: 80, ninety: 90,
+  twenty: 20,
+  thirty: 30,
+  forty: 40,
+  fifty: 50,
+  sixty: 60,
+  seventy: 70,
+  eighty: 80,
+  ninety: 90,
 };
 
 const ORDINALS: Record<string, number> = {
-  first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7,
-  eighth: 8, ninth: 9, tenth: 10, eleventh: 11, twelfth: 12, twentieth: 20,
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+  sixth: 6,
+  seventh: 7,
+  eighth: 8,
+  ninth: 9,
+  tenth: 10,
+  eleventh: 11,
+  twelfth: 12,
+  twentieth: 20,
 };
 
 function wordNumbers(s: string): string {
@@ -43,31 +76,38 @@ function wordNumbers(s: string): string {
   const onesAlt = Object.keys(ONES).join('|');
   s = s.replace(
     new RegExp(`\\b(${tensAlt})[\\s-](${onesAlt})\\b`, 'gi'),
-    (_m, t: string, o: string) => String(TENS[t.toLowerCase()] + ONES[o.toLowerCase()]),
+    (_m, t: string, o: string) =>
+      String(TENS[t.toLowerCase()] + ONES[o.toLowerCase()]),
   );
-  s = s.replace(new RegExp(`\\b(${tensAlt})\\b`, 'gi'), (m) => String(TENS[m.toLowerCase()]));
+  s = s.replace(new RegExp(`\\b(${tensAlt})\\b`, 'gi'), (m) =>
+    String(TENS[m.toLowerCase()]),
+  );
   // "second" is also an ordinal *and* a unit of time; ordinals are handled
   // separately below, so only convert bare cardinals here.
-  s = s.replace(new RegExp(`\\b(${onesAlt})\\b`, 'gi'), (m) => String(ONES[m.toLowerCase()]));
+  s = s.replace(new RegExp(`\\b(${onesAlt})\\b`, 'gi'), (m) =>
+    String(ONES[m.toLowerCase()]),
+  );
   return s;
 }
 
 /* --------------------------------------------------------------- unicode */
 
 function unicode(s: string): string {
-  return s
-    .replace(/[−‒–—]/g, '-') // minus / dashes
-    .replace(/[×⋅•]/g, '×')
-    .replace(/÷/g, '÷')
-    // Greek angle names, as textbooks label triangles.
-    .replace(/α/g, 'A')
-    .replace(/β/g, 'B')
-    .replace(/γ/g, 'C')
-    .replace(/²/g, '^2')
-    .replace(/³/g, '^3')
-    .replace(/⁴/g, '^4')
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'");
+  return (
+    s
+      .replace(/[−‒–—]/g, '-') // minus / dashes
+      .replace(/[×⋅•]/g, '×')
+      .replace(/÷/g, '÷')
+      // Greek angle names, as textbooks label triangles.
+      .replace(/α/g, 'A')
+      .replace(/β/g, 'B')
+      .replace(/γ/g, 'C')
+      .replace(/²/g, '^2')
+      .replace(/³/g, '^3')
+      .replace(/⁴/g, '^4')
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+  );
 }
 
 /* ----------------------------------------------------------------- stems */
@@ -95,18 +135,20 @@ function stripStems(s: string): string {
 /* -------------------------------------------------------------- operators */
 
 function operators(s: string): string {
-  return s
-    .replace(/\bmultiplied\s+by\b|\btimes\b/gi, ' × ')
-    .replace(/\bdivided\s+by\b/gi, ' ÷ ')
-    .replace(/\b(?:added\s+to|plus)\b/gi, ' + ')
-    .replace(/\b(?:subtract(?:ed)?\s+by|take\s+away|minus|less)\b/gi, ' - ')
-    .replace(/\b(?:is\s+equal\s+to|equals?)\b/gi, ' = ')
-    .replace(/\bsquare\s+root\s+of\s+/gi, 'sqrt ')
-    // Powers bind to the term before them, so swallow the preceding space.
-    .replace(/\s*\bsquared\b/gi, '^2')
-    .replace(/\s*\bcubed\b/gi, '^3')
-    .replace(/\s*\bto\s+the\s+power\s+(?:of\s+)?(-?\d+)/gi, '^$1')
-    .replace(/\s*\braised\s+to\s+(?:the\s+)?(-?\d+)/gi, '^$1');
+  return (
+    s
+      .replace(/\bmultiplied\s+by\b|\btimes\b/gi, ' × ')
+      .replace(/\bdivided\s+by\b/gi, ' ÷ ')
+      .replace(/\b(?:added\s+to|plus)\b/gi, ' + ')
+      .replace(/\b(?:subtract(?:ed)?\s+by|take\s+away|minus|less)\b/gi, ' - ')
+      .replace(/\b(?:is\s+equal\s+to|equals?)\b/gi, ' = ')
+      .replace(/\bsquare\s+root\s+of\s+/gi, 'sqrt ')
+      // Powers bind to the term before them, so swallow the preceding space.
+      .replace(/\s*\bsquared\b/gi, '^2')
+      .replace(/\s*\bcubed\b/gi, '^3')
+      .replace(/\s*\bto\s+the\s+power\s+(?:of\s+)?(-?\d+)/gi, '^$1')
+      .replace(/\s*\braised\s+to\s+(?:the\s+)?(-?\d+)/gi, '^$1')
+  );
 }
 
 /** Units of length/area attached to a number carry no algebraic meaning. */
@@ -121,7 +163,10 @@ function stripUnits(s: string): string {
 
 /** `radius of 5`, `radius = 5`, `radius 5` → `r=5` */
 function labelled(s: string, words: string, key: string): string {
-  const re = new RegExp(`\\b(?:${words})\\b\\s*(?:of|is|are|=|:)?\\s*(-?\\d*\\.?\\d+)`, 'gi');
+  const re = new RegExp(
+    `\\b(?:${words})\\b\\s*(?:of|is|are|=|:)?\\s*(-?\\d*\\.?\\d+)`,
+    'gi',
+  );
   return s.replace(re, `${key}=$1`);
 }
 
@@ -141,7 +186,8 @@ function measurement(s: string): string {
 }
 
 function trigonometry(s: string): string {
-  const isRight = /\bright[\s-]?angled?\b|\bright\s+triangle\b|\bhypotenuse\b/i.test(s);
+  const isRight =
+    /\bright[\s-]?angled?\b|\bright\s+triangle\b|\bhypotenuse\b/i.test(s);
 
   s = labelled(s, 'hypotenuse|hyp', 'c');
   s = labelled(s, 'opposite|opp', 'a');
@@ -199,14 +245,27 @@ function statistics(s: string): string {
   // "exactly 3 heads in 10 flips" → a binomial with x=3, n=10
   s = s.replace(/\bexactly\s+(-?\d+)\b/gi, 'x=$1');
   // Allow a describing word between the count and the noun: "10 coin flips".
-  const TRIALS = 'trials?|flips?|tosses|throws|rolls|attempts|shots|games|people|students|items';
-  s = s.replace(new RegExp(`\\b(?:in|out\\s+of)\\s+(\\d+)\\s*(?:\\w+\\s+)?(?:${TRIALS})\\b`, 'gi'), 'n=$1');
-  s = s.replace(new RegExp(`\\b(\\d+)\\s*(?:\\w+\\s+)?(?:${TRIALS})\\b`, 'gi'), 'n=$1');
+  const TRIALS =
+    'trials?|flips?|tosses|throws|rolls|attempts|shots|games|people|students|items';
+  s = s.replace(
+    new RegExp(
+      `\\b(?:in|out\\s+of)\\s+(\\d+)\\s*(?:\\w+\\s+)?(?:${TRIALS})\\b`,
+      'gi',
+    ),
+    'n=$1',
+  );
+  s = s.replace(
+    new RegExp(`\\b(\\d+)\\s*(?:\\w+\\s+)?(?:${TRIALS})\\b`, 'gi'),
+    'n=$1',
+  );
   return s;
 }
 
 function logarithms(s: string): string {
-  s = s.replace(/\blog\s*(?:to\s+the\s+)?base\s*(\d+(?:\.\d+)?)\s*(?:of\s*)?/gi, 'log$1 ');
+  s = s.replace(
+    /\blog\s*(?:to\s+the\s+)?base\s*(\d+(?:\.\d+)?)\s*(?:of\s*)?/gi,
+    'log$1 ',
+  );
   s = s.replace(/\bnatural\s+log(?:arithm)?\s*(?:of\s*)?/gi, 'ln ');
   s = s.replace(/\blog\s+of\b/gi, 'log');
   return s;
@@ -222,16 +281,18 @@ function probability(s: string): string {
 /* ---------------------------------------------------------------- tidying */
 
 function tidy(s: string): string {
-  return s
-    // Articles and connectives carry no maths. `a` is also a real variable, so
-    // never drop one that is being assigned a value.
-    .replace(/\b(?:a|an|the)\b(?!\s*=)/gi, ' ')
-    .replace(/\b(?:with|that|which|has|have|having|its|of)\b/gi, ' ')
-    .replace(/\s*,\s*/g, ', ')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s*,\s*$/, '')
-    .replace(/^\s*,\s*/, '')
-    .trim();
+  return (
+    s
+      // Articles and connectives carry no maths. `a` is also a real variable, so
+      // never drop one that is being assigned a value.
+      .replace(/\b(?:a|an|the)\b(?!\s*=)/gi, ' ')
+      .replace(/\b(?:with|that|which|has|have|having|its|of)\b/gi, ' ')
+      .replace(/\s*,\s*/g, ', ')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s*,\s*$/, '')
+      .replace(/^\s*,\s*/, '')
+      .trim()
+  );
 }
 
 /* ------------------------------------------------------------------- main */

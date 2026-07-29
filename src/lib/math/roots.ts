@@ -9,7 +9,8 @@ import { Rational } from './rational';
 
 export function evaluatePoly(p: Poly, x: number): number {
   let out = 0;
-  for (const { power, coeff } of p.terms()) out += coeff.toNumber() * Math.pow(x, power);
+  for (const { power, coeff } of p.terms())
+    out += coeff.toNumber() * Math.pow(x, power);
   return out;
 }
 
@@ -30,7 +31,8 @@ function integerCoeffs(p: Poly): { coeffs: number[]; degree: number } {
     lcm = (lcm * d) / gcdInt(lcm, d);
   }
   const coeffs: number[] = [];
-  for (let k = 0; k <= deg; k++) coeffs.push(Math.round(p.get(k).toNumber() * lcm));
+  for (let k = 0; k <= deg; k++)
+    coeffs.push(Math.round(p.get(k).toNumber() * lcm));
   return { coeffs, degree: deg };
 }
 function gcdInt(a: number, b: number): number {

@@ -1,5 +1,6 @@
 import { Rational } from './rational';
 import { proseWordsIn } from '../nl/vocabulary';
+import { MAX_POLYNOMIAL_DEGREE } from '../safety';
 
 /**
  * A single-variable polynomial with exact rational coefficients, stored as
@@ -41,12 +42,14 @@ export class Poly {
 
   add(o: Poly): Poly {
     const m = new Map(this.coeffs);
-    for (const [p, c] of o.coeffs) m.set(p, (m.get(p) ?? Rational.int(0)).add(c));
+    for (const [p, c] of o.coeffs)
+      m.set(p, (m.get(p) ?? Rational.int(0)).add(c));
     return new Poly(m, this.variable);
   }
   sub(o: Poly): Poly {
     const m = new Map(this.coeffs);
-    for (const [p, c] of o.coeffs) m.set(p, (m.get(p) ?? Rational.int(0)).sub(c));
+    for (const [p, c] of o.coeffs)
+      m.set(p, (m.get(p) ?? Rational.int(0)).sub(c));
     return new Poly(m, this.variable);
   }
 
@@ -70,7 +73,8 @@ export class Poly {
   /** Evaluate at a rational value. */
   at(x: Rational): Rational {
     let out = Rational.int(0);
-    for (const { power, coeff } of this.terms()) out = out.add(coeff.mul(x.pow(power)));
+    for (const { power, coeff } of this.terms())
+      out = out.add(coeff.mul(x.pow(power)));
     return out;
   }
 
@@ -133,7 +137,9 @@ export function parsePoly(inputRaw: string, variable = 'x'): Poly {
   // two digits it is real arithmetic this parser cannot do, and deleting it
   // silently turned "2*7" into twenty-seven.
   if (/\d\*\d/.test(s)) {
-    throw new ParseError(`Work out "${s.match(/\d+\*\d+/)?.[0]}" first — this reads polynomials, not arithmetic.`);
+    throw new ParseError(
+      `Work out "${s.match(/\d+\*\d+/)?.[0]}" first — this reads polynomials, not arithmetic.`,
+    );
   }
   s = s.replace(/\*/g, '');
   if (s === '') throw new ParseError('Nothing to parse.');
@@ -172,9 +178,16 @@ function parseMonomial(chunk: string, v: string): Monomial {
     // The exponent has to be the whole remainder.
     const exp = rest.slice(1);
     if (!/^\d+$/.test(exp)) {
-      throw new ParseError(`Unsupported power in "${chunk}". Use a whole number like ${v}^2.`);
+      throw new ParseError(
+        `Unsupported power in "${chunk}". Use a whole number like ${v}^2.`,
+      );
     }
     power = parseInt(exp, 10);
+    if (!Number.isSafeInteger(power) || power > MAX_POLYNOMIAL_DEGREE) {
+      throw new ParseError(
+        `Powers above ${MAX_POLYNOMIAL_DEGREE} are not supported in worked solutions.`,
+      );
+    }
   } else if (rest !== '') {
     throw new ParseError(`Couldn't read "${chunk}".`);
   }
@@ -199,7 +212,8 @@ export function parseEquation(inputRaw: string, variable?: string): Equation {
   const parts = normalise(inputRaw).split('=');
   if (parts.length > 2) throw new ParseError('Too many "=" signs.');
   const lhs = parsePoly(parts[0], v);
-  const rhs = parts.length === 2 ? parsePoly(parts[1], v) : new Poly(new Map(), v);
+  const rhs =
+    parts.length === 2 ? parsePoly(parts[1], v) : new Poly(new Map(), v);
   return { lhs, rhs, variable: v };
 }
 

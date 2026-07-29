@@ -33,7 +33,10 @@ export function TriangleDiagram({ data }: { data: TriangleData }) {
     x: (X(p) + X(q)) / 2,
     y: (Y(p) + Y(q)) / 2,
   });
-  const centroid = { x: (X(Ap) + X(Bp) + X(Cp)) / 3, y: (Y(Ap) + Y(Bp) + Y(Cp)) / 3 };
+  const centroid = {
+    x: (X(Ap) + X(Bp) + X(Cp)) / 3,
+    y: (Y(Ap) + Y(Bp) + Y(Cp)) / 3,
+  };
 
   /** Nudge a label outward from the centre so it clears the edge. */
   function out(p: { x: number; y: number }, by = 15) {
@@ -49,9 +52,18 @@ export function TriangleDiagram({ data }: { data: TriangleData }) {
     { pos: out(mid(Ap, Bp)), text: `c = ${round(c)}` },
   ];
   const vertexLabels = [
-    { pos: out({ x: X(Ap), y: Y(Ap) }, 13), text: A !== undefined ? `A = ${round(A)}°` : 'A' },
-    { pos: out({ x: X(Bp), y: Y(Bp) }, 13), text: B !== undefined ? `B = ${round(B)}°` : 'B' },
-    { pos: out({ x: X(Cp), y: Y(Cp) }, 13), text: C !== undefined ? `C = ${round(C)}°` : 'C' },
+    {
+      pos: out({ x: X(Ap), y: Y(Ap) }, 13),
+      text: A !== undefined ? `A = ${round(A)}°` : 'A',
+    },
+    {
+      pos: out({ x: X(Bp), y: Y(Bp) }, 13),
+      text: B !== undefined ? `B = ${round(B)}°` : 'B',
+    },
+    {
+      pos: out({ x: X(Cp), y: Y(Cp) }, 13),
+      text: C !== undefined ? `C = ${round(C)}°` : 'C',
+    },
   ];
 
   const scale = 260 / Math.max(w, h);
@@ -72,7 +84,13 @@ export function TriangleDiagram({ data }: { data: TriangleData }) {
         />
         {rightAngle && <RightAngleMark at={Cp} toward={[Bp, Ap]} X={X} Y={Y} />}
         {sideLabels.map((l) => (
-          <text key={l.text} x={l.pos.x} y={l.pos.y} className="diagram-label" textAnchor="middle">
+          <text
+            key={l.text}
+            x={l.pos.x}
+            y={l.pos.y}
+            className="diagram-label"
+            textAnchor="middle"
+          >
             {l.text}
           </text>
         ))}

@@ -19,13 +19,20 @@ function solve(input: string) {
 
 function answers(latex: string | undefined): number[] {
   const out: number[] = [];
-  const pm = /\\dfrac\{(-?\d+)\s*\\pm\s*\\sqrt\{(\d+)\}\}\{(-?\d+)\}/.exec(latex ?? '');
+  const pm = /\\dfrac\{(-?\d+)\s*\\pm\s*\\sqrt\{(\d+)\}\}\{(-?\d+)\}/.exec(
+    latex ?? '',
+  );
   if (pm) {
     const [n, m, d] = [Number(pm[1]), Number(pm[2]), Number(pm[3])];
     return [(n + Math.sqrt(m)) / d, (n - Math.sqrt(m)) / d];
   }
-  for (const m of (latex ?? '').matchAll(/x\s*=\s*\\frac\{(-?\d+)\}\{(-?\d+)\}/g)) out.push(Number(m[1]) / Number(m[2]));
-  if (out.length === 0) for (const m of (latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g)) out.push(Number(m[1]));
+  for (const m of (latex ?? '').matchAll(
+    /x\s*=\s*\\frac\{(-?\d+)\}\{(-?\d+)\}/g,
+  ))
+    out.push(Number(m[1]) / Number(m[2]));
+  if (out.length === 0)
+    for (const m of (latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g))
+      out.push(Number(m[1]));
   return out;
 }
 
@@ -62,7 +69,10 @@ describe('term collecting', () => {
     ['(x+1)/(x-1) = 2', 3],
     ['3/(x+1) = 2/(x-1)', 5],
   ])('%s gives x = %d', (equation, expected) => {
-    expect(answers(solve(equation).answerLatex)[0]).toBeCloseTo(expected as number, 6);
+    expect(answers(solve(equation).answerLatex)[0]).toBeCloseTo(
+      expected as number,
+      6,
+    );
   });
 
   it('expands products of factors into a quadratic and solves it', () => {
@@ -85,7 +95,9 @@ describe('term collecting', () => {
   it('recognises an identity produced only after expanding', () => {
     const r = solve('5(x + 2) = 5x + 10');
     expect(r.answerLatex).toBeUndefined();
-    expect(r.steps[r.steps.length - 1]?.latex).toBe('\\text{Infinitely many solutions}');
+    expect(r.steps[r.steps.length - 1]?.latex).toBe(
+      '\\text{Infinitely many solutions}',
+    );
   });
 
   it('recognises a contradiction produced only after expanding', () => {
@@ -107,7 +119,10 @@ describe('term collecting', () => {
     // x(x-1)(x-2) = 5  expands to  x^3 - 3x^2 + 2x - 5 = 0, which has no
     // rational root at all (checked against every p/q the theorem allows) —
     // the honest answer is refusal, not a numeric guess dressed as exact.
-    const r = collectSolver.solve('x(x-1)(x-2) = 5', collectSolver.defaultMethodId);
+    const r = collectSolver.solve(
+      'x(x-1)(x-2) = 5',
+      collectSolver.defaultMethodId,
+    );
     expect(r.ok).toBe(false);
   });
 
@@ -123,7 +138,12 @@ describe('term collecting', () => {
   });
 
   it('picks up equations nothing else recognises', () => {
-    for (const input of ['2(x+3) = 3(x-1)', '(x+1)(x-1) = x + 3', '3/(x+1) = 2/(x-1)', 'x + 1/x = 3']) {
+    for (const input of [
+      '2(x+3) = 3(x-1)',
+      '(x+1)(x-1) = x + 3',
+      '3/(x+1) = 2/(x-1)',
+      'x + 1/x = 3',
+    ]) {
       expect(interpret(input).detection?.solver.id).toBe('collect');
     }
   });

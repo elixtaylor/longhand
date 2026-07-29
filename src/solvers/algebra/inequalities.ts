@@ -8,7 +8,12 @@ import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 type Rel = '<' | '>' | '<=' | '>=';
 
-const PRETTY: Record<Rel, string> = { '<': '<', '>': '>', '<=': '\\le', '>=': '\\ge' };
+const PRETTY: Record<Rel, string> = {
+  '<': '<',
+  '>': '>',
+  '<=': '\\le',
+  '>=': '\\ge',
+};
 const FLIP: Record<Rel, Rel> = { '<': '>', '>': '<', '<=': '>=', '>=': '<=' };
 
 interface Ineq {
@@ -20,8 +25,13 @@ interface Ineq {
 function parse(input: string): Ineq {
   const s = input.replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/\s+/g, '');
   const m = s.match(/^(.+?)(<=|>=|<|>)(.+)$/);
-  if (!m) throw new ParseError('An inequality needs <, >, ≤ or ≥ — e.g.  3x + 2 > 8');
-  return { lhs: parsePoly(m[1], 'x'), rhs: parsePoly(m[3], 'x'), rel: m[2] as Rel };
+  if (!m)
+    throw new ParseError('An inequality needs <, >, ≤ or ≥ — e.g.  3x + 2 > 8');
+  return {
+    lhs: parsePoly(m[1], 'x'),
+    rhs: parsePoly(m[3], 'x'),
+    rel: m[2] as Rel,
+  };
 }
 
 function solveLinear(iq: Ineq): SolveResult {
@@ -31,7 +41,10 @@ function solveLinear(iq: Ineq): SolveResult {
   let rel = iq.rel;
 
   const steps: Step[] = [
-    { note: 'Write the inequality.', latex: `${polyLatex(iq.lhs)} ${PRETTY[iq.rel]} ${polyLatex(iq.rhs)}` },
+    {
+      note: 'Write the inequality.',
+      latex: `${polyLatex(iq.lhs)} ${PRETTY[iq.rel]} ${polyLatex(iq.rhs)}`,
+    },
     {
       note: 'Collect every term on the left, keeping the inequality sign the same.',
       latex: `${polyLatex(std)} ${PRETTY[rel]} 0`,
@@ -44,7 +57,14 @@ function solveLinear(iq: Ineq): SolveResult {
       note: 'The $x$ terms cancel, so the inequality is either always true or never true.',
       latex: holds ? '\\text{True for every } x' : '\\text{No solution}',
     });
-    return { ok: true, solution: { headline: 'Solve the inequality', methodName: 'Balancing', steps } };
+    return {
+      ok: true,
+      solution: {
+        headline: 'Solve the inequality',
+        methodName: 'Balancing',
+        steps,
+      },
+    };
   }
 
   steps.push({
@@ -67,13 +87,18 @@ function solveLinear(iq: Ineq): SolveResult {
     });
   }
   // The division is its own move, not a tail on the line that set it up.
-  steps.push({ note: 'Work out the division.', latex: `x ${PRETTY[rel]} ${rl(value)}` });
+  steps.push({
+    note: 'Work out the division.',
+    latex: `x ${PRETTY[rel]} ${rl(value)}`,
+  });
 
   const answer = `x ${PRETTY[rel]} ${rl(value)}`;
   const v = value.toNumber();
   const inclusive = rel.includes('=');
   steps.push({
-    note: 'On a number line this is everything ' + (rel.startsWith('<') ? 'to the left of' : 'to the right of') +
+    note:
+      'On a number line this is everything ' +
+      (rel.startsWith('<') ? 'to the left of' : 'to the right of') +
       ` $${rl(value)}$, with ${inclusive ? 'a filled circle (the value is included)' : 'an open circle (the value is not included)'}.`,
     // No latex: the line above already states the solution, and the diagram
     // is what this step adds.
@@ -81,17 +106,33 @@ function solveLinear(iq: Ineq): SolveResult {
       kind: 'number-line',
       data: {
         points: [{ x: v, filled: inclusive }],
-        regions: [rel.startsWith('<') ? { from: null, to: v } : { from: v, to: null }],
+        regions: [
+          rel.startsWith('<') ? { from: null, to: v } : { from: v, to: null },
+        ],
       },
     },
     annotation: 'solution set',
   });
 
-  return { ok: true, solution: { headline: 'Solve the inequality', methodName: 'Balancing', steps, answerLatex: answer } };
+  return {
+    ok: true,
+    solution: {
+      headline: 'Solve the inequality',
+      methodName: 'Balancing',
+      steps,
+      answerLatex: answer,
+    },
+  };
 }
 
 function evalRel(v: number, rel: Rel): boolean {
-  return rel === '<' ? v < 0 : rel === '>' ? v > 0 : rel === '<=' ? v <= 0 : v >= 0;
+  return rel === '<'
+    ? v < 0
+    : rel === '>'
+      ? v > 0
+      : rel === '<='
+        ? v <= 0
+        : v >= 0;
 }
 function termX(coeff: Rational): string {
   if (coeff.eq(Rational.int(1))) return 'x';
@@ -103,8 +144,14 @@ function solveQuadratic(iq: Ineq): SolveResult {
   let std = iq.lhs.sub(iq.rhs);
   let rel = iq.rel;
   const steps: Step[] = [
-    { note: 'Write the inequality.', latex: `${polyLatex(iq.lhs)} ${PRETTY[iq.rel]} ${polyLatex(iq.rhs)}` },
-    { note: 'Bring everything to one side.', latex: `${polyLatex(std)} ${PRETTY[rel]} 0` },
+    {
+      note: 'Write the inequality.',
+      latex: `${polyLatex(iq.lhs)} ${PRETTY[iq.rel]} ${polyLatex(iq.rhs)}`,
+    },
+    {
+      note: 'Bring everything to one side.',
+      latex: `${polyLatex(std)} ${PRETTY[rel]} 0`,
+    },
   ];
 
   // Work with a positive leading coefficient so the parabola opens upwards.
@@ -132,11 +179,22 @@ function solveQuadratic(iq: Ineq): SolveResult {
       latex: `\\Delta = ${info.discriminant} < 0`,
     });
     steps.push({
-      note: alwaysPositive ? 'So the inequality holds for every value of $x$.' : 'So the inequality is never satisfied.',
-      latex: alwaysPositive ? '\\text{True for every } x' : '\\text{No solution}',
+      note: alwaysPositive
+        ? 'So the inequality holds for every value of $x$.'
+        : 'So the inequality is never satisfied.',
+      latex: alwaysPositive
+        ? '\\text{True for every } x'
+        : '\\text{No solution}',
       annotation: 'solution set',
     });
-    return { ok: true, solution: { headline: 'Solve the quadratic inequality', methodName: 'Sign diagram', steps } };
+    return {
+      ok: true,
+      solution: {
+        headline: 'Solve the quadratic inequality',
+        methodName: 'Sign diagram',
+        steps,
+      },
+    };
   }
 
   const roots = [...info.numericRoots].sort((x, y) => x - y);
@@ -170,7 +228,9 @@ function solveQuadratic(iq: Ineq): SolveResult {
   } else if (below) {
     answer = inclusive ? `${lb} \\le x \\le ${hb}` : `${lb} < x < ${hb}`;
   } else {
-    answer = inclusive ? `x \\le ${lb} \\;\\text{or}\\; x \\ge ${hb}` : `x < ${lb} \\;\\text{or}\\; x > ${hb}`;
+    answer = inclusive
+      ? `x \\le ${lb} \\;\\text{or}\\; x \\ge ${hb}`
+      : `x < ${lb} \\;\\text{or}\\; x > ${hb}`;
   }
 
   steps.push({
@@ -201,7 +261,12 @@ function solveQuadratic(iq: Ineq): SolveResult {
 
   return {
     ok: true,
-    solution: { headline: 'Solve the quadratic inequality', methodName: 'Sign diagram', steps, answerLatex: answer },
+    solution: {
+      headline: 'Solve the quadratic inequality',
+      methodName: 'Sign diagram',
+      steps,
+      answerLatex: answer,
+    },
   };
 }
 
@@ -214,10 +279,16 @@ export const inequalitySolver: Solver = {
   id: 'inequalities',
   title: 'Inequalities',
   subjects: ['Methods', 'General'],
-  blurb: 'Solve linear and quadratic inequalities, including the sign-flip rule.',
+  blurb:
+    'Solve linear and quadratic inequalities, including the sign-flip rule.',
   placeholder: 'e.g.  3x + 2 > 8   or   x^2 - 5x + 6 < 0',
   methods: [
-    { id: 'auto', name: 'What it needs', blurb: 'Balances a linear inequality, or uses a sign diagram for a quadratic.' },
+    {
+      id: 'auto',
+      name: 'What it needs',
+      blurb:
+        'Balances a linear inequality, or uses a sign diagram for a quadratic.',
+    },
   ],
   defaultMethodId: 'auto',
   detect(input) {
@@ -236,11 +307,19 @@ export const inequalitySolver: Solver = {
     try {
       iq = parse(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that inequality.' };
+      return {
+        ok: false,
+        error:
+          e instanceof Error ? e.message : 'Could not read that inequality.',
+      };
     }
     const std = iq.lhs.sub(iq.rhs);
     if (std.degree() > 2) {
-      return { ok: false, error: 'This topic handles linear and quadratic inequalities (up to x²).' };
+      return {
+        ok: false,
+        error:
+          'This topic handles linear and quadratic inequalities (up to x²).',
+      };
     }
     return std.get(2).isZero() ? solveLinear(iq) : solveQuadratic(iq);
   },

@@ -43,7 +43,8 @@ function pointAt(input: string): number | null {
 
 function parseFn(input: string): Poly {
   const p = parsePoly(functionPart(input), 'x');
-  if (p.isZeroPoly()) throw new ParseError('Enter a function of x, e.g.  y = x^3 - 3x');
+  if (p.isZeroPoly())
+    throw new ParseError('Enter a function of x, e.g.  y = x^3 - 3x');
   return p;
 }
 
@@ -74,7 +75,11 @@ function probeStep(x: number, all: number[]): number {
   return Math.min(1e-4, nearest / 4);
 }
 
-function gradientEitherSide(fd: Poly, x: number, all: number[]): { left: number; right: number } {
+function gradientEitherSide(
+  fd: Poly,
+  x: number,
+  all: number[],
+): { left: number; right: number } {
   const h = probeStep(x, all);
   return { left: evaluatePoly(fd, x - h), right: evaluatePoly(fd, x + h) };
 }
@@ -104,7 +109,11 @@ function gradientAt(input: string): SolveResult {
   const f = parseFn(input);
   const x = pointAt(input);
   if (x === null) {
-    return { ok: false, error: 'Say where to measure the gradient, e.g. “gradient of y = x^2 at x = 3”.' };
+    return {
+      ok: false,
+      error:
+        'Say where to measure the gradient, e.g. “gradient of y = x^2 at x = 3”.',
+    };
   }
   const fd = differentiate(f);
   const m = evaluatePoly(fd, x);
@@ -145,18 +154,27 @@ function substituted(p: Poly, x: number): string {
   return terms
     .map(({ coeff, power }, i) => {
       const body =
-        power === 0 ? rl(coeff) : `${coeff.eq(Rational.int(1)) ? '' : rl(coeff)}${par(x)}${power > 1 ? `^{${power}}` : ''}`;
+        power === 0
+          ? rl(coeff)
+          : `${coeff.eq(Rational.int(1)) ? '' : rl(coeff)}${par(x)}${power > 1 ? `^{${power}}` : ''}`;
       return i === 0 ? body : coeff.isNeg() ? ` ${body}` : ` + ${body}`;
     })
     .join('');
 }
 
 /* --------------------------------------------------------- stationary points */
-function stationaryPoints(input: string, wording: 'stationary' | 'turning'): SolveResult {
+function stationaryPoints(
+  input: string,
+  wording: 'stationary' | 'turning',
+): SolveResult {
   const f = parseFn(input);
   const fd = differentiate(f);
   if (fd.isZeroPoly()) {
-    return { ok: false, error: 'That function has a constant gradient, so it has no stationary points.' };
+    return {
+      ok: false,
+      error:
+        'That function has a constant gradient, so it has no stationary points.',
+    };
   }
   const fdd = differentiate(fd);
   const xs = realRoots(fd).sort((a, b) => a - b);
@@ -179,7 +197,8 @@ function stationaryPoints(input: string, wording: 'stationary' | 'turning'): Sol
       ok: true,
       solution: {
         headline: `${wording === 'turning' ? 'Turning' : 'Stationary'} points of ${polyLatex(f)}`,
-        methodName: wording === 'turning' ? 'Turning points' : 'Stationary points',
+        methodName:
+          wording === 'turning' ? 'Turning points' : 'Stationary points',
         steps,
         answerLatex: '\\text{no stationary points}',
       },
@@ -187,7 +206,10 @@ function stationaryPoints(input: string, wording: 'stationary' | 'turning'): Sol
   }
 
   steps.push({
-    note: xs.length === 1 ? 'Solving gives one value of x.' : `Solving gives ${xs.length} values of x.`,
+    note:
+      xs.length === 1
+        ? 'Solving gives one value of x.'
+        : `Solving gives ${xs.length} values of x.`,
     latex: `x = ${xs.map((x) => fmt(x, 4)).join(', \\quad x = ')}`,
   });
 
@@ -202,7 +224,12 @@ function stationaryPoints(input: string, wording: 'stationary' | 'turning'): Sol
     // The second derivative decides which way the curve bends there, which is
     // what turns a bare coordinate into "maximum" or "minimum".
     const curvature = evaluatePoly(fdd, x);
-    const nature = curvature > 0 ? 'minimum' : curvature < 0 ? 'maximum' : natureBySign(fd, x, xs);
+    const nature =
+      curvature > 0
+        ? 'minimum'
+        : curvature < 0
+          ? 'maximum'
+          : natureBySign(fd, x, xs);
     steps.push({
       note:
         curvature === 0
@@ -219,14 +246,17 @@ function stationaryPoints(input: string, wording: 'stationary' | 'turning'): Sol
         annotation: nature,
       });
     }
-    described.push(`\\left(${fmt(x, 4)},\\; ${fmt(y, 4)}\\right)\\text{ ${nature}}`);
+    described.push(
+      `\\left(${fmt(x, 4)},\\; ${fmt(y, 4)}\\right)\\text{ ${nature}}`,
+    );
   }
 
   return {
     ok: true,
     solution: {
       headline: `${wording === 'turning' ? 'Turning' : 'Stationary'} points of ${polyLatex(f)}`,
-      methodName: wording === 'turning' ? 'Turning points' : 'Stationary points',
+      methodName:
+        wording === 'turning' ? 'Turning points' : 'Stationary points',
       steps,
       answerLatex: described.join(', \\quad '),
     },
@@ -238,14 +268,23 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
   const f = parseFn(input);
   const x1 = pointAt(input);
   if (x1 === null) {
-    return { ok: false, error: `Say where the ${kind} touches, e.g. “${kind} to y = x^2 at x = 3”.` };
+    return {
+      ok: false,
+      error: `Say where the ${kind} touches, e.g. “${kind} to y = x^2 at x = 3”.`,
+    };
   }
   const fd = differentiate(f);
   const slope = evaluatePoly(fd, x1);
   const y1 = evaluatePoly(f, x1);
 
   if (kind === 'normal' && slope === 0) {
-    return { ok: false, error: 'The tangent is horizontal there, so the normal is the vertical line x = ' + fmt(x1) + '.' };
+    return {
+      ok: false,
+      error:
+        'The tangent is horizontal there, so the normal is the vertical line x = ' +
+        fmt(x1) +
+        '.',
+    };
   }
   const m = kind === 'tangent' ? slope : -1 / slope;
   const c = y1 - m * x1;
@@ -273,7 +312,9 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
   // A zero gradient means a horizontal line. "y = 0x + 3" is not wrong so
   // much as not written by anyone.
   const lineLatex =
-    m === 0 ? `y = ${fmt(c, 4)}` : `y = ${fmt(m, 4)}x ${c < 0 ? '-' : '+'} ${fmt(Math.abs(c), 4)}`;
+    m === 0
+      ? `y = ${fmt(c, 4)}`
+      : `y = ${fmt(m, 4)}x ${c < 0 ? '-' : '+'} ${fmt(Math.abs(c), 4)}`;
 
   steps.push({
     note: 'Use the point–gradient form of a straight line.',
@@ -314,7 +355,8 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
 /* ------------------------------------------------------------------ solver */
 const GRADIENT = /\b(?:gradient|slope)\b/i;
 const STATIONARY = /\bstationary\b|\bnature\s+of\b/i;
-const TURNING = /\bturning\s+point|\bvertex\b|\b(?:maximum|minimum|max|min)\s+(?:point|value)?/i;
+const TURNING =
+  /\bturning\s+point|\bvertex\b|\b(?:maximum|minimum|max|min)\s+(?:point|value)?/i;
 const TANGENT = /\btangent\b/i;
 const NORMAL = /\bnormal\s+(?:to|line)\b/i;
 
@@ -326,10 +368,28 @@ export const calculusApplicationsSolver: Solver = {
     'Questions that need differentiation and equation solving together — the gradient at a point, stationary points and their nature, tangents and normals.',
   placeholder: 'stationary points of x^3 - 3x',
   methods: [
-    { id: 'stationary', name: 'Stationary points', blurb: "Set f'(x) = 0, solve, then use f''(x) to say whether each is a maximum or a minimum." },
-    { id: 'gradient', name: 'Gradient at a point', blurb: "Differentiate, then substitute the x-value into f'(x)." },
-    { id: 'tangent', name: 'Tangent line', blurb: 'Gradient at the point, then y − y₁ = m(x − x₁).' },
-    { id: 'normal', name: 'Normal line', blurb: 'Perpendicular to the tangent: gradient −1/m through the same point.' },
+    {
+      id: 'stationary',
+      name: 'Stationary points',
+      blurb:
+        "Set f'(x) = 0, solve, then use f''(x) to say whether each is a maximum or a minimum.",
+    },
+    {
+      id: 'gradient',
+      name: 'Gradient at a point',
+      blurb: "Differentiate, then substitute the x-value into f'(x).",
+    },
+    {
+      id: 'tangent',
+      name: 'Tangent line',
+      blurb: 'Gradient at the point, then y − y₁ = m(x − x₁).',
+    },
+    {
+      id: 'normal',
+      name: 'Normal line',
+      blurb:
+        'Perpendicular to the tangent: gradient −1/m through the same point.',
+    },
   ],
   defaultMethodId: 'stationary',
 
@@ -343,7 +403,8 @@ export const calculusApplicationsSolver: Solver = {
     if (TANGENT.test(input) && /\bat\b/i.test(input)) return 0.95;
     if (STATIONARY.test(input)) return 0.95;
     if (TURNING.test(input)) return 0.92;
-    if (GRADIENT.test(input) && /\b(?:at|when)\s+x\s*=/i.test(input)) return 0.95;
+    if (GRADIENT.test(input) && /\b(?:at|when)\s+x\s*=/i.test(input))
+      return 0.95;
     if (GRADIENT.test(input)) return 0.5;
     return 0;
   },
@@ -377,7 +438,10 @@ export const calculusApplicationsSolver: Solver = {
           return stationaryPoints(input, 'stationary');
       }
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that function.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that function.',
+      };
     }
   },
 };

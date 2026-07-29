@@ -1,7 +1,11 @@
 import { financialSolver } from './index';
 import { sequencesSolver } from '../sequences';
 
-const sol = (s: { solve: (i: string, m: string) => any }, input: string, method: string) => {
+const sol = (
+  s: { solve: (i: string, m: string) => any },
+  input: string,
+  method: string,
+) => {
   const r = s.solve(input, method);
   expect(r.ok, `failed to solve "${input}"`).toBe(true);
   return r.ok ? r.solution : null!;
@@ -17,25 +21,41 @@ describe('financialSolver', () => {
 
   it('computes compound interest yearly', () => {
     // 5000 × 1.04³ = 5624.32
-    const s = sol(financialSolver, '$5000 at 4% for 3 years compound', 'compound');
+    const s = sol(
+      financialSolver,
+      '$5000 at 4% for 3 years compound',
+      'compound',
+    );
     expect(s.answerLatex).toContain('5,624.32');
   });
 
   it('respects monthly compounding', () => {
     // 5000 × (1 + 0.04/12)^36 = 5636.36
-    const s = sol(financialSolver, '$5000 at 4% for 3 years compounded monthly', 'compound');
+    const s = sol(
+      financialSolver,
+      '$5000 at 4% for 3 years compounded monthly',
+      'compound',
+    );
     expect(s.answerLatex).toContain('5,636.36');
   });
 
   it('computes reducing-balance depreciation', () => {
     // 20000 × 0.85^4 = 10440.13
-    const s = sol(financialSolver, '$20000 at 15% for 4 years depreciation', 'depreciation');
+    const s = sol(
+      financialSolver,
+      '$20000 at 15% for 4 years depreciation',
+      'depreciation',
+    );
     expect(s.answerLatex).toContain('10,440.13');
   });
 
   it('computes a loan repayment', () => {
     // P=300000, i=0.06/12, N=360 → 1798.65
-    const s = sol(financialSolver, 'loan $300000 at 6% for 30 years repaid monthly', 'repayment');
+    const s = sol(
+      financialSolver,
+      'loan $300000 at 6% for 30 years repaid monthly',
+      'repayment',
+    );
     expect(s.answerLatex).toContain('1,798.65');
   });
 
@@ -45,7 +65,9 @@ describe('financialSolver', () => {
   });
 
   it('asks for missing figures', () => {
-    expect(financialSolver.solve('interest on $5000', 'compound').ok).toBe(false);
+    expect(financialSolver.solve('interest on $5000', 'compound').ok).toBe(
+      false,
+    );
   });
 });
 

@@ -5,11 +5,7 @@
  */
 
 export type SaceSubject =
-  | 'Foundations'
-  | 'General'
-  | 'Methods'
-  | 'Specialist'
-  | 'Physics';
+  'Foundations' | 'General' | 'Methods' | 'Specialist' | 'Physics';
 
 /** An optional bespoke diagram attached to a step (grid, division bracket…). */
 export interface StepVisual {
@@ -93,8 +89,7 @@ export interface Method {
 }
 
 export type SolveResult =
-  | { ok: true; solution: Solution }
-  | { ok: false; error: string };
+  { ok: true; solution: Solution } | { ok: false; error: string };
 
 export interface Solver {
   id: string;

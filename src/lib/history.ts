@@ -11,6 +11,10 @@ export interface HistoryEntry {
   at: number;
 }
 
+function validId(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-z][a-z0-9-]*$/i.test(value);
+}
+
 const KEY = 'longhand.history';
 const LIMIT = 20;
 
@@ -18,7 +22,15 @@ export function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(KEY);
     const list = raw ? (JSON.parse(raw) as HistoryEntry[]) : [];
-    return Array.isArray(list) ? list.filter((e) => typeof e?.input === 'string') : [];
+    return Array.isArray(list)
+      ? list.filter(
+          (e): e is HistoryEntry =>
+            typeof e?.input === 'string' &&
+            validId(e.solverId) &&
+            validId(e.methodId) &&
+            typeof e.at === 'number',
+        )
+      : [];
   } catch {
     return [];
   }
@@ -27,7 +39,8 @@ export function loadHistory(): HistoryEntry[] {
 /** Add an entry, moving a repeat of the same problem back to the top. */
 export function pushHistory(entry: HistoryEntry): HistoryEntry[] {
   const existing = loadHistory().filter(
-    (e) => !(e.input.trim() === entry.input.trim() && e.solverId === entry.solverId),
+    (e) =>
+      !(e.input.trim() === entry.input.trim() && e.solverId === entry.solverId),
   );
   const next = [entry, ...existing].slice(0, LIMIT);
   try {
@@ -71,11 +84,15 @@ export function decodeShare(hash: string): ShareState | null {
   try {
     const params = new URLSearchParams(raw);
     const input = params.get('q');
-    if (!input) return null;
+    if (!input || input.length > 2_000) return null;
+    const solverId = params.get('t') ?? undefined;
+    const methodId = params.get('m') ?? undefined;
+    if ((solverId && !validId(solverId)) || (methodId && !validId(methodId)))
+      return null;
     return {
       input,
-      solverId: params.get('t') ?? undefined,
-      methodId: params.get('m') ?? undefined,
+      solverId,
+      methodId,
     };
   } catch {
     return null;

@@ -118,7 +118,8 @@ export function evaluate(src: string): number | null {
   }
 
   const value = expression();
-  if (value === null || i !== tokens.length || !Number.isFinite(value)) return null;
+  if (value === null || i !== tokens.length || !Number.isFinite(value))
+    return null;
   void peek;
   return value;
 }

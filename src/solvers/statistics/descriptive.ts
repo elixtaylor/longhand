@@ -35,7 +35,10 @@ function modes(xs: number[]): number[] {
   for (const x of xs) counts.set(x, (counts.get(x) ?? 0) + 1);
   const max = Math.max(...counts.values());
   if (max === 1) return []; // every value appears once → no mode
-  return [...counts.entries()].filter(([, c]) => c === max).map(([v]) => v).sort((a, b) => a - b);
+  return [...counts.entries()]
+    .filter(([, c]) => c === max)
+    .map(([v]) => v)
+    .sort((a, b) => a - b);
 }
 
 export const statisticsSolver: Solver = {
@@ -45,10 +48,26 @@ export const statisticsSolver: Solver = {
   blurb: 'Mean, median, mode, spread and the five-number summary.',
   placeholder: 'e.g.  4, 8, 15, 16, 23, 42',
   methods: [
-    { id: 'summary', name: 'Full summary', blurb: 'Centre, spread and the five-number summary all at once.' },
-    { id: 'centre', name: 'Centre', blurb: 'Mean, median and mode — the measures of central tendency.' },
-    { id: 'spread', name: 'Spread', blurb: 'Range, variance and standard deviation.' },
-    { id: 'five-number', name: 'Five-number summary', blurb: 'Minimum, Q1, median, Q3, maximum — and the IQR for a boxplot.' },
+    {
+      id: 'summary',
+      name: 'Full summary',
+      blurb: 'Centre, spread and the five-number summary all at once.',
+    },
+    {
+      id: 'centre',
+      name: 'Centre',
+      blurb: 'Mean, median and mode — the measures of central tendency.',
+    },
+    {
+      id: 'spread',
+      name: 'Spread',
+      blurb: 'Range, variance and standard deviation.',
+    },
+    {
+      id: 'five-number',
+      name: 'Five-number summary',
+      blurb: 'Minimum, Q1, median, Q3, maximum — and the IQR for a boxplot.',
+    },
   ],
   defaultMethodId: 'summary',
   detect(input) {
@@ -56,18 +75,31 @@ export const statisticsSolver: Solver = {
     if (!/,/.test(input) || /=/.test(input)) return 0;
     const list = readData(input);
     if (list.length < 4) return 0;
-    const explicit = /mean|median|mode|average|deviation|quartile|statistic|spread|summary/i.test(input);
+    const explicit =
+      /mean|median|mode|average|deviation|quartile|statistic|spread|summary/i.test(
+        input,
+      );
     if (explicit) return 0.97;
     // …unless it follows a constant pattern, in which case it is a sequence.
     const d = list[1] - list[0];
-    const isArithmetic = list.every((v, i) => i === 0 || Math.abs(v - list[i - 1] - d) < 1e-9);
+    const isArithmetic = list.every(
+      (v, i) => i === 0 || Math.abs(v - list[i - 1] - d) < 1e-9,
+    );
     const isGeometric =
-      list[0] !== 0 && list.every((v, i) => i === 0 || Math.abs(v - list[i - 1] * (list[1] / list[0])) < 1e-9);
+      list[0] !== 0 &&
+      list.every(
+        (v, i) =>
+          i === 0 || Math.abs(v - list[i - 1] * (list[1] / list[0])) < 1e-9,
+      );
     return isArithmetic || isGeometric ? 0.5 : 0.88;
   },
   solve(input, methodId): SolveResult {
     const xs = readData(input);
-    if (xs.length < 2) return { ok: false, error: 'Give at least two data values, e.g.  4, 8, 15, 16, 23, 42.' };
+    if (xs.length < 2)
+      return {
+        ok: false,
+        error: 'Give at least two data values, e.g.  4, 8, 15, 16, 23, 42.',
+      };
 
     const n = xs.length;
     const sorted = [...xs].sort((a, b) => a - b);
@@ -91,7 +123,10 @@ export const statisticsSolver: Solver = {
     ];
 
     if (wants('centre')) {
-      steps.push({ note: 'The mean is the total divided by how many values there are.', latex: `\\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{${fmt(total)}}{${n}} = ${fmt(mean, 4)}` });
+      steps.push({
+        note: 'The mean is the total divided by how many values there are.',
+        latex: `\\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{${fmt(total)}}{${n}} = ${fmt(mean, 4)}`,
+      });
       steps.push({
         note:
           n % 2 === 1
@@ -100,13 +135,22 @@ export const statisticsSolver: Solver = {
         latex: `\\text{median} = ${fmt(median, 4)}`,
       });
       steps.push({
-        note: mo.length === 0 ? 'Every value appears the same number of times, so there is no mode.' : 'The mode is the most common value.',
-        latex: mo.length === 0 ? `\\text{no mode}` : `\\text{mode} = ${mo.map((m) => fmt(m)).join(',\\; ')}`,
+        note:
+          mo.length === 0
+            ? 'Every value appears the same number of times, so there is no mode.'
+            : 'The mode is the most common value.',
+        latex:
+          mo.length === 0
+            ? `\\text{no mode}`
+            : `\\text{mode} = ${mo.map((m) => fmt(m)).join(',\\; ')}`,
       });
     }
 
     if (wants('spread')) {
-      steps.push({ note: 'The range is the largest value minus the smallest.', latex: `\\text{range} = ${fmt(sorted[n - 1])} - ${fmt(sorted[0])} = ${fmt(range)}` });
+      steps.push({
+        note: 'The range is the largest value minus the smallest.',
+        latex: `\\text{range} = ${fmt(sorted[n - 1])} - ${fmt(sorted[0])} = ${fmt(range)}`,
+      });
       steps.push({
         note: 'For the standard deviation, find how far each value is from the mean, square those, and add them up.',
         latex: `\\sum (x - \\bar{x})^{2} = ${fmt(sumSq, 4)}`,
@@ -132,7 +176,10 @@ export const statisticsSolver: Solver = {
         latex: `${fmt(sorted[0])},\\; ${fmt(q1, 4)},\\; ${fmt(median, 4)},\\; ${fmt(q3, 4)},\\; ${fmt(sorted[n - 1])}`,
         annotation: 'min, Q₁, median, Q₃, max',
       });
-      steps.push({ note: 'The interquartile range measures the spread of the middle half.', latex: `\\text{IQR} = ${fmt(q3, 4)} - ${fmt(q1, 4)} = ${fmt(q3 - q1, 4)}` });
+      steps.push({
+        note: 'The interquartile range measures the spread of the middle half.',
+        latex: `\\text{IQR} = ${fmt(q3, 4)} - ${fmt(q1, 4)} = ${fmt(q3 - q1, 4)}`,
+      });
       steps.push({
         note: 'Drawn as a boxplot — the box spans the middle half of the data.',
         visual: {

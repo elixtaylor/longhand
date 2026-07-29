@@ -37,9 +37,14 @@ describe('every step carries something', () => {
       const w = runWorked(ex.input);
       for (const part of w.parts) {
         if (!part.result.ok) continue;
-        const ls = part.result.solution.steps.map((s) => s.latex).filter(Boolean);
+        const ls = part.result.solution.steps
+          .map((s) => s.latex)
+          .filter(Boolean);
         for (let i = 1; i < ls.length; i++) {
-          expect(ls[i], `"${ex.label}" repeats a line at step ${i + 1}`).not.toBe(ls[i - 1]);
+          expect(
+            ls[i],
+            `"${ex.label}" repeats a line at step ${i + 1}`,
+          ).not.toBe(ls[i - 1]);
         }
       }
     }
@@ -51,7 +56,10 @@ describe('every step carries something', () => {
         const r = solver.solve(ex.input, ex.methodId ?? solver.defaultMethodId);
         if (!r.ok) continue;
         for (const [i, s] of r.solution.steps.entries()) {
-          expect(s.note, `${solver.id} step ${i + 1} has no explanation`).toBeTruthy();
+          expect(
+            s.note,
+            `${solver.id} step ${i + 1} has no explanation`,
+          ).toBeTruthy();
         }
       }
     }
@@ -69,7 +77,9 @@ describe('the moves that used to be skipped', () => {
 
   it('shows the subtraction of one equation from the other', () => {
     const ls = lines('2x + 3y = 12 ; x - y = 1');
-    expect(ls.join(' | ')).toContain('\\left(2x + 3y\\right) - \\left(2x - 2y\\right)');
+    expect(ls.join(' | ')).toContain(
+      '\\left(2x + 3y\\right) - \\left(2x - 2y\\right)',
+    );
     // …and the back-substitution one stage at a time, not in a single arrow.
     expect(ls).toContain('2x + 3\\left(2\\right) = 12');
     expect(ls).toContain('2x + 6 = 12');

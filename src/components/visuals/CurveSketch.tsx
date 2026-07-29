@@ -7,7 +7,8 @@ import type { CurveData } from '../../lib/engine/visuals';
  */
 export function CurveSketch({ data }: { data: CurveData }) {
   const { coeffs, roots, yIntercept, turningPoints } = data;
-  const f = (x: number) => coeffs.reduce((sum, [p, c]) => sum + c * Math.pow(x, p), 0);
+  const f = (x: number) =>
+    coeffs.reduce((sum, [p, c]) => sum + c * Math.pow(x, p), 0);
 
   // Frame the interesting part of the curve: every marked feature, padded.
   const xsOfInterest = [...roots, ...turningPoints.map((t) => t.x), 0];
@@ -39,7 +40,8 @@ export function CurveSketch({ data }: { data: CurveData }) {
   const H = 240;
   const PAD = 26;
   const sx = (x: number) => PAD + ((x - xMin) / (xMax - xMin)) * (W - PAD * 2);
-  const sy = (y: number) => H - PAD - ((y - yMin) / (yMax - yMin)) * (H - PAD * 2);
+  const sy = (y: number) =>
+    H - PAD - ((y - yMin) / (yMax - yMin)) * (H - PAD * 2);
 
   // Clip the path where it leaves the visible band.
   const path = pts
@@ -57,16 +59,44 @@ export function CurveSketch({ data }: { data: CurveData }) {
 
   return (
     <div className="viz-scroll">
-      <svg className="diagram" viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label="Sketch of the curve with intercepts and turning points marked">
-        {showXAxis && <line x1={PAD / 2} y1={sy(0)} x2={W - PAD / 2} y2={sy(0)} className="diagram-axis" />}
-        {showYAxis && <line x1={sx(0)} y1={PAD / 2} x2={sx(0)} y2={H - PAD / 2} className="diagram-axis" />}
+      <svg
+        className="diagram"
+        viewBox={`0 0 ${W} ${H}`}
+        width={W}
+        height={H}
+        role="img"
+        aria-label="Sketch of the curve with intercepts and turning points marked"
+      >
+        {showXAxis && (
+          <line
+            x1={PAD / 2}
+            y1={sy(0)}
+            x2={W - PAD / 2}
+            y2={sy(0)}
+            className="diagram-axis"
+          />
+        )}
+        {showYAxis && (
+          <line
+            x1={sx(0)}
+            y1={PAD / 2}
+            x2={sx(0)}
+            y2={H - PAD / 2}
+            className="diagram-axis"
+          />
+        )}
 
         <path d={path} className="diagram-curve" />
 
         {roots.map((r) => (
           <g key={`r${r}`}>
             <circle cx={sx(r)} cy={sy(0)} r={4} className="diagram-point" />
-            <text x={sx(r)} y={sy(0) + 16} className="diagram-label" textAnchor="middle">
+            <text
+              x={sx(r)}
+              y={sy(0) + 16}
+              className="diagram-label"
+              textAnchor="middle"
+            >
               {trim(r)}
             </text>
           </g>
@@ -74,8 +104,18 @@ export function CurveSketch({ data }: { data: CurveData }) {
 
         {showYAxis && (
           <g>
-            <circle cx={sx(0)} cy={sy(yIntercept)} r={4} className="diagram-point" />
-            <text x={sx(0) - 8} y={sy(yIntercept) - 7} className="diagram-label" textAnchor="end">
+            <circle
+              cx={sx(0)}
+              cy={sy(yIntercept)}
+              r={4}
+              className="diagram-point"
+            />
+            <text
+              x={sx(0) - 8}
+              y={sy(yIntercept) - 7}
+              className="diagram-label"
+              textAnchor="end"
+            >
               {trim(yIntercept)}
             </text>
           </g>
@@ -83,7 +123,12 @@ export function CurveSketch({ data }: { data: CurveData }) {
 
         {turningPoints.map((t) => (
           <g key={`t${t.x}`}>
-            <circle cx={sx(t.x)} cy={sy(t.y)} r={4.5} className="diagram-point-key" />
+            <circle
+              cx={sx(t.x)}
+              cy={sy(t.y)}
+              r={4.5}
+              className="diagram-point-key"
+            />
             <text
               x={sx(t.x)}
               y={sy(t.y) + (t.kind === 'max' ? -10 : 18)}

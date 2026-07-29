@@ -1,5 +1,10 @@
 import { Rational } from '../../lib/math/rational';
-import { parseEquation, toStandardForm, Poly, ParseError } from '../../lib/math/parse';
+import {
+  parseEquation,
+  toStandardForm,
+  Poly,
+  ParseError,
+} from '../../lib/math/parse';
 import { rl, rlPlain, polyLatex, connectTerm } from '../../lib/math/format';
 import { simplifySqrt, isPerfectSquare } from '../../lib/math/surd';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
@@ -51,7 +56,8 @@ function integeriseABC(std: Poly): ABC {
 }
 
 /* ----------------------------------------------------- exact roots (shared core) */
-export type RootNature = 'double' | 'two-rational' | 'two-irrational' | 'complex';
+export type RootNature =
+  'double' | 'two-rational' | 'two-irrational' | 'complex';
 
 export interface RootInfo {
   discriminant: number;
@@ -86,7 +92,8 @@ function pmFraction(
   // way a student would say it, not "i times that".
   const iPart = imaginary ? 'i' : '';
   const coeff = C === 1 ? '' : String(C);
-  const surdTerm = inside === 1 ? `${coeff}${iPart}` : `${coeff}\\sqrt{${inside}}${iPart}`;
+  const surdTerm =
+    inside === 1 ? `${coeff}${iPart}` : `${coeff}\\sqrt{${inside}}${iPart}`;
   const numerator = A === 0 ? `\\pm ${surdTerm}` : `${A} \\pm ${surdTerm}`;
   return D === 1 ? numerator : `\\dfrac{${numerator}}{${D}}`;
 }
@@ -153,7 +160,13 @@ function readOffStep(a: number, b: number, c: number): Step {
   };
 }
 
-function scaledStep(scaled: number, std: Poly, a: number, b: number, c: number): Step[] {
+function scaledStep(
+  scaled: number,
+  std: Poly,
+  a: number,
+  b: number,
+  c: number,
+): Step[] {
   if (scaled === 1) return [];
   return [
     {
@@ -234,7 +247,10 @@ function solveByCompletingSquare(std: Poly): SolveResult {
   const H2 = H.mul(H); // (b/2a)^2
   const rhs = C.neg().add(H2); // -(c/a) + (b/2a)^2
 
-  const steps: Step[] = [readOffStep(a, b, c), ...scaledStep(scaled, std, a, b, c)];
+  const steps: Step[] = [
+    readOffStep(a, b, c),
+    ...scaledStep(scaled, std, a, b, c),
+  ];
 
   // Write a term as a connective, so a negative coefficient reads "− 4x"
   // rather than the "+ −4x" you get from plain concatenation.
@@ -334,7 +350,9 @@ function parabolaStep(std: Poly): Step | null {
         ] as Array<[number, number]>,
         roots: info.numericRoots,
         yIntercept: c,
-        turningPoints: [{ x: vx, y: vy, kind: a > 0 ? ('min' as const) : ('max' as const) }],
+        turningPoints: [
+          { x: vx, y: vy, kind: a > 0 ? ('min' as const) : ('max' as const) },
+        ],
       },
     },
     annotation: 'the parabola',
@@ -353,7 +371,10 @@ function coefTimes(k: number, v: string): string {
 
 function solveByFactorising(std: Poly): SolveResult {
   let { a, b, c, scaled } = integeriseABC(std);
-  const steps: Step[] = [readOffStep(a, b, c), ...scaledStep(scaled, std, a, b, c)];
+  const steps: Step[] = [
+    readOffStep(a, b, c),
+    ...scaledStep(scaled, std, a, b, c),
+  ];
 
   // Make the leading coefficient positive.
   if (a < 0) {
@@ -477,10 +498,14 @@ function parseStandard(input: string): Poly {
   const eq = parseEquation(input, 'x');
   const std = toStandardForm(eq);
   if (std.degree() > 2) {
-    throw new ParseError('That looks like a cubic or higher — this topic handles quadratics (up to x²).');
+    throw new ParseError(
+      'That looks like a cubic or higher — this topic handles quadratics (up to x²).',
+    );
   }
   if (std.get(2).isZero()) {
-    throw new ParseError('There is no x² term. Try the "Linear equations" topic instead.');
+    throw new ParseError(
+      'There is no x² term. Try the "Linear equations" topic instead.',
+    );
   }
   return std;
 }
@@ -492,9 +517,24 @@ export const quadraticsSolver: Solver = {
   blurb: 'Solve ax² + bx + c = 0 — your choice of method.',
   placeholder: 'e.g.  2x^2 + 7x - 4 = 0',
   methods: [
-    { id: 'factorise', name: 'Factorising', blurb: 'Split into two brackets. Neat when the roots are whole numbers or simple fractions.' },
-    { id: 'complete-square', name: 'Completing the square', blurb: 'Rewrite as (x + p)² = q. Always works, and gives the turning point too.' },
-    { id: 'formula', name: 'Quadratic formula', blurb: 'x = (−b ± √(b²−4ac)) / 2a. Always works, including surd and no-real-solution cases.' },
+    {
+      id: 'factorise',
+      name: 'Factorising',
+      blurb:
+        'Split into two brackets. Neat when the roots are whole numbers or simple fractions.',
+    },
+    {
+      id: 'complete-square',
+      name: 'Completing the square',
+      blurb:
+        'Rewrite as (x + p)² = q. Always works, and gives the turning point too.',
+    },
+    {
+      id: 'formula',
+      name: 'Quadratic formula',
+      blurb:
+        'x = (−b ± √(b²−4ac)) / 2a. Always works, including surd and no-real-solution cases.',
+    },
   ],
   defaultMethodId: 'factorise',
   detect(input) {
@@ -513,14 +553,22 @@ export const quadraticsSolver: Solver = {
     try {
       std = parseStandard(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that quadratic.' };
+      return {
+        ok: false,
+        error:
+          e instanceof Error ? e.message : 'Could not read that quadratic.',
+      };
     }
     try {
       if (methodId === 'complete-square') return solveByCompletingSquare(std);
       if (methodId === 'formula') return solveByFormula(std);
       return solveByFactorising(std);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Something went wrong solving that.' };
+      return {
+        ok: false,
+        error:
+          e instanceof Error ? e.message : 'Something went wrong solving that.',
+      };
     }
   },
 };

@@ -18,7 +18,9 @@ function solve(input: string) {
 
 /** The numbers in "x = 1, \quad x = -7". */
 function answers(latex: string | undefined): number[] {
-  return [...(latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g)].map((m) => Number(m[1]));
+  return [...(latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g)].map((m) =>
+    Number(m[1]),
+  );
 }
 
 /** Substitute a solution back into the original equation and compare sides. */
@@ -26,7 +28,9 @@ function satisfies(equation: string, x: number): boolean {
   const [lhs, rhs] = equation.split('=');
   const left = evaluateExpr(parseExpr(lhs), { x });
   const right = evaluateExpr(parseExpr(rhs), { x });
-  return Math.abs(left - right) < 1e-4 * Math.max(1, Math.abs(left), Math.abs(right));
+  return (
+    Math.abs(left - right) < 1e-4 * Math.max(1, Math.abs(left), Math.abs(right))
+  );
 }
 
 /**
@@ -40,7 +44,12 @@ function satisfiesInDegrees(equation: string, x: number): boolean {
   const call = parseExpr(lhs);
   if (call.t !== 'fn') throw new Error('expected a trig call on the left');
   const radians = (evaluateExpr(call.a, { x }) * Math.PI) / 180;
-  const left = call.name === 'sin' ? Math.sin(radians) : call.name === 'cos' ? Math.cos(radians) : Math.tan(radians);
+  const left =
+    call.name === 'sin'
+      ? Math.sin(radians)
+      : call.name === 'cos'
+        ? Math.cos(radians)
+        : Math.tan(radians);
   return Math.abs(left - evaluateExpr(parseExpr(rhs))) < 1e-6;
 }
 
@@ -113,11 +122,13 @@ describe('solving by undoing', () => {
   it('gives every solution of a compound-angle trig equation, not just the first', () => {
     const found = answers(solve('sin(2x) = 0.5').answerLatex);
     expect(found).toEqual([15, 75, 195, 255]);
-    for (const x of found) expect(satisfiesInDegrees('sin(2x) = 0.5', x)).toBe(true);
+    for (const x of found)
+      expect(satisfiesInDegrees('sin(2x) = 0.5', x)).toBe(true);
 
     const cos = answers(solve('cos(x+30) = 0.5').answerLatex);
     expect(cos).toEqual([30, 270]);
-    for (const x of cos) expect(satisfiesInDegrees('cos(x+30) = 0.5', x)).toBe(true);
+    for (const x of cos)
+      expect(satisfiesInDegrees('cos(x+30) = 0.5', x)).toBe(true);
 
     // Nothing outside one revolution, and nothing inside it missed.
     for (const x of found) expect(x).toBeGreaterThanOrEqual(0);
@@ -134,12 +145,19 @@ describe('solving by undoing', () => {
   });
 
   it('proves there is no solution instead of inventing one', () => {
-    for (const equation of ['e^x = -3', 'sqrt(x) = -2', '2^x = -8', '(x+1)^2 = -4']) {
+    for (const equation of [
+      'e^x = -3',
+      'sqrt(x) = -2',
+      '2^x = -8',
+      '(x+1)^2 = -4',
+    ]) {
       const r = inverseSolver.solve(equation, 'undo');
       expect(r.ok).toBe(true);
       if (!r.ok) return;
       expect(r.solution.answerLatex).toBeUndefined();
-      expect(r.solution.steps[r.solution.steps.length - 1].latex).toBe('\\text{No real solutions}');
+      expect(r.solution.steps[r.solution.steps.length - 1].latex).toBe(
+        '\\text{No real solutions}',
+      );
     }
     // sin never leaves [-1, 1], whatever is inside it.
     const r = inverseSolver.solve('sin(2x) = 3', 'undo');
@@ -175,7 +193,12 @@ describe('solving by undoing', () => {
   });
 
   it('picks up the questions nothing else would take', () => {
-    for (const input of ['ln(x+5) = 5', '2(x+3) = 10', 'sqrt(x-3) = 4', 'x/4 + 2 = 7']) {
+    for (const input of [
+      'ln(x+5) = 5',
+      '2(x+3) = 10',
+      'sqrt(x-3) = 4',
+      'x/4 + 2 = 7',
+    ]) {
       expect(interpret(input).detection?.solver.id).toBe('inverse');
     }
   });

@@ -15,7 +15,8 @@ interface Edge {
 
 function parseEdges(input: string): Edge[] {
   const edges: Edge[] = [];
-  const re = /([A-Za-z]\w*)\s*(?:-|–|to|→)\s*([A-Za-z]\w*)\s*[:=\s]\s*(-?\d+(?:\.\d+)?)/g;
+  const re =
+    /([A-Za-z]\w*)\s*(?:-|–|to|→)\s*([A-Za-z]\w*)\s*[:=\s]\s*(-?\d+(?:\.\d+)?)/g;
   let m: RegExpExecArray | null;
   let guard = 0;
   while ((m = re.exec(input)) && guard++ < 500) {
@@ -47,7 +48,11 @@ function shortestPath(edges: Edge[], start: string, end: string) {
     let best: string | null = null;
     for (const n of nodes) {
       if (done.has(n)) continue;
-      if (best === null || (dist.get(n) ?? Infinity) < (dist.get(best) ?? Infinity)) best = n;
+      if (
+        best === null ||
+        (dist.get(n) ?? Infinity) < (dist.get(best) ?? Infinity)
+      )
+        best = n;
     }
     if (best === null || (dist.get(best) ?? Infinity) === Infinity) break;
     done.add(best);
@@ -73,7 +78,12 @@ function shortestPath(edges: Edge[], start: string, end: string) {
     path.unshift(cur);
     cur = prev.get(cur) ?? null;
   }
-  return { dist, order, path: path[0] === start ? path : [], total: dist.get(end) ?? Infinity };
+  return {
+    dist,
+    order,
+    path: path[0] === start ? path : [],
+    total: dist.get(end) ?? Infinity,
+  };
 }
 
 /** Kruskal — sort edges, add any that doesn't close a cycle. */
@@ -96,7 +106,12 @@ function minimumSpanningTree(edges: Edge[]) {
     parent.set(ra, rb);
     chosen.push(e);
   }
-  return { sorted, chosen, rejected, total: chosen.reduce((s, e) => s + e.w, 0) };
+  return {
+    sorted,
+    chosen,
+    rejected,
+    total: chosen.reduce((s, e) => s + e.w, 0),
+  };
 }
 
 const edgeLatex = (e: Edge) => `${e.from}\\text{–}${e.to}\\;(${fmt(e.w)})`;
@@ -108,32 +123,58 @@ export const networksSolver: Solver = {
   blurb: 'Shortest path and minimum spanning tree in a weighted network.',
   placeholder: 'e.g.  A-B 5, B-C 3, A-C 9  shortest path A to C',
   methods: [
-    { id: 'shortest-path', name: 'Shortest path', blurb: 'Dijkstra’s algorithm — the cheapest route between two nodes.' },
-    { id: 'mst', name: 'Minimum spanning tree', blurb: 'Kruskal’s algorithm — connect every node for the least total weight.' },
+    {
+      id: 'shortest-path',
+      name: 'Shortest path',
+      blurb: 'Dijkstra’s algorithm — the cheapest route between two nodes.',
+    },
+    {
+      id: 'mst',
+      name: 'Minimum spanning tree',
+      blurb:
+        'Kruskal’s algorithm — connect every node for the least total weight.',
+    },
   ],
   defaultMethodId: 'shortest-path',
   detect(input) {
     const edges = parseEdges(input);
     if (edges.length < 2) return 0;
-    const explicit = /network|graph|shortest\s*path|spanning\s*tree|\bmst\b|dijkstra|kruskal|prim/i.test(input);
+    const explicit =
+      /network|graph|shortest\s*path|spanning\s*tree|\bmst\b|dijkstra|kruskal|prim/i.test(
+        input,
+      );
     return explicit ? 0.96 : 0.8;
   },
   solve(input, methodId): SolveResult {
     const edges = parseEdges(input);
     if (edges.length < 2) {
-      return { ok: false, error: 'Type the connections like  A-B 5, B-C 3, A-C 9.' };
+      return {
+        ok: false,
+        error: 'Type the connections like  A-B 5, B-C 3, A-C 9.',
+      };
     }
     if (edges.some((e) => e.w < 0)) {
-      return { ok: false, error: 'These methods need non-negative weights (distances or costs).' };
+      return {
+        ok: false,
+        error: 'These methods need non-negative weights (distances or costs).',
+      };
     }
     const nodes = nodesOf(edges);
-    const wantMst = /spanning|\bmst\b|kruskal|prim/i.test(input) || (methodId === 'mst' && !/shortest/i.test(input));
+    const wantMst =
+      /spanning|\bmst\b|kruskal|prim/i.test(input) ||
+      (methodId === 'mst' && !/shortest/i.test(input));
 
     if (wantMst) {
       const { sorted, chosen, rejected, total } = minimumSpanningTree(edges);
       const steps: Step[] = [
-        { note: `The network has ${nodes.length} nodes, so a spanning tree needs ${nodes.length - 1} edges.`, latex: `\\text{nodes: } ${nodes.join(', ')}` },
-        { note: 'Sort every edge by weight, smallest first.', latex: sorted.map(edgeLatex).join(', \\; ') },
+        {
+          note: `The network has ${nodes.length} nodes, so a spanning tree needs ${nodes.length - 1} edges.`,
+          latex: `\\text{nodes: } ${nodes.join(', ')}`,
+        },
+        {
+          note: 'Sort every edge by weight, smallest first.',
+          latex: sorted.map(edgeLatex).join(', \\; '),
+        },
         {
           note: 'Work down the list, taking each edge unless it would close a cycle.',
           latex: chosen.map(edgeLatex).join(', \\; '),
@@ -171,18 +212,30 @@ export const networksSolver: Solver = {
     }
 
     // Shortest path — read the endpoints, or default to first and last node.
-    const m = input.match(/(?:from\s*)?([A-Za-z]\w*)\s*(?:to|→|-->)\s*([A-Za-z]\w*)\s*$/i);
+    const m = input.match(
+      /(?:from\s*)?([A-Za-z]\w*)\s*(?:to|→|-->)\s*([A-Za-z]\w*)\s*$/i,
+    );
     const start = m && nodes.includes(m[1]) ? m[1] : nodes[0];
     const end = m && nodes.includes(m[2]) ? m[2] : nodes[nodes.length - 1];
-    if (start === end) return { ok: false, error: 'Choose two different nodes, e.g.  shortest path A to C.' };
+    if (start === end)
+      return {
+        ok: false,
+        error: 'Choose two different nodes, e.g.  shortest path A to C.',
+      };
 
     const { order, path, total } = shortestPath(edges, start, end);
     if (!Number.isFinite(total) || path.length === 0) {
-      return { ok: false, error: `There is no route from ${start} to ${end} in this network.` };
+      return {
+        ok: false,
+        error: `There is no route from ${start} to ${end} in this network.`,
+      };
     }
 
     const steps: Step[] = [
-      { note: `Start at ${start} with a distance of 0, and every other node at infinity.`, latex: `d(${start}) = 0` },
+      {
+        note: `Start at ${start} with a distance of 0, and every other node at infinity.`,
+        latex: `d(${start}) = 0`,
+      },
       {
         note: 'Repeatedly settle the nearest unvisited node, updating its neighbours.',
         latex: order.map((o) => `d(${o.node}) = ${fmt(o.d)}`).join(', \\; '),

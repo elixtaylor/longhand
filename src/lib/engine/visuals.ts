@@ -19,7 +19,11 @@ export interface CurveData {
   coeffs: Array<[number, number]>;
   roots: number[];
   yIntercept: number;
-  turningPoints: Array<{ x: number; y: number; kind: 'max' | 'min' | 'inflection' }>;
+  turningPoints: Array<{
+    x: number;
+    y: number;
+    kind: 'max' | 'min' | 'inflection';
+  }>;
 }
 
 /** A normal distribution with a shaded tail or interval. */

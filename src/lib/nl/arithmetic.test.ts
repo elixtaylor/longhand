@@ -36,7 +36,9 @@ describe('evaluating a numeric expression', () => {
 describe('folding arithmetic inside a question', () => {
   it('works out values without touching the rest', () => {
     expect(foldArithmetic('ln x = 5^2')).toBe('ln x = 25');
-    expect(foldArithmetic('a = 3+4, b = 12, C = 40')).toBe('a = 7, b = 12, C = 40');
+    expect(foldArithmetic('a = 3+4, b = 12, C = 40')).toBe(
+      'a = 7, b = 12, C = 40',
+    );
     expect(foldArithmetic('2^x = 4*8')).toBe('2^x = 32');
   });
 
@@ -46,7 +48,11 @@ describe('folding arithmetic inside a question', () => {
   });
 
   it('leaves a question that has nothing to fold', () => {
-    for (const q of ['3x + 4 = 2x - 5', 'a = 7, b = 9, C = 40', 'sin x = 0.5']) {
+    for (const q of [
+      '3x + 4 = 2x - 5',
+      'a = 7, b = 9, C = 40',
+      'sin x = 0.5',
+    ]) {
       expect(foldArithmetic(q)).toBe(q);
     }
   });
@@ -71,7 +77,11 @@ describe('parsers refuse a value they can only partly read', () => {
   it('will not take the first number of a parameter expression', () => {
     // "a = 3" out of "a = 3+4" silently solved a different triangle.
     expect(parseParams('a = 3+4, b = 12')).toEqual({ b: 12 });
-    expect(parseParams('a = 7, b = 12, C = 40')).toEqual({ a: 7, b: 12, C: 40 });
+    expect(parseParams('a = 7, b = 12, C = 40')).toEqual({
+      a: 7,
+      b: 12,
+      C: 40,
+    });
     expect(parseParams('r=0.5, n=10')).toEqual({ r: 0.5, n: 10 });
   });
 

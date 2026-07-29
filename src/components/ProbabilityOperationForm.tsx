@@ -66,11 +66,17 @@ export function ProbabilityOperationForm({
       return;
     }
     const parts = [`P(A)=${paN}`, `P(B)=${pbN}`];
-    if (op !== 'intersection' && pab.trim() !== '') parts.push(`P(A and B)=${pabN}`);
+    if (op !== 'intersection' && pab.trim() !== '')
+      parts.push(`P(A and B)=${pabN}`);
     onSubmit(`${parts.join(', ')} ${OPS.find((o) => o.id === op)!.keyword}`);
   }
 
-  function numberField(label: string, value: string, setValue: (v: string) => void, placeholder?: string) {
+  function numberField(
+    label: string,
+    value: string,
+    setValue: (v: string) => void,
+    placeholder?: string,
+  ) {
     return (
       <div className="number-field" key={label}>
         <label className="field-label">{label}</label>
@@ -119,7 +125,9 @@ export function ProbabilityOperationForm({
             {op !== 'intersection' && numberField('P(A∩B)', pab, setPab)}
           </div>
           {op !== 'intersection' && (
-            <p className="setting-hint">Leave P(A∩B) blank to assume independent events.</p>
+            <p className="setting-hint">
+              Leave P(A∩B) blank to assume independent events.
+            </p>
           )}
         </>
       )}

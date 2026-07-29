@@ -112,7 +112,9 @@ export function StepList({
         return;
       }
       exprs.forEach((exprEl) => {
-        const katex = exprEl.querySelector<HTMLElement>('.katex-display > .katex');
+        const katex = exprEl.querySelector<HTMLElement>(
+          '.katex-display > .katex',
+        );
         if (!katex) return;
         exprEl.style.width = `${katex.scrollWidth}px`;
         if (katex.scrollHeight > 0) {
@@ -126,7 +128,10 @@ export function StepList({
     document.fonts.ready.then(measure);
     document.fonts.addEventListener('loadingdone', measure);
     const themeObserver = new MutationObserver(measure);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
     return () => {
       document.fonts.removeEventListener('loadingdone', measure);
       themeObserver.disconnect();
@@ -191,7 +196,10 @@ export function StepList({
     // Toggling the theme in Settings changes data-theme without resizing
     // anything, but still needs this to switch on/off or re-measure.
     const themeObserver = new MutationObserver(measureGrid);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
     measureGrid();
     return () => {
       resizeObserver.disconnect();
@@ -202,19 +210,24 @@ export function StepList({
   const allShown = revealed >= total;
 
   async function copyWorking() {
-    const lines = [stripMath(solution.headline)];
-    solution.steps.forEach((s, i) => {
-      // Copy what is on screen: with explanations hidden, a bare list of
-      // lines is exactly what a student wants to paste into their book.
-      if (s.note && showNotes) lines.push(`${i + 1}. ${stripMath(s.note)}`);
-      if (s.latex) lines.push(showNotes ? `    ${s.latex}` : s.latex);
-    });
-    if (solution.answerLatex) lines.push(`Answer:  ${solution.answerLatex}`);
+    const lines = workingText(solution, showNotes);
     try {
       await navigator.clipboard.writeText(lines.join('\n'));
     } catch {
       /* clipboard blocked — ignore */
     }
+  }
+
+  function downloadWorking() {
+    const blob = new Blob([workingText(solution, showNotes).join('\n')], {
+      type: 'text/plain;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'longhand-working.txt';
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -239,7 +252,9 @@ export function StepList({
                     )}
                     {step.annotation && (
                       <span className="step-annotation">
-                        <span className="step-annotation-text">{step.annotation}</span>
+                        <span className="step-annotation-text">
+                          {step.annotation}
+                        </span>
                       </span>
                     )}
                   </div>
@@ -263,12 +278,20 @@ export function StepList({
           </button>
         )}
         {revealMode === 'step' && !allShown && (
-          <button type="button" className="btn" onClick={() => setRevealed((r) => r + 1)}>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setRevealed((r) => r + 1)}
+          >
             Reveal next step
           </button>
         )}
         {revealMode === 'step' && !allShown && (
-          <button type="button" className="btn" onClick={() => setRevealed(total)}>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setRevealed(total)}
+          >
             Show all
           </button>
         )}
@@ -279,6 +302,9 @@ export function StepList({
         )}
         <button type="button" className="btn" onClick={copyWorking}>
           Copy working
+        </button>
+        <button type="button" className="btn" onClick={downloadWorking}>
+          Download .txt
         </button>
         <button type="button" className="btn" onClick={() => window.print()}>
           Print
@@ -294,4 +320,14 @@ export function StepList({
 /** Rough text version of an inline-math string for the clipboard. */
 function stripMath(text: string): string {
   return text.replace(/\$/g, '');
+}
+
+function workingText(solution: Solution, showNotes: boolean): string[] {
+  const lines = [stripMath(solution.headline)];
+  solution.steps.forEach((s, i) => {
+    if (s.note && showNotes) lines.push(`${i + 1}. ${stripMath(s.note)}`);
+    if (s.latex) lines.push(showNotes ? `    ${s.latex}` : s.latex);
+  });
+  if (solution.answerLatex) lines.push(`Answer:  ${solution.answerLatex}`);
+  return lines;
 }

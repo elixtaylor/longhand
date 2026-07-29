@@ -30,7 +30,9 @@ describe('offering a method only when it differs', () => {
 
   it('keeps a method that reports the problem cannot be done that way', () => {
     // "This doesn't factorise" is a different — and useful — piece of working.
-    expect(methodsFor('quadratics', 'x^2 + 6x + 2 = 0')).toContain('Factorising');
+    expect(methodsFor('quadratics', 'x^2 + 6x + 2 = 0')).toContain(
+      'Factorising',
+    );
   });
 
   it('never offers a method whose working the solver cannot produce', () => {
@@ -49,7 +51,10 @@ describe('offering a method only when it differs', () => {
   it('never returns an empty list', () => {
     for (const solver of solvers) {
       for (const input of ['', '   ', 'nonsense here', 'x']) {
-        expect(distinctMethods(solver, input).length, `${solver.id} on "${input}"`).toBeGreaterThan(0);
+        expect(
+          distinctMethods(solver, input).length,
+          `${solver.id} on "${input}"`,
+        ).toBeGreaterThan(0);
       }
     }
   });
@@ -69,7 +74,9 @@ describe('offering a method only when it differs', () => {
     ] as const) {
       const solver = getSolver(id)!;
       for (const m of distinctMethods(solver, input)) {
-        expect(runSolve(solver, input, m.id).ok, `${id} / ${m.name}`).toBe(true);
+        expect(runSolve(solver, input, m.id).ok, `${id} / ${m.name}`).toBe(
+          true,
+        );
       }
     }
   });

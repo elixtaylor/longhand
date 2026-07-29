@@ -62,8 +62,12 @@ describe('normalise — measurement vocabulary', () => {
     expect(n('circle with diameter 10')).toBe('circle r=5');
   });
   it('reads a cylinder', () => {
-    expect(n('volume of a cylinder with radius 3 and height 10')).toContain('r=3');
-    expect(n('volume of a cylinder with radius 3 and height 10')).toContain('h=10');
+    expect(n('volume of a cylinder with radius 3 and height 10')).toContain(
+      'r=3',
+    );
+    expect(n('volume of a cylinder with radius 3 and height 10')).toContain(
+      'h=10',
+    );
   });
   it('strips units from measurements', () => {
     expect(n('rectangle length 8cm width 3cm')).toBe('rectangle l=8 w=3');
@@ -100,7 +104,9 @@ describe('normalise — sequences and statistics', () => {
     expect(n('sum of the first 20 terms of 2, 6, 18')).toContain('n=20');
   });
   it('reads common difference and first term', () => {
-    const out = n('arithmetic sequence with first term 5 and common difference 3');
+    const out = n(
+      'arithmetic sequence with first term 5 and common difference 3',
+    );
     expect(out).toContain('a=5');
     expect(out).toContain('d=3');
   });
@@ -129,13 +135,19 @@ describe('natural language end to end', () => {
     ['what is the area of a circle with radius 5', 'measurement'],
     ['volume of a cylinder with radius 3 and height 10', 'measurement'],
     ['solve x squared plus 5x plus 6 equals 0', 'quadratics'],
-    ['a triangle with sides 7 and 9 and an included angle of 40', 'triangle-rules'],
+    [
+      'a triangle with sides 7 and 9 and an included angle of 40',
+      'triangle-rules',
+    ],
     ['right triangle with sides 3 and 4', 'right-triangle', 'c = 5'],
     ['if I invest $5000 at 4% for 3 years compounded monthly', 'financial'],
     ['the derivative of x cubed minus 4x squared', 'differentiate'],
     ['integrate 3x squared from 0 to 2', 'integrate', '8'],
     ['what is the mean of 4, 8, 15, 16, 23, 42', 'statistics'],
-    ['probability of exactly 3 heads in 10 coin flips with p=0.5', 'distributions'],
+    [
+      'probability of exactly 3 heads in 10 coin flips with p=0.5',
+      'distributions',
+    ],
     ['10th term of 3, 7, 11, 15', 'sequences'],
     ['log base 2 of 32', 'logarithms'],
   ];
@@ -143,7 +155,10 @@ describe('natural language end to end', () => {
   for (const [phrase, topic, expected] of cases) {
     it(`understands "${phrase}"`, () => {
       const res = interpret(phrase);
-      expect(res.detection?.solver.id, `detected ${res.detection?.solver.id} from "${res.text}"`).toBe(topic);
+      expect(
+        res.detection?.solver.id,
+        `detected ${res.detection?.solver.id} from "${res.text}"`,
+      ).toBe(topic);
 
       const solver = getSolver(topic)!;
       const solved = runSolve(solver, phrase, solver.defaultMethodId);

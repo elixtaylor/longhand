@@ -1,5 +1,12 @@
 import { fmt, gcd, rad2deg } from '../../lib/math/num';
-import { parseExpr, simplify, toLatex, evaluateExpr, num, type Expr } from '../../lib/math/expr';
+import {
+  parseExpr,
+  simplify,
+  toLatex,
+  evaluateExpr,
+  num,
+  type Expr,
+} from '../../lib/math/expr';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /**
@@ -97,7 +104,9 @@ function readEquation(raw: string): Equation | null {
 /** Bracket a sum before something is done to the whole of it. */
 function tight(e: Expr): string {
   const s = toLatex(e);
-  return e.t === 'add' || e.t === 'sub' || e.t === 'neg' ? `\\left(${s}\\right)` : s;
+  return e.t === 'add' || e.t === 'sub' || e.t === 'neg'
+    ? `\\left(${s}\\right)`
+    : s;
 }
 
 /** A rational answer is worth showing as a fraction as well as a decimal. */
@@ -122,7 +131,8 @@ interface Answer {
  * from this solver simply not being able to do it, which must refuse and let
  * something else try.
  */
-type Outcome = { ok: true; answers: Answer[] } | { ok: false; why: string; proven: boolean };
+type Outcome =
+  { ok: true; answers: Answer[] } | { ok: false; why: string; proven: boolean };
 
 const noSolution = (why: string): Outcome => ({ ok: false, why, proven: true });
 const cannot = (why: string): Outcome => ({ ok: false, why, proven: false });
@@ -140,10 +150,19 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
   for (let guard = 0; guard < 24; guard++) {
     if (left.t === 'var') return finish(right, steps);
 
-    const tidy = (l: Expr, r: Expr, note: string, annotation?: string): void => {
+    const tidy = (
+      l: Expr,
+      r: Expr,
+      note: string,
+      annotation?: string,
+    ): void => {
       left = l;
       right = simplify(r);
-      steps.push({ note, latex: `${toLatex(left)} = ${toLatex(right)}`, annotation });
+      steps.push({
+        note,
+        latex: `${toLatex(left)} = ${toLatex(right)}`,
+        annotation,
+      });
     };
 
     switch (left.t) {
@@ -163,14 +182,19 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             latex: `${toLatex(left)} - ${tight(other)} = ${toLatex(right)} - ${tight(other)}`,
             annotation: 'same to both sides',
           });
-          tidy({ t: 'neg', a: keep }, { t: 'sub', a: right, b: other }, `The $${toLatex(other)}$ on the left cancels.`);
+          tidy(
+            { t: 'neg', a: keep },
+            { t: 'sub', a: right, b: other },
+            `The $${toLatex(other)}$ on the left cancels.`,
+          );
           break;
         }
 
         // Adding a negative reads as subtracting, and the reverse.
         const value = evaluateExpr(other);
         const negative = Number.isFinite(value) && value < 0;
-        const undo = subtraction && keepIsFirst ? 'add' : negative ? 'add' : 'subtract';
+        const undo =
+          subtraction && keepIsFirst ? 'add' : negative ? 'add' : 'subtract';
         const shown = negative ? simplify({ t: 'neg', a: other }) : other;
         const sign = undo === 'add' ? '+' : '-';
 
@@ -181,7 +205,9 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         });
         tidy(
           keep,
-          undo === 'add' ? { t: 'add', a: right, b: shown } : { t: 'sub', a: right, b: shown },
+          undo === 'add'
+            ? { t: 'add', a: right, b: shown }
+            : { t: 'sub', a: right, b: shown },
           `The $${toLatex(shown)}$ on the left cancels out.`,
         );
         break;
@@ -192,13 +218,20 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         const keep = has(left.a) ? left.a : left.b;
         const factor = has(left.a) ? left.b : left.a;
         const value = evaluateExpr(factor);
-        if (value === 0) return cannot('Multiplying by zero loses the $x$, so nothing can be recovered.');
+        if (value === 0)
+          return cannot(
+            'Multiplying by zero loses the $x$, so nothing can be recovered.',
+          );
         steps.push({
           note: `$${toLatex(keep)}$ is multiplied by $${toLatex(factor)}$, so divide both sides by $${toLatex(factor)}$ to undo it.`,
           latex: `\\dfrac{${toLatex(left)}}{${toLatex(factor)}} = \\dfrac{${toLatex(right)}}{${toLatex(factor)}}`,
           annotation: 'same to both sides',
         });
-        tidy(keep, { t: 'div', a: right, b: factor }, `The $${toLatex(factor)}$ on the left cancels.`);
+        tidy(
+          keep,
+          { t: 'div', a: right, b: factor },
+          `The $${toLatex(factor)}$ on the left cancels.`,
+        );
         break;
       }
 
@@ -209,7 +242,11 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             latex: `${toLatex(left)} \\times ${tight(left.b)} = ${toLatex(right)} \\times ${tight(left.b)}`,
             annotation: 'same to both sides',
           });
-          tidy(left.a, { t: 'mul', a: right, b: left.b }, 'The division on the left cancels.');
+          tidy(
+            left.a,
+            { t: 'mul', a: right, b: left.b },
+            'The division on the left cancels.',
+          );
           break;
         }
         // a / x = R: clear the denominator first, then divide by R.
@@ -217,8 +254,12 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         const value = evaluateExpr(right);
         if (!Number.isFinite(value) || value === 0) {
           return evaluateExpr(left.a) === 0
-            ? cannot('Both sides are zero whatever $x$ is, so nothing pins it down.')
-            : noSolution('A fraction with a non-zero top can never equal zero, however big $x$ gets.');
+            ? cannot(
+                'Both sides are zero whatever $x$ is, so nothing pins it down.',
+              )
+            : noSolution(
+                'A fraction with a non-zero top can never equal zero, however big $x$ gets.',
+              );
         }
         steps.push({
           note: `$x$ is underneath, so multiply both sides by $${toLatex(left.b)}$ to bring it up.`,
@@ -234,7 +275,11 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
           latex: `\\dfrac{${toLatex(top)}}{${tight(right)}} = ${toLatex(left.b)}`,
           annotation: 'same to both sides',
         });
-        tidy(left.b, { t: 'div', a: top, b: right }, 'Read it the other way round.');
+        tidy(
+          left.b,
+          { t: 'div', a: top, b: right },
+          'Read it the other way round.',
+        );
         break;
       }
 
@@ -252,7 +297,8 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
       case 'pow': {
         if (has(left.a)) {
           const n = evaluateExpr(left.b);
-          if (!Number.isFinite(n) || n === 0) return cannot('That index isn’t a number this can undo.');
+          if (!Number.isFinite(n) || n === 0)
+            return cannot('That index isn’t a number this can undo.');
           const step = undoPower(left.a, right, n, steps, depth);
           if ('done' in step) return step.done;
           left = step.next.left;
@@ -262,7 +308,9 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         // c^u = R: the unknown is in the index, so logarithms bring it down.
         const base = evaluateExpr(left.a);
         if (!Number.isFinite(base) || base <= 0 || base === 1) {
-          return cannot('A power like this only has a logarithm when its base is positive and not 1.');
+          return cannot(
+            'A power like this only has a logarithm when its base is positive and not 1.',
+          );
         }
         const value = evaluateExpr(right);
         if (!(value > 0)) {
@@ -308,7 +356,9 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
               annotation: 'same to both sides',
             });
             const raised: Expr =
-              left.name === 'ln' ? { t: 'fn', name: 'exp', a: right } : { t: 'pow', a: num(base), b: right };
+              left.name === 'ln'
+                ? { t: 'fn', name: 'exp', a: right }
+                : { t: 'pow', a: num(base), b: right };
             tidy(
               inner,
               raised,
@@ -323,26 +373,38 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             if (left.name === 'exp') {
               const value = evaluateExpr(right);
               if (!(value > 0)) {
-                return noSolution(`$e$ to any power is positive, so it can never equal $${toLatex(right)}$.`);
+                return noSolution(
+                  `$e$ to any power is positive, so it can never equal $${toLatex(right)}$.`,
+                );
               }
               steps.push({
                 note: 'To bring the index down, take the natural logarithm of both sides.',
                 latex: `\\ln\\left(${toLatex(left)}\\right) = \\ln\\left(${toLatex(right)}\\right)`,
                 annotation: 'same to both sides',
               });
-              tidy(inner, { t: 'fn', name: 'ln', a: right }, '$\\ln$ and $e$ undo each other, leaving the index.');
+              tidy(
+                inner,
+                { t: 'fn', name: 'ln', a: right },
+                '$\\ln$ and $e$ undo each other, leaving the index.',
+              );
               break;
             }
             const value = evaluateExpr(right);
             if (!(value >= 0)) {
-              return noSolution(`A square root is never negative, so it can never equal $${toLatex(right)}$.`);
+              return noSolution(
+                `A square root is never negative, so it can never equal $${toLatex(right)}$.`,
+              );
             }
             steps.push({
               note: 'Square both sides to undo the square root.',
               latex: `\\left(${toLatex(left)}\\right)^{2} = ${tight(right)}^{2}`,
               annotation: 'same to both sides',
             });
-            tidy(inner, { t: 'pow', a: right, b: num(2) }, 'Squaring a square root leaves what was underneath.');
+            tidy(
+              inner,
+              { t: 'pow', a: right, b: num(2) },
+              'Squaring a square root leaves what was underneath.',
+            );
             break;
           }
 
@@ -352,7 +414,9 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             return solveTrig(left.name, inner, right, steps);
 
           default:
-            return cannot(`There is no rule here for undoing $${toLatex(left)}$.`);
+            return cannot(
+              `There is no rule here for undoing $${toLatex(left)}$.`,
+            );
         }
         break;
       }
@@ -371,14 +435,25 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
  */
 type PowerStep = { done: Outcome } | { next: Equation };
 
-function undoPower(base: Expr, right: Expr, n: number, steps: Step[], depth: number): PowerStep {
+function undoPower(
+  base: Expr,
+  right: Expr,
+  n: number,
+  steps: Step[],
+  depth: number,
+): PowerStep {
   const value = evaluateExpr(right);
   const even = Number.isInteger(n) && n % 2 === 0;
-  const root = n === 2 ? `\\sqrt{${toLatex(right)}}` : `\\sqrt[${fmt(n)}]{${toLatex(right)}}`;
+  const root =
+    n === 2
+      ? `\\sqrt{${toLatex(right)}}`
+      : `\\sqrt[${fmt(n)}]{${toLatex(right)}}`;
 
   if (even && !(value >= 0)) {
     return {
-      done: noSolution(`An even power is never negative, so it can never equal $${toLatex(right)}$.`),
+      done: noSolution(
+        `An even power is never negative, so it can never equal $${toLatex(right)}$.`,
+      ),
     };
   }
 
@@ -389,7 +464,8 @@ function undoPower(base: Expr, right: Expr, n: number, steps: Step[], depth: num
   });
 
   const size = Math.pow(Math.abs(value), 1 / n);
-  const neat = Math.abs(size - Math.round(size)) < 1e-9 ? Math.round(size) : size;
+  const neat =
+    Math.abs(size - Math.round(size)) < 1e-9 ? Math.round(size) : size;
 
   if (!even) {
     const signed = value < 0 ? -neat : neat;
@@ -419,12 +495,17 @@ function undoPower(base: Expr, right: Expr, n: number, steps: Step[], depth: num
     annotation: 'two cases',
   });
 
-  if (depth > 2) return { done: cannot('This one branches too many times to lay out.') };
+  if (depth > 2)
+    return { done: cannot('This one branches too many times to lay out.') };
 
   const answers: Answer[] = [];
   for (const sign of [1, -1] as const) {
     const branch: Step[] = [];
-    const outcome = isolate({ left: base, right: num(sign * neat) }, branch, depth + 1);
+    const outcome = isolate(
+      { left: base, right: num(sign * neat) },
+      branch,
+      depth + 1,
+    );
     if (!outcome.ok) return { done: outcome };
     steps.push({
       note: `Case ${sign === 1 ? 1 : 2}: take the ${sign === 1 ? 'positive' : 'negative'} root.`,
@@ -447,23 +528,34 @@ function ordinalRoot(n: number): string {
 function wholePower(base: number, value: number): number | null {
   const p = Math.log(value) / Math.log(base);
   const r = Math.round(p);
-  return Math.abs(p - r) < 1e-10 && Math.abs(Math.pow(base, r) - value) < 1e-9 ? r : null;
+  return Math.abs(p - r) < 1e-10 && Math.abs(Math.pow(base, r) - value) < 1e-9
+    ? r
+    : null;
 }
 
 /* --------------------------------------------------------- finishing off */
 
 function finish(right: Expr, steps: Step[]): Outcome {
   const value = evaluateExpr(right);
-  if (!Number.isFinite(value)) return cannot('The right-hand side didn’t come out as a number.');
+  if (!Number.isFinite(value))
+    return cannot('The right-hand side didn’t come out as a number.');
 
   const fraction = asFraction(right);
   if (fraction) {
-    steps.push({ note: 'Cancel the fraction down.', latex: `x = ${fraction}`, annotation: 'exact' });
+    steps.push({
+      note: 'Cancel the fraction down.',
+      latex: `x = ${fraction}`,
+      annotation: 'exact',
+    });
   }
   const exact = fraction ?? toLatex(right);
   const decimal = fmt(value, 6);
   if (exact !== decimal) {
-    steps.push({ note: 'Work it out.', latex: `x = ${decimal}`, annotation: 'solved' });
+    steps.push({
+      note: 'Work it out.',
+      latex: `x = ${decimal}`,
+      annotation: 'solved',
+    });
   } else if (steps.length) {
     steps[steps.length - 1].annotation = 'solved';
   }
@@ -481,11 +573,18 @@ function finish(right: Expr, steps: Step[]): Outcome {
  * `trig(u) = k`. Provided u is linear in x, every solution for u maps to one
  * for x, and both can be listed in full.
  */
-function solveTrig(name: 'sin' | 'cos' | 'tan', inner: Expr, right: Expr, steps: Step[]): Outcome {
+function solveTrig(
+  name: 'sin' | 'cos' | 'tan',
+  inner: Expr,
+  right: Expr,
+  steps: Step[],
+): Outcome {
   const k = evaluateExpr(right);
   if (!Number.isFinite(k)) return cannot('The right-hand side isn’t a number.');
   if ((name === 'sin' || name === 'cos') && Math.abs(k) > 1) {
-    return noSolution(`$\\${name}$ is never outside $-1$ to $1$, so $\\${name}(\\ldots) = ${fmt(k)}$ has no solution.`);
+    return noSolution(
+      `$\\${name}$ is never outside $-1$ to $1$, so $\\${name}(\\ldots) = ${fmt(k)}$ has no solution.`,
+    );
   }
 
   // u = px + q, found by measuring rather than pattern-matching.
@@ -493,13 +592,24 @@ function solveTrig(name: 'sin' | 'cos' | 'tan', inner: Expr, right: Expr, steps:
   const p = evaluateExpr(inner, { x: 1 }) - q;
   const check = evaluateExpr(inner, { x: 2 });
   if (!Number.isFinite(p) || p === 0 || Math.abs(check - (2 * p + q)) > 1e-9) {
-    return cannot('The angle inside has to be a straight-line expression in $x$ for this method.');
+    return cannot(
+      'The angle inside has to be a straight-line expression in $x$ for this method.',
+    );
   }
 
   const period = name === 'tan' ? 180 : 360;
   const principal =
-    name === 'sin' ? rad2deg(Math.asin(k)) : name === 'cos' ? rad2deg(Math.acos(k)) : rad2deg(Math.atan(k));
-  const family = name === 'sin' ? [principal, 180 - principal] : name === 'cos' ? [principal, -principal] : [principal];
+    name === 'sin'
+      ? rad2deg(Math.asin(k))
+      : name === 'cos'
+        ? rad2deg(Math.acos(k))
+        : rad2deg(Math.atan(k));
+  const family =
+    name === 'sin'
+      ? [principal, 180 - principal]
+      : name === 'cos'
+        ? [principal, -principal]
+        : [principal];
 
   const u = toLatex(inner);
   steps.push({
@@ -531,14 +641,20 @@ function solveTrig(name: 'sin' | 'cos' | 'tan', inner: Expr, right: Expr, steps:
   for (const angle of family) {
     const lo = Math.min(q, 360 * p + q);
     const hi = Math.max(q, 360 * p + q);
-    for (let n = Math.floor((lo - angle) / period) - 1; n <= Math.ceil((hi - angle) / period) + 1; n++) {
+    for (
+      let n = Math.floor((lo - angle) / period) - 1;
+      n <= Math.ceil((hi - angle) / period) + 1;
+      n++
+    ) {
       const x = (angle + period * n - q) / p;
       if (x >= -1e-9 && x < 360 - 1e-9) found.push(Math.round(x * 1e6) / 1e6);
     }
   }
   const solutions = [...new Set(found)].sort((a, b) => a - b);
-  if (!solutions.length) return cannot('No angle in one revolution satisfies that.');
-  if (solutions.length > 24) return cannot('That has too many solutions in a revolution to list.');
+  if (!solutions.length)
+    return cannot('No angle in one revolution satisfies that.');
+  if (solutions.length > 24)
+    return cannot('That has too many solutions in a revolution to list.');
 
   if (p !== 1 || q !== 0) {
     steps.push({
@@ -549,10 +665,17 @@ function solveTrig(name: 'sin' | 'cos' | 'tan', inner: Expr, right: Expr, steps:
   steps.push({
     note: `Take every value of $n$ that leaves $x$ between $0^{\\circ}$ and $360^{\\circ}$.`,
     latex: solutions.map((x) => `x = ${fmt(x, 4)}^{\\circ}`).join(', \\quad '),
-    annotation: solutions.length === 1 ? 'solved' : `${solutions.length} solutions`,
+    annotation:
+      solutions.length === 1 ? 'solved' : `${solutions.length} solutions`,
   });
 
-  return { ok: true, answers: solutions.map((x) => ({ latex: `x = ${fmt(x, 4)}^{\\circ}`, value: x })) };
+  return {
+    ok: true,
+    answers: solutions.map((x) => ({
+      latex: `x = ${fmt(x, 4)}^{\\circ}`,
+      value: x,
+    })),
+  };
 }
 
 /** Two branches can land on the same root; it is one solution, not two. */
@@ -572,13 +695,15 @@ export const inverseSolver: Solver = {
   id: 'inverse',
   title: 'Solving by undoing',
   subjects: ['General', 'Methods', 'Specialist'],
-  blurb: 'Undo brackets, fractions, powers, roots, logs and exponentials one layer at a time.',
+  blurb:
+    'Undo brackets, fractions, powers, roots, logs and exponentials one layer at a time.',
   placeholder: 'e.g.  ln(x + 5) = 5   or   2(x + 3) = 10',
   methods: [
     {
       id: 'undo',
       name: 'Inverse operations',
-      blurb: 'Work from the outside in, undoing each operation on both sides until x is on its own.',
+      blurb:
+        'Work from the outside in, undoing each operation on both sides until x is on its own.',
     },
   ],
   defaultMethodId: 'undo',
@@ -594,12 +719,16 @@ export const inverseSolver: Solver = {
     if (!eq) {
       return {
         ok: false,
-        error: 'Write an equation with one unknown appearing once, e.g.  ln(x + 5) = 5  or  2(x + 3) = 10.',
+        error:
+          'Write an equation with one unknown appearing once, e.g.  ln(x + 5) = 5  or  2(x + 3) = 10.',
       };
     }
 
     const steps: Step[] = [
-      { note: 'Write down the equation.', latex: `${toLatex(eq.left)} = ${toLatex(eq.right)}` },
+      {
+        note: 'Write down the equation.',
+        latex: `${toLatex(eq.left)} = ${toLatex(eq.right)}`,
+      },
     ];
     const outcome = isolate(eq, steps);
     if (!outcome.ok) {
@@ -607,8 +736,13 @@ export const inverseSolver: Solver = {
       // it is worth reading. Not being able to do the question is not — that
       // has to fail out loud so the student isn't shown a dead end dressed up
       // as a conclusion.
-      if (!outcome.proven) return { ok: false, error: outcome.why.replace(/\$/g, '') };
-      steps.push({ note: outcome.why, latex: '\\text{No real solutions}', annotation: 'no solution' });
+      if (!outcome.proven)
+        return { ok: false, error: outcome.why.replace(/\$/g, '') };
+      steps.push({
+        note: outcome.why,
+        latex: '\\text{No real solutions}',
+        annotation: 'no solution',
+      });
       return {
         ok: true,
         solution: {

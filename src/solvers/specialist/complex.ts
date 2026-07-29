@@ -34,7 +34,8 @@ function parseCx(sRaw: string): Cx {
   if (s === '') throw new Error('Empty complex number.');
 
   const tokens = s.match(/[+-]?[^+-]+/g);
-  if (!tokens || tokens.join('') !== s) throw new Error(`Could not read "${sRaw}".`);
+  if (!tokens || tokens.join('') !== s)
+    throw new Error(`Could not read "${sRaw}".`);
 
   let re = 0;
   let im = 0;
@@ -72,7 +73,14 @@ function parse(input: string): Problem {
   // Two bracketed complex numbers joined by an operation.
   const bin = s.match(/^\(([^()]+)\)([+\-*×/÷])\(([^()]+)\)$/);
   if (bin) {
-    const opMap: Record<string, Problem['op']> = { '+': '+', '-': '-', '*': '*', '×': '*', '/': '/', '÷': '/' };
+    const opMap: Record<string, Problem['op']> = {
+      '+': '+',
+      '-': '-',
+      '*': '*',
+      '×': '*',
+      '/': '/',
+      '÷': '/',
+    };
     return { op: opMap[bin[2]], a: parseCx(bin[1]), b: parseCx(bin[3]) };
   }
 
@@ -114,7 +122,10 @@ export const complexSolver: Solver = {
     try {
       p = parse(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that.',
+      };
     }
     const { a, b } = p;
 
@@ -129,7 +140,10 @@ export const complexSolver: Solver = {
           headline: `Write $${cxTex(a)}$ in polar form`,
           methodName: 'Polar form',
           steps: [
-            { note: 'Plot the number: the real part is across, the imaginary part is up.', latex: `z = ${cxTex(a)}` },
+            {
+              note: 'Plot the number: the real part is across, the imaginary part is up.',
+              latex: `z = ${cxTex(a)}`,
+            },
             {
               note: 'The modulus is the distance from the origin (Pythagoras).',
               latex: `r = |z| = \\sqrt{${fmt(a.re)}^{2} + ${fmt(a.im)}^{2}} = ${fmt(r, 4)}`,
@@ -158,9 +172,19 @@ export const complexSolver: Solver = {
           headline: `Find $|${cxTex(a)}|$`,
           methodName: 'Modulus',
           steps: [
-            { note: 'The modulus is the distance from the origin on the complex plane.', latex: `|a + bi| = \\sqrt{a^{2} + b^{2}}` },
-            { note: 'Substitute the real and imaginary parts.', latex: `|z| = \\sqrt{${fmt(a.re)}^{2} + ${fmt(a.im)}^{2}} = \\sqrt{${fmt(a.re * a.re + a.im * a.im)}}` },
-            { note: 'Work it out.', latex: `|z| = ${fmt(r, 4)}`, annotation: 'modulus' },
+            {
+              note: 'The modulus is the distance from the origin on the complex plane.',
+              latex: `|a + bi| = \\sqrt{a^{2} + b^{2}}`,
+            },
+            {
+              note: 'Substitute the real and imaginary parts.',
+              latex: `|z| = \\sqrt{${fmt(a.re)}^{2} + ${fmt(a.im)}^{2}} = \\sqrt{${fmt(a.re * a.re + a.im * a.im)}}`,
+            },
+            {
+              note: 'Work it out.',
+              latex: `|z| = ${fmt(r, 4)}`,
+              annotation: 'modulus',
+            },
           ],
           answerLatex: `|z| = ${fmt(r, 4)}`,
         },
@@ -175,15 +199,23 @@ export const complexSolver: Solver = {
           headline: `Find the conjugate of $${cxTex(a)}$`,
           methodName: 'Conjugate',
           steps: [
-            { note: 'The conjugate flips the sign of the imaginary part.', latex: `\\overline{a + bi} = a - bi` },
-            { note: 'Apply it.', latex: `\\overline{${cxTex(a)}} = ${cxTex(conj)}`, annotation: 'conjugate' },
+            {
+              note: 'The conjugate flips the sign of the imaginary part.',
+              latex: `\\overline{a + bi} = a - bi`,
+            },
+            {
+              note: 'Apply it.',
+              latex: `\\overline{${cxTex(a)}} = ${cxTex(conj)}`,
+              annotation: 'conjugate',
+            },
           ],
           answerLatex: cxTex(conj),
         },
       };
     }
 
-    if (!b) return { ok: false, error: 'That operation needs two complex numbers.' };
+    if (!b)
+      return { ok: false, error: 'That operation needs two complex numbers.' };
 
     if (p.op === '+' || p.op === '-') {
       const sign = p.op === '+' ? 1 : -1;
@@ -194,12 +226,19 @@ export const complexSolver: Solver = {
           headline: `Work out $(${cxTex(a)}) ${p.op} (${cxTex(b)})$`,
           methodName: p.op === '+' ? 'Addition' : 'Subtraction',
           steps: [
-            { note: `Collect the real parts and the imaginary parts separately.`, latex: `(${cxTex(a)}) ${p.op} (${cxTex(b)})` },
+            {
+              note: `Collect the real parts and the imaginary parts separately.`,
+              latex: `(${cxTex(a)}) ${p.op} (${cxTex(b)})`,
+            },
             {
               note: 'Group them.',
               latex: `= (${fmt(a.re)} ${p.op} ${fmt(b.re)}) + (${fmt(a.im)} ${p.op} ${fmt(b.im)})i`,
             },
-            { note: 'Simplify.', latex: `= ${cxTex(out)}`, annotation: 'answer' },
+            {
+              note: 'Simplify.',
+              latex: `= ${cxTex(out)}`,
+              annotation: 'answer',
+            },
           ],
           answerLatex: cxTex(out),
         },
@@ -214,7 +253,10 @@ export const complexSolver: Solver = {
           headline: `Work out $(${cxTex(a)})(${cxTex(b)})$`,
           methodName: 'Multiplication',
           steps: [
-            { note: 'Expand the brackets as usual.', latex: `(${cxTex(a)})(${cxTex(b)})` },
+            {
+              note: 'Expand the brackets as usual.',
+              latex: `(${cxTex(a)})(${cxTex(b)})`,
+            },
             {
               note: 'Multiply every term by every term.',
               latex: `= ${fmt(a.re)}\\times${fmt(b.re)} + ${fmt(a.re)}\\times${fmt(b.im)}i + ${fmt(a.im)}i\\times${fmt(b.re)} + ${fmt(a.im)}i\\times${fmt(b.im)}i`,
@@ -224,7 +266,11 @@ export const complexSolver: Solver = {
               latex: `= ${fmt(a.re * b.re)} + ${fmt(a.re * b.im)}i + ${fmt(a.im * b.re)}i ${a.im * b.im >= 0 ? '-' : '+'} ${fmt(Math.abs(a.im * b.im))}`,
               annotation: 'i² = −1',
             },
-            { note: 'Collect real and imaginary parts.', latex: `= ${cxTex(out)}`, annotation: 'answer' },
+            {
+              note: 'Collect real and imaginary parts.',
+              latex: `= ${cxTex(out)}`,
+              annotation: 'answer',
+            },
           ],
           answerLatex: cxTex(out),
         },
@@ -244,7 +290,10 @@ export const complexSolver: Solver = {
         headline: `Work out $\\dfrac{${cxTex(a)}}{${cxTex(b)}}$`,
         methodName: 'Division by the conjugate',
         steps: [
-          { note: 'Write it as a fraction.', latex: `\\dfrac{${cxTex(a)}}{${cxTex(b)}}` },
+          {
+            note: 'Write it as a fraction.',
+            latex: `\\dfrac{${cxTex(a)}}{${cxTex(b)}}`,
+          },
           {
             note: 'Multiply top and bottom by the conjugate of the denominator — that makes the bottom real.',
             latex: `= \\dfrac{(${cxTex(a)})(${cxTex(conj)})}{(${cxTex(b)})(${cxTex(conj)})}`,
@@ -254,7 +303,11 @@ export const complexSolver: Solver = {
             note: 'The denominator becomes $a^{2} + b^{2}$.',
             latex: `= \\dfrac{${cxTex(C(numRe, numIm))}}{${fmt(b.re)}^{2} + ${fmt(b.im)}^{2}} = \\dfrac{${cxTex(C(numRe, numIm))}}{${fmt(denom)}}`,
           },
-          { note: 'Divide each part by the denominator.', latex: `= ${cxTex(out)}`, annotation: 'answer' },
+          {
+            note: 'Divide each part by the denominator.',
+            latex: `= ${cxTex(out)}`,
+            annotation: 'answer',
+          },
         ],
         answerLatex: cxTex(out),
       },

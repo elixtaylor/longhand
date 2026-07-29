@@ -21,7 +21,8 @@ import { TeX } from './TeX';
  * used to own, and `onClose` is its only way out.
  */
 
-type SectionId = 'calculators' | 'formulas' | 'textbook' | 'recent' | 'settings';
+type SectionId =
+  'calculators' | 'formulas' | 'textbook' | 'recent' | 'settings';
 
 export function Sidebar({
   onClose,
@@ -62,11 +63,31 @@ export function Sidebar({
   const formulas = formulasFor(solver.id);
   const imported = importedFor(solver.id);
 
-  const sections: Array<{ id: SectionId; label: string; count?: number; available: boolean }> = [
+  const sections: Array<{
+    id: SectionId;
+    label: string;
+    count?: number;
+    available: boolean;
+  }> = [
     { id: 'calculators', label: 'Calculators', available: true },
-    { id: 'formulas', label: 'Formulas', count: formulas.length, available: formulas.length > 0 },
-    { id: 'textbook', label: 'Textbook questions', count: imported.length, available: imported.length > 0 },
-    { id: 'recent', label: 'Recent', count: history.length, available: history.length > 0 },
+    {
+      id: 'formulas',
+      label: 'Formulas',
+      count: formulas.length,
+      available: formulas.length > 0,
+    },
+    {
+      id: 'textbook',
+      label: 'Textbook questions',
+      count: imported.length,
+      available: imported.length > 0,
+    },
+    {
+      id: 'recent',
+      label: 'Recent',
+      count: history.length,
+      available: history.length > 0,
+    },
     { id: 'settings', label: 'Settings', available: true },
   ];
   const shown = sections.filter((s) => s.available);
@@ -74,7 +95,8 @@ export function Sidebar({
   // Changing topic can pull the open formulas/textbook tab out from under the
   // student, same as ReferenceTabs used to guard against.
   useEffect(() => {
-    if (openSection && !shown.some((s) => s.id === openSection)) setOpenSection(null);
+    if (openSection && !shown.some((s) => s.id === openSection))
+      setOpenSection(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [solver.id, history.length]);
 
@@ -83,6 +105,21 @@ export function Sidebar({
     panelRef.current?.focus();
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
+      if (e.key === 'Tab') {
+        const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled])',
+        );
+        if (!focusable?.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -120,7 +157,12 @@ export function Sidebar({
       >
         <div className="sidebar-head">
           <h2>Menu</h2>
-          <button type="button" className="icon-btn" aria-label="Close menu" onClick={onClose}>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Close menu"
+            onClick={onClose}
+          >
             ✕
           </button>
         </div>
@@ -138,7 +180,9 @@ export function Sidebar({
                 >
                   <span>
                     {s.label}
-                    {s.count !== undefined && <span className="ref-count">{s.count}</span>}
+                    {s.count !== undefined && (
+                      <span className="ref-count">{s.count}</span>
+                    )}
                   </span>
                   <svg
                     className="accordion-chevron"
@@ -167,16 +211,27 @@ export function Sidebar({
                           <div className="examples">
                             {group.items.map((item) => {
                               const itemSolver = getSolver(item.solverId)!;
-                              const method = itemSolver.methods.find((m) => m.id === item.methodId)!;
+                              const method = itemSolver.methods.find(
+                                (m) => m.id === item.methodId,
+                              )!;
                               return (
                                 <button
                                   key={`${item.solverId}-${item.methodId}`}
                                   type="button"
                                   className="calc-item"
-                                  onClick={() => jumpToCalculator(item.solverId, item.methodId)}
+                                  onClick={() =>
+                                    jumpToCalculator(
+                                      item.solverId,
+                                      item.methodId,
+                                    )
+                                  }
                                 >
-                                  <span className="calc-item-label">{item.label ?? method.name}</span>
-                                  <span className="calc-item-blurb">{item.blurb ?? method.blurb}</span>
+                                  <span className="calc-item-label">
+                                    {item.label ?? method.name}
+                                  </span>
+                                  <span className="calc-item-blurb">
+                                    {item.blurb ?? method.blurb}
+                                  </span>
                                 </button>
                               );
                             })}
@@ -206,7 +261,12 @@ export function Sidebar({
                     <>
                       <div className="examples examples-grid">
                         {imported.map((p) => (
-                          <button key={p.ref} type="button" className="example-row" onClick={() => loadImported(p)}>
+                          <button
+                            key={p.ref}
+                            type="button"
+                            className="example-row"
+                            onClick={() => loadImported(p)}
+                          >
                             <span className="example-expr">{p.label}</span>
                             <span className="example-tag">{p.ref}</span>
                           </button>
@@ -214,11 +274,19 @@ export function Sidebar({
                       </div>
                       <p className="attribution">
                         Questions from{' '}
-                        <a href={sourceOf(imported[0]).url} target="_blank" rel="noreferrer">
+                        <a
+                          href={sourceOf(imported[0]).url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           {sourceOf(imported[0]).title}
                         </a>{' '}
                         ({sourceOf(imported[0]).publisher}), used under{' '}
-                        <a href={sourceOf(imported[0]).licenceUrl} target="_blank" rel="noreferrer">
+                        <a
+                          href={sourceOf(imported[0]).licenceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           {sourceOf(imported[0]).licence}
                         </a>
                         . All working is Longhand’s own.
@@ -237,13 +305,21 @@ export function Sidebar({
                             onClick={() => loadHistory(h)}
                             title={h.input}
                           >
-                            <span className="example-expr">{truncate(h.input, 34)}</span>
-                            <span className="example-tag">{getSolver(h.solverId)?.title ?? ''}</span>
+                            <span className="example-expr">
+                              {truncate(h.input, 34)}
+                            </span>
+                            <span className="example-tag">
+                              {getSolver(h.solverId)?.title ?? ''}
+                            </span>
                           </button>
                         ))}
                       </div>
                       <p className="attribution">
-                        <button type="button" className="link-btn" onClick={onClearHistory}>
+                        <button
+                          type="button"
+                          className="link-btn"
+                          onClick={onClearHistory}
+                        >
                           Clear recent problems
                         </button>
                       </p>

@@ -28,7 +28,12 @@ function parseMatrix(s: string): Matrix {
 }
 
 /** Split "[[…]] op [[…]]" into the two matrices and the operator. */
-function splitMatrices(input: string): { a: Matrix; b?: Matrix; op: string; k?: number } {
+function splitMatrices(input: string): {
+  a: Matrix;
+  b?: Matrix;
+  op: string;
+  k?: number;
+} {
   const s = input.trim();
 
   const det = s.match(/^(?:det|determinant)\s*(.+)$/i);
@@ -38,17 +43,24 @@ function splitMatrices(input: string): { a: Matrix; b?: Matrix; op: string; k?: 
   if (inv) return { a: parseMatrix(inv[1]), op: 'inverse' };
 
   const scalar = s.match(/^(-?\d*\.?\d+)\s*[*×]?\s*(\[\[.+\]\])$/);
-  if (scalar) return { a: parseMatrix(scalar[2]), op: 'scale', k: Number(scalar[1]) };
+  if (scalar)
+    return { a: parseMatrix(scalar[2]), op: 'scale', k: Number(scalar[1]) };
 
   const parts = s.match(/^(\[\[.*?\]\])\s*([+\-*×])\s*(\[\[.*?\]\])$/);
   if (parts) {
-    return { a: parseMatrix(parts[1]), b: parseMatrix(parts[3]), op: parts[2] === '×' ? '*' : parts[2] };
+    return {
+      a: parseMatrix(parts[1]),
+      b: parseMatrix(parts[3]),
+      op: parts[2] === '×' ? '*' : parts[2],
+    };
   }
 
   // A lone matrix: show its determinant if square.
   if (/^\[\[.*\]\]$/.test(s)) return { a: parseMatrix(s), op: 'det' };
 
-  throw new Error('Try  [[1,2],[3,4]] * [[5,6],[7,8]],  det [[1,2],[3,4]]  or  inverse [[1,2],[3,4]].');
+  throw new Error(
+    'Try  [[1,2],[3,4]] * [[5,6],[7,8]],  det [[1,2],[3,4]]  or  inverse [[1,2],[3,4]].',
+  );
 }
 
 function determinant(m: Matrix): number {
@@ -69,7 +81,12 @@ export const matricesSolver: Solver = {
   blurb: 'Add, multiply, and find determinants and inverses.',
   placeholder: 'e.g.  [[1,2],[3,4]] * [[5,6],[7,8]]',
   methods: [
-    { id: 'standard', name: 'Standard operations', blurb: 'Row-by-column multiplication, and the ad − bc rule for 2×2 determinants.' },
+    {
+      id: 'standard',
+      name: 'Standard operations',
+      blurb:
+        'Row-by-column multiplication, and the ad − bc rule for 2×2 determinants.',
+    },
   ],
   defaultMethodId: 'standard',
   detect(input) {
@@ -86,13 +103,19 @@ export const matricesSolver: Solver = {
     try {
       parsed = splitMatrices(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that matrix.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that matrix.',
+      };
     }
     const { a, b, op, k } = parsed;
 
     if (op === '+' || op === '-') {
       if (!b || a.length !== b.length || a[0].length !== b[0].length) {
-        return { ok: false, error: 'To add or subtract, both matrices must be the same size.' };
+        return {
+          ok: false,
+          error: 'To add or subtract, both matrices must be the same size.',
+        };
       }
       const sign = op === '+' ? 1 : -1;
       const out = a.map((row, i) => row.map((v, j) => v + sign * b[i][j]));
@@ -102,12 +125,19 @@ export const matricesSolver: Solver = {
           headline: `Work out $${mTex(a)} ${op} ${mTex(b)}$`,
           methodName: op === '+' ? 'Matrix addition' : 'Matrix subtraction',
           steps: [
-            { note: `${op === '+' ? 'Add' : 'Subtract'} the entries in matching positions.`, latex: `${mTex(a)} ${op} ${mTex(b)}` },
+            {
+              note: `${op === '+' ? 'Add' : 'Subtract'} the entries in matching positions.`,
+              latex: `${mTex(a)} ${op} ${mTex(b)}`,
+            },
             {
               note: 'Work through position by position.',
               latex: `= \\begin{pmatrix} ${a.map((row, i) => row.map((v, j) => `${fmt(v)} ${op} ${fmt(b[i][j])}`).join(' & ')).join(' \\\\ ')} \\end{pmatrix}`,
             },
-            { note: 'Simplify.', latex: `= ${mTex(out)}`, annotation: 'answer' },
+            {
+              note: 'Simplify.',
+              latex: `= ${mTex(out)}`,
+              annotation: 'answer',
+            },
           ],
           answerLatex: mTex(out),
         },
@@ -122,8 +152,15 @@ export const matricesSolver: Solver = {
           headline: `Work out $${fmt(k!)}${mTex(a)}$`,
           methodName: 'Scalar multiplication',
           steps: [
-            { note: 'Multiply every entry by the scalar.', latex: `${fmt(k!)} ${mTex(a)}` },
-            { note: 'Work through each entry.', latex: `= ${mTex(out)}`, annotation: 'answer' },
+            {
+              note: 'Multiply every entry by the scalar.',
+              latex: `${fmt(k!)} ${mTex(a)}`,
+            },
+            {
+              note: 'Work through each entry.',
+              latex: `= ${mTex(out)}`,
+              annotation: 'answer',
+            },
           ],
           answerLatex: mTex(out),
         },
@@ -138,11 +175,17 @@ export const matricesSolver: Solver = {
           error: `You can't multiply a ${a.length}×${a[0].length} by a ${b.length}×${b[0].length} — the first matrix's columns must match the second's rows.`,
         };
       }
-      const out = a.map((row) => b[0].map((_, j) => row.reduce((s, v, kk) => s + v * b[kk][j], 0)));
+      const out = a.map((row) =>
+        b[0].map((_, j) => row.reduce((s, v, kk) => s + v * b[kk][j], 0)),
+      );
       const workings = a
         .map((row) =>
           b[0]
-            .map((_, j) => row.map((v, kk) => `${fmt(v)}\\times${fmt(b[kk][j])}`).join(' + '))
+            .map((_, j) =>
+              row
+                .map((v, kk) => `${fmt(v)}\\times${fmt(b[kk][j])}`)
+                .join(' + '),
+            )
             .join(' & '),
         )
         .join(' \\\\ ');
@@ -161,7 +204,11 @@ export const matricesSolver: Solver = {
               note: 'Each entry is a row of the first matrix dotted with a column of the second.',
               latex: `= \\begin{pmatrix} ${workings} \\end{pmatrix}`,
             },
-            { note: 'Work out each entry.', latex: `= ${mTex(out)}`, annotation: 'answer' },
+            {
+              note: 'Work out each entry.',
+              latex: `= ${mTex(out)}`,
+              annotation: 'answer',
+            },
           ],
           answerLatex: mTex(out),
         },
@@ -170,20 +217,31 @@ export const matricesSolver: Solver = {
 
     // Determinant and inverse both need a square matrix.
     if (a.length !== a[0].length) {
-      return { ok: false, error: 'Only a square matrix has a determinant or an inverse.' };
+      return {
+        ok: false,
+        error: 'Only a square matrix has a determinant or an inverse.',
+      };
     }
     const det = determinant(a);
 
     if (op === 'det') {
-      const steps: Step[] = [{ note: 'Write down the matrix.', latex: mTex(a) }];
+      const steps: Step[] = [
+        { note: 'Write down the matrix.', latex: mTex(a) },
+      ];
       if (a.length === 2) {
-        steps.push({ note: 'For a 2×2 matrix the determinant is $ad - bc$.', latex: `\\det = ad - bc` });
+        steps.push({
+          note: 'For a 2×2 matrix the determinant is $ad - bc$.',
+          latex: `\\det = ad - bc`,
+        });
         steps.push({
           note: 'Substitute the entries.',
           latex: `\\det = (${fmt(a[0][0])})(${fmt(a[1][1])}) - (${fmt(a[0][1])})(${fmt(a[1][0])}) = ${fmt(a[0][0] * a[1][1])} - ${fmt(a[0][1] * a[1][0])}`,
         });
       } else {
-        steps.push({ note: 'Expand along the first row, alternating the signs.', latex: `\\det = \\sum_{j} (-1)^{1+j} a_{1j} M_{1j}` });
+        steps.push({
+          note: 'Expand along the first row, alternating the signs.',
+          latex: `\\det = \\sum_{j} (-1)^{1+j} a_{1j} M_{1j}`,
+        });
       }
       steps.push({
         note: 'Work it out.',
@@ -192,13 +250,22 @@ export const matricesSolver: Solver = {
       });
       return {
         ok: true,
-        solution: { headline: `Find the determinant of $${mTex(a)}$`, methodName: 'Determinant', steps, answerLatex: `\\det = ${fmt(det)}` },
+        solution: {
+          headline: `Find the determinant of $${mTex(a)}$`,
+          methodName: 'Determinant',
+          steps,
+          answerLatex: `\\det = ${fmt(det)}`,
+        },
       };
     }
 
     // Inverse (2×2 only — the SACE case).
     if (a.length !== 2) {
-      return { ok: false, error: 'This handles inverses of 2×2 matrices. For the determinant of a bigger matrix, try  det [[…]].' };
+      return {
+        ok: false,
+        error:
+          'This handles inverses of 2×2 matrices. For the determinant of a bigger matrix, try  det [[…]].',
+      };
     }
     if (det === 0) {
       return {
@@ -207,8 +274,15 @@ export const matricesSolver: Solver = {
           headline: `Find the inverse of $${mTex(a)}$`,
           methodName: 'Inverse',
           steps: [
-            { note: 'Start with the determinant — a matrix only has an inverse when it isn’t zero.', latex: `\\det = ad - bc = (${fmt(a[0][0])})(${fmt(a[1][1])}) - (${fmt(a[0][1])})(${fmt(a[1][0])}) = 0` },
-            { note: 'The determinant is zero, so this matrix is singular and has no inverse.', latex: `\\text{No inverse exists}`, annotation: 'singular' },
+            {
+              note: 'Start with the determinant — a matrix only has an inverse when it isn’t zero.',
+              latex: `\\det = ad - bc = (${fmt(a[0][0])})(${fmt(a[1][1])}) - (${fmt(a[0][1])})(${fmt(a[1][0])}) = 0`,
+            },
+            {
+              note: 'The determinant is zero, so this matrix is singular and has no inverse.',
+              latex: `\\text{No inverse exists}`,
+              annotation: 'singular',
+            },
           ],
         },
       };
@@ -224,10 +298,24 @@ export const matricesSolver: Solver = {
         headline: `Find the inverse of $${mTex(a)}$`,
         methodName: 'Inverse of a 2×2 matrix',
         steps: [
-          { note: 'First find the determinant.', latex: `\\det = ad - bc = (${fmt(p)})(${fmt(s)}) - (${fmt(q)})(${fmt(r)}) = ${fmt(det)}`, annotation: 'not zero → an inverse exists' },
-          { note: 'Swap the entries on the leading diagonal and negate the other two.', latex: `\\text{adj} = \\begin{pmatrix} ${fmt(s)} & ${fmt(-q)} \\\\ ${fmt(-r)} & ${fmt(p)} \\end{pmatrix}` },
-          { note: 'Divide by the determinant.', latex: `A^{-1} = \\dfrac{1}{${fmt(det)}}\\begin{pmatrix} ${fmt(s)} & ${fmt(-q)} \\\\ ${fmt(-r)} & ${fmt(p)} \\end{pmatrix}` },
-          { note: 'Work out each entry.', latex: `A^{-1} = ${mTex(out)}`, annotation: 'inverse' },
+          {
+            note: 'First find the determinant.',
+            latex: `\\det = ad - bc = (${fmt(p)})(${fmt(s)}) - (${fmt(q)})(${fmt(r)}) = ${fmt(det)}`,
+            annotation: 'not zero → an inverse exists',
+          },
+          {
+            note: 'Swap the entries on the leading diagonal and negate the other two.',
+            latex: `\\text{adj} = \\begin{pmatrix} ${fmt(s)} & ${fmt(-q)} \\\\ ${fmt(-r)} & ${fmt(p)} \\end{pmatrix}`,
+          },
+          {
+            note: 'Divide by the determinant.',
+            latex: `A^{-1} = \\dfrac{1}{${fmt(det)}}\\begin{pmatrix} ${fmt(s)} & ${fmt(-q)} \\\\ ${fmt(-r)} & ${fmt(p)} \\end{pmatrix}`,
+          },
+          {
+            note: 'Work out each entry.',
+            latex: `A^{-1} = ${mTex(out)}`,
+            annotation: 'inverse',
+          },
         ],
         answerLatex: mTex(out),
       },

@@ -188,7 +188,9 @@ button {
   background: var(--bg-tint);
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
-  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
 }
 .palette-key:hover {
   background: var(--accent-soft);
@@ -202,27 +204,17 @@ button {
   min-height: 48px;
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
+  justify-content: center;
   background: var(--bg-tint);
   border: 1px dashed var(--line-strong);
   border-radius: var(--control-radius);
-}
-.preview-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-3);
-  font-weight: 700;
-  writing-mode: horizontal-tb;
 }
 .preview-body {
   font-size: 1.15rem;
   color: var(--ink);
   overflow-x: auto;
-}
-.preview-empty {
-  color: var(--ink-3);
-  font-style: italic;
+  text-align: center;
+  width: 100%;
 }
 /* Prose reads as prose — KaTeX would set it as a run of italic letters. */
 .preview-plain {
@@ -330,9 +322,11 @@ button {
   color: var(--ink-2);
   border-radius: calc(var(--control-radius) - 2px);
   white-space: nowrap;
-  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
 }
-.method-tab[aria-selected="true"] {
+.method-tab[aria-selected='true'] {
   background: var(--surface-raised);
   color: var(--accent);
   box-shadow: var(--shadow-1);
@@ -371,7 +365,9 @@ button {
   background: var(--bg-tint);
   border: 1px solid transparent;
   border-radius: var(--control-radius);
-  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
 }
 .op-picker button[aria-pressed='true'] {
   background: var(--surface-raised);
@@ -394,7 +390,9 @@ button {
   font-weight: 600;
   color: var(--ink-2);
   border-radius: calc(var(--control-radius) - 2px);
-  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
 }
 .dims-toggle button[aria-pressed='true'] {
   background: var(--surface-raised);
@@ -458,7 +456,9 @@ button {
   color: var(--accent-ink);
   background: var(--accent);
   border-radius: var(--control-radius);
-  transition: filter 0.14s var(--ease), transform 0.05s var(--ease);
+  transition:
+    filter 0.14s var(--ease),
+    transform 0.05s var(--ease);
 }
 .btn-primary:hover {
   filter: brightness(1.06);
@@ -1404,7 +1404,7 @@ button {
   color: var(--ink-2);
   border-radius: calc(var(--control-radius) - 2px);
 }
-.segmented button[aria-pressed="true"] {
+.segmented button[aria-pressed='true'] {
   background: var(--surface-raised);
   color: var(--accent);
   box-shadow: var(--shadow-1);
@@ -1423,7 +1423,7 @@ button {
   border-radius: var(--control-radius);
   align-items: stretch;
 }
-.theme-swatch[aria-pressed="true"] {
+.theme-swatch[aria-pressed='true'] {
   border-color: var(--accent);
 }
 .swatch-chip {
@@ -1459,18 +1459,18 @@ button {
    match. font-style is reset too — a cursive face has no italic variant of
    its own, so leaving KaTeX's italic flag on would browser-synthesise a
    slant on top of it. */
-:root[data-theme="notebook"] .katex,
-:root[data-theme="notebook"] .katex .mathnormal,
-:root[data-theme="notebook"] .katex .mathit,
-:root[data-theme="notebook"] .katex .mathrm,
-:root[data-theme="notebook"] .katex .mathbf,
-:root[data-theme="notebook"] .katex .mathsf,
-:root[data-theme="notebook"] .katex .mathtt,
-:root[data-theme="notebook"] .katex .mainrm,
-:root[data-theme="notebook"] .katex .textrm,
-:root[data-theme="notebook"] .katex .textit,
-:root[data-theme="notebook"] .katex .textsf,
-:root[data-theme="notebook"] .katex .texttt {
+:root[data-theme='notebook'] .katex,
+:root[data-theme='notebook'] .katex .mathnormal,
+:root[data-theme='notebook'] .katex .mathit,
+:root[data-theme='notebook'] .katex .mathrm,
+:root[data-theme='notebook'] .katex .mathbf,
+:root[data-theme='notebook'] .katex .mathsf,
+:root[data-theme='notebook'] .katex .mathtt,
+:root[data-theme='notebook'] .katex .mainrm,
+:root[data-theme='notebook'] .katex .textrm,
+:root[data-theme='notebook'] .katex .textit,
+:root[data-theme='notebook'] .katex .textsf,
+:root[data-theme='notebook'] .katex .texttt {
   font-family: var(--font-hand) !important;
   font-style: normal !important;
 }

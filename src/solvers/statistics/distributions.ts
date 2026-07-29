@@ -1,5 +1,10 @@
 import { fmt, parseParams, formatParams, nCr } from '../../lib/math/num';
-import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
+import type {
+  Solver,
+  Step,
+  SolveResult,
+  FieldSchema,
+} from '../../lib/engine/types';
 
 /**
  * Discrete and continuous random variables, and confidence intervals
@@ -17,7 +22,8 @@ function erf(x: number): number {
   const a5 = 1.061405429;
   const p = 0.3275911;
   const t = 1 / (1 + p * ax);
-  const y = 1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
+  const y =
+    1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
   return sign * y;
 }
 
@@ -28,7 +34,12 @@ function phi(z: number): number {
 
 /** Common two-tailed critical values, so the working shows the familiar number. */
 function zStar(confidence: number): number {
-  const table: Record<number, number> = { 90: 1.645, 95: 1.96, 98: 2.326, 99: 2.576 };
+  const table: Record<number, number> = {
+    90: 1.645,
+    95: 1.96,
+    98: 2.326,
+    99: 2.576,
+  };
   return table[Math.round(confidence)] ?? 1.96;
 }
 
@@ -59,7 +70,8 @@ export const distributionsSolver: Solver = {
     {
       id: 'binomial',
       name: 'Binomial',
-      blurb: 'P(X = x) = ⁿCₓ pˣ(1−p)ⁿ⁻ˣ for a fixed number of independent trials.',
+      blurb:
+        'P(X = x) = ⁿCₓ pˣ(1−p)ⁿ⁻ˣ for a fixed number of independent trials.',
       fields: BINOMIAL_FIELDS,
       serialize: formatParams,
     },
@@ -73,7 +85,8 @@ export const distributionsSolver: Solver = {
     {
       id: 'confidence',
       name: 'Confidence interval',
-      blurb: 'x̄ ± z* σ/√n for a population mean. Leave confidence blank for 95%.',
+      blurb:
+        'x̄ ± z* σ/√n for a population mean. Leave confidence blank for 95%.',
       fields: CONFIDENCE_FIELDS,
       serialize: formatParams,
     },
@@ -82,8 +95,10 @@ export const distributionsSolver: Solver = {
   detect(input) {
     const l = input.toLowerCase();
     const p = parseParams(input);
-    if (/binomial/.test(l) && p.n !== undefined && p.p !== undefined) return 0.97;
-    if (/normal|z.?score|standardise|standardize/.test(l) && p.sd !== undefined) return 0.97;
+    if (/binomial/.test(l) && p.n !== undefined && p.p !== undefined)
+      return 0.97;
+    if (/normal|z.?score|standardise|standardize/.test(l) && p.sd !== undefined)
+      return 0.97;
     if (/confidence|interval/.test(l) && p.n !== undefined) return 0.97;
     // The shape of the data identifies the distribution even when the student
     // never names it — "probability of exactly 3 heads in 10 flips, p=0.5".
@@ -107,10 +122,19 @@ export const distributionsSolver: Solver = {
       const prob = p.p;
       const x = p.x ?? p.r;
       if (n === undefined || prob === undefined) {
-        return { ok: false, error: 'Give the number of trials and the probability, e.g.  binomial n=10, p=0.5, x=3.' };
+        return {
+          ok: false,
+          error:
+            'Give the number of trials and the probability, e.g.  binomial n=10, p=0.5, x=3.',
+        };
       }
-      if (prob < 0 || prob > 1) return { ok: false, error: 'A probability must be between 0 and 1.' };
-      if (!Number.isInteger(n) || n < 0) return { ok: false, error: 'The number of trials must be a whole number.' };
+      if (prob < 0 || prob > 1)
+        return { ok: false, error: 'A probability must be between 0 and 1.' };
+      if (!Number.isInteger(n) || n < 0)
+        return {
+          ok: false,
+          error: 'The number of trials must be a whole number.',
+        };
 
       const mean = n * prob;
       const variance = n * prob * (1 - prob);
@@ -122,9 +146,19 @@ export const distributionsSolver: Solver = {
       ];
 
       if (x === undefined) {
-        steps.push({ note: 'The mean (expected number of successes) is np.', latex: `E(X) = np = ${n} \\times ${fmt(prob, 4)} = ${fmt(mean, 4)}` });
-        steps.push({ note: 'The variance is np(1 − p).', latex: `\\text{Var}(X) = np(1-p) = ${fmt(variance, 4)}` });
-        steps.push({ note: 'The standard deviation is its square root.', latex: `\\sigma = ${fmt(Math.sqrt(variance), 4)}`, annotation: 'spread' });
+        steps.push({
+          note: 'The mean (expected number of successes) is np.',
+          latex: `E(X) = np = ${n} \\times ${fmt(prob, 4)} = ${fmt(mean, 4)}`,
+        });
+        steps.push({
+          note: 'The variance is np(1 − p).',
+          latex: `\\text{Var}(X) = np(1-p) = ${fmt(variance, 4)}`,
+        });
+        steps.push({
+          note: 'The standard deviation is its square root.',
+          latex: `\\sigma = ${fmt(Math.sqrt(variance), 4)}`,
+          annotation: 'spread',
+        });
         return {
           ok: true,
           solution: {
@@ -137,11 +171,17 @@ export const distributionsSolver: Solver = {
       }
 
       if (!Number.isInteger(x) || x < 0 || x > n) {
-        return { ok: false, error: `x must be a whole number between 0 and ${n}.` };
+        return {
+          ok: false,
+          error: `x must be a whole number between 0 and ${n}.`,
+        };
       }
       const c = nCr(n, x);
       const px = c * Math.pow(prob, x) * Math.pow(1 - prob, n - x);
-      steps.push({ note: 'Write down the binomial probability formula.', latex: `P(X = x) = \\binom{n}{x} p^{x}(1-p)^{\\,n-x}` });
+      steps.push({
+        note: 'Write down the binomial probability formula.',
+        latex: `P(X = x) = \\binom{n}{x} p^{x}(1-p)^{\\,n-x}`,
+      });
       steps.push({
         note: 'Count the ways to choose which trials succeed.',
         latex: `\\binom{${n}}{${x}} = ${c}`,
@@ -150,8 +190,15 @@ export const distributionsSolver: Solver = {
         note: 'Substitute everything into the formula.',
         latex: `P(X = ${x}) = ${c} \\times (${fmt(prob, 4)})^{${x}} \\times (${fmt(1 - prob, 4)})^{${n - x}}`,
       });
-      steps.push({ note: 'Work it out.', latex: `P(X = ${x}) = ${fmt(px, 6)}`, annotation: 'probability' });
-      steps.push({ note: 'For reference, the mean and standard deviation of this distribution:', latex: `E(X) = ${fmt(mean, 4)}, \\quad \\sigma = ${fmt(Math.sqrt(variance), 4)}` });
+      steps.push({
+        note: 'Work it out.',
+        latex: `P(X = ${x}) = ${fmt(px, 6)}`,
+        annotation: 'probability',
+      });
+      steps.push({
+        note: 'For reference, the mean and standard deviation of this distribution:',
+        latex: `E(X) = ${fmt(mean, 4)}, \\quad \\sigma = ${fmt(Math.sqrt(variance), 4)}`,
+      });
 
       return {
         ok: true,
@@ -172,10 +219,16 @@ export const distributionsSolver: Solver = {
       if (mean === undefined || sd === undefined || n === undefined) {
         return {
           ok: false,
-          error: 'Give the sample mean, standard deviation and sample size, e.g.  confidence mean=50, sd=8, n=100.',
+          error:
+            'Give the sample mean, standard deviation and sample size, e.g.  confidence mean=50, sd=8, n=100.',
         };
       }
-      if (n <= 0 || sd < 0) return { ok: false, error: 'The sample size must be positive and the standard deviation cannot be negative.' };
+      if (n <= 0 || sd < 0)
+        return {
+          ok: false,
+          error:
+            'The sample size must be positive and the standard deviation cannot be negative.',
+        };
 
       const z = zStar(level);
       const se = sd / Math.sqrt(n);
@@ -186,10 +239,23 @@ export const distributionsSolver: Solver = {
           headline: `Find a $${fmt(level)}\\%$ confidence interval for the population mean`,
           methodName: 'Confidence interval',
           steps: [
-            { note: 'Write down the sample statistics.', latex: `\\bar{x} = ${fmt(mean, 4)}, \\quad \\sigma = ${fmt(sd, 4)}, \\quad n = ${fmt(n)}` },
-            { note: `For ${fmt(level)}% confidence the critical value is:`, latex: `z^{*} = ${fmt(z, 3)}`, annotation: 'from the standard normal' },
-            { note: 'Find the standard error of the mean.', latex: `\\text{SE} = \\dfrac{\\sigma}{\\sqrt{n}} = \\dfrac{${fmt(sd, 4)}}{\\sqrt{${fmt(n)}}} = ${fmt(se, 6)}` },
-            { note: 'The margin of error is the critical value times the standard error.', latex: `E = z^{*} \\times \\text{SE} = ${fmt(z, 3)} \\times ${fmt(se, 6)} = ${fmt(margin, 6)}` },
+            {
+              note: 'Write down the sample statistics.',
+              latex: `\\bar{x} = ${fmt(mean, 4)}, \\quad \\sigma = ${fmt(sd, 4)}, \\quad n = ${fmt(n)}`,
+            },
+            {
+              note: `For ${fmt(level)}% confidence the critical value is:`,
+              latex: `z^{*} = ${fmt(z, 3)}`,
+              annotation: 'from the standard normal',
+            },
+            {
+              note: 'Find the standard error of the mean.',
+              latex: `\\text{SE} = \\dfrac{\\sigma}{\\sqrt{n}} = \\dfrac{${fmt(sd, 4)}}{\\sqrt{${fmt(n)}}} = ${fmt(se, 6)}`,
+            },
+            {
+              note: 'The margin of error is the critical value times the standard error.',
+              latex: `E = z^{*} \\times \\text{SE} = ${fmt(z, 3)} \\times ${fmt(se, 6)} = ${fmt(margin, 6)}`,
+            },
             {
               note: 'The interval runs one margin either side of the sample mean.',
               latex: `\\bar{x} \\pm E = ${fmt(mean, 4)} \\pm ${fmt(margin, 4)}`,
@@ -210,9 +276,14 @@ export const distributionsSolver: Solver = {
     const sd = p.sd ?? p.sigma ?? p.s;
     const x = p.x;
     if (mean === undefined || sd === undefined || x === undefined) {
-      return { ok: false, error: 'Give the mean, standard deviation and value, e.g.  normal mean=100, sd=15, x=120.' };
+      return {
+        ok: false,
+        error:
+          'Give the mean, standard deviation and value, e.g.  normal mean=100, sd=15, x=120.',
+      };
     }
-    if (sd <= 0) return { ok: false, error: 'The standard deviation must be positive.' };
+    if (sd <= 0)
+      return { ok: false, error: 'The standard deviation must be positive.' };
 
     const z = (x - mean) / sd;
     const below = phi(z);
@@ -222,14 +293,23 @@ export const distributionsSolver: Solver = {
         headline: `Find $P(X < ${fmt(x)})$ for $X \\sim N(${fmt(mean)}, ${fmt(sd)}^{2})$`,
         methodName: 'Normal distribution',
         steps: [
-          { note: 'Write down the distribution.', latex: `X \\sim N(\\mu = ${fmt(mean)},\\; \\sigma = ${fmt(sd)})` },
-          { note: 'Standardise: how many standard deviations from the mean is this value?', latex: `z = \\dfrac{x - \\mu}{\\sigma}` },
+          {
+            note: 'Write down the distribution.',
+            latex: `X \\sim N(\\mu = ${fmt(mean)},\\; \\sigma = ${fmt(sd)})`,
+          },
+          {
+            note: 'Standardise: how many standard deviations from the mean is this value?',
+            latex: `z = \\dfrac{x - \\mu}{\\sigma}`,
+          },
           {
             note: 'Substitute the values.',
             latex: `z = \\dfrac{${fmt(x)} - ${fmt(mean)}}{${fmt(sd)}} = ${fmt(z, 4)}`,
             annotation: `${fmt(Math.abs(z), 2)} SD ${z < 0 ? 'below' : 'above'} the mean`,
           },
-          { note: 'Read the probability below that z-score from the standard normal.', latex: `P(X < ${fmt(x)}) = P(Z < ${fmt(z, 4)}) = ${fmt(below, 4)}` },
+          {
+            note: 'Read the probability below that z-score from the standard normal.',
+            latex: `P(X < ${fmt(x)}) = P(Z < ${fmt(z, 4)}) = ${fmt(below, 4)}`,
+          },
           {
             note: 'The probability above is whatever is left.',
             latex: `P(X > ${fmt(x)}) = 1 - ${fmt(below, 4)} = ${fmt(1 - below, 4)}`,
@@ -239,7 +319,13 @@ export const distributionsSolver: Solver = {
             note: 'The shaded area is the probability you just found.',
             visual: {
               kind: 'normal',
-              data: { mean, sd, lo: null, hi: x, label: `P(X < ${fmt(x)}) = ${fmt(below, 4)}` },
+              data: {
+                mean,
+                sd,
+                lo: null,
+                hi: x,
+                label: `P(X < ${fmt(x)}) = ${fmt(below, 4)}`,
+              },
             },
             annotation: 'area under the curve',
           },

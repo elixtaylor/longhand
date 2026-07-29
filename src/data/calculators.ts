@@ -28,7 +28,8 @@ export const CALCULATORS: CalculatorGroup[] = [
         solverId: 'right-triangle',
         methodId: 'pythagoras',
         label: 'Right-angled triangle',
-        blurb: 'Fill in any two of a, b, c, A, B — Pythagoras or SOH CAH TOA, whichever applies.',
+        blurb:
+          'Fill in any two of a, b, c, A, B — Pythagoras or SOH CAH TOA, whichever applies.',
       },
     ],
   },
@@ -39,14 +40,19 @@ export const CALCULATORS: CalculatorGroup[] = [
         solverId: 'triangle-rules',
         methodId: 'cosine-rule',
         label: 'Any triangle',
-        blurb: 'Fill in any three of a, b, c, A, B, C — sine rule, cosine rule or area, whichever applies.',
+        blurb:
+          'Fill in any three of a, b, c, A, B, C — sine rule, cosine rule or area, whichever applies.',
       },
     ],
   },
   {
     heading: 'Vectors',
     items: [
-      { solverId: 'vectors', methodId: 'component', label: 'Vector arithmetic' },
+      {
+        solverId: 'vectors',
+        methodId: 'component',
+        label: 'Vector arithmetic',
+      },
       { solverId: 'vectors', methodId: 'collinear' },
       { solverId: 'vectors', methodId: 'ratio' },
     ],
@@ -74,7 +80,8 @@ export const CALCULATORS: CalculatorGroup[] = [
         solverId: 'complex',
         methodId: 'rectangular',
         label: 'Complex numbers',
-        blurb: 'Add, subtract, multiply, divide, modulus, conjugate or polar form.',
+        blurb:
+          'Add, subtract, multiply, divide, modulus, conjugate or polar form.',
       },
     ],
   },

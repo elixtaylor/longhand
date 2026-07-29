@@ -39,6 +39,10 @@ describe('parsePoly', () => {
   it('rejects negative exponents with a clear error', () => {
     expect(() => parsePoly('x^-2')).toThrow(ParseError);
   });
+
+  it('rejects impractically large powers', () => {
+    expect(() => parsePoly('x^101')).toThrow(/Powers above/);
+  });
 });
 
 describe('parseEquation / toStandardForm', () => {

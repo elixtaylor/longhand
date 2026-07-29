@@ -11,10 +11,24 @@ type QuadTerm =
   | { kind: 'const'; value: number };
 
 type Problem =
-  | { kind: 'exponential'; coeff: number; base: number | 'e'; mult: number; value: number }
+  | {
+      kind: 'exponential';
+      coeff: number;
+      base: number | 'e';
+      mult: number;
+      value: number;
+    }
   | { kind: 'evaluate'; base: number | 'e'; value: number }
   | { kind: 'log-equation'; base: number | 'e'; value: number }
-  | { kind: 'exponential-quadratic'; terms: QuadTerm[]; rhs: number; unitBase: number; a: number; b: number; c: number };
+  | {
+      kind: 'exponential-quadratic';
+      terms: QuadTerm[];
+      rhs: number;
+      unitBase: number;
+      a: number;
+      b: number;
+      c: number;
+    };
 
 const clean = (s: string) => s.replace(/\s+/g, '');
 
@@ -22,7 +36,9 @@ function parse(inputRaw: string): Problem {
   const s = clean(inputRaw);
 
   // b^x = c, optionally with a coefficient and a multiple of x: 5*2^(3x)=40
-  const exp = s.match(/^(?:(\d*\.?\d+)[*×])?(\d*\.?\d+|e)\^\(?(\d*\.?\d+)?x\)?=(-?\d*\.?\d+)$/i);
+  const exp = s.match(
+    /^(?:(\d*\.?\d+)[*×])?(\d*\.?\d+|e)\^\(?(\d*\.?\d+)?x\)?=(-?\d*\.?\d+)$/i,
+  );
   if (exp) {
     return {
       kind: 'exponential',
@@ -66,7 +82,12 @@ function parse(inputRaw: string): Problem {
   if (fracIdx > 0) {
     const numTerm = parseLogTerm(s.slice(0, fracIdx));
     const denTerm = parseLogTerm(s.slice(fracIdx + 1));
-    if (numTerm && denTerm && numTerm.isLn === denTerm.isLn && numTerm.base === denTerm.base) {
+    if (
+      numTerm &&
+      denTerm &&
+      numTerm.isLn === denTerm.isLn &&
+      numTerm.base === denTerm.base
+    ) {
       return { kind: 'evaluate', base: denTerm.value, value: numTerm.value };
     }
   }
@@ -80,11 +101,17 @@ function parse(inputRaw: string): Problem {
  * without parens there is no way to tell "log16" apart from "log₁6", so a
  * bare term (log16, ln16) is always the default base with the digits as
  * the value. */
-function parseLogTerm(raw: string): { isLn: boolean; base: number; value: number } | null {
+function parseLogTerm(
+  raw: string,
+): { isLn: boolean; base: number; value: number } | null {
   const isLn = /^ln/i.test(raw);
   const withParens = raw.match(/^(?:log_?(\d*\.?\d+)?|ln)\((\d*\.?\d+)\)$/i);
   if (withParens) {
-    return { isLn, base: isLn ? Math.E : withParens[1] ? Number(withParens[1]) : 10, value: Number(withParens[2]) };
+    return {
+      isLn,
+      base: isLn ? Math.E : withParens[1] ? Number(withParens[1]) : 10,
+      value: Number(withParens[2]),
+    };
   }
   const bare = raw.match(/^(?:log|ln)(\d*\.?\d+)$/i);
   if (bare) {
@@ -148,7 +175,12 @@ function parseTerm(raw: string): QuadTerm | null {
   const expMatch = right.match(/^([+-]?\d*)x([+-]\d+(?:\.\d+)?)?$/);
   if (!expMatch) return null;
   const multStr = expMatch[1];
-  const mult = multStr === '' || multStr === '+' ? 1 : multStr === '-' ? -1 : Number(multStr);
+  const mult =
+    multStr === '' || multStr === '+'
+      ? 1
+      : multStr === '-'
+        ? -1
+        : Number(multStr);
   const k = expMatch[2] ? Number(expMatch[2]) : 0;
 
   return { kind: 'exp', coeff: sign * coeff, base, mult, k };
@@ -156,11 +188,16 @@ function parseTerm(raw: string): QuadTerm | null {
 
 /** Finds the smallest base that every exponential term's own base is an
  * exact power of — 1 or 2, enough to reduce the equation to a quadratic. */
-function findUnitBase(effBases: number[]): { unitBase: number; degrees: number[] } | null {
+function findUnitBase(
+  effBases: number[],
+): { unitBase: number; degrees: number[] } | null {
   const candidates = Array.from(new Set(effBases)).sort((x, y) => x - y);
   for (const ub of candidates) {
     const degrees = effBases.map((eb) => exactPower(ub, eb));
-    if (degrees.every((d) => d === 1 || d === 2) && degrees.some((d) => d === 2)) {
+    if (
+      degrees.every((d) => d === 1 || d === 2) &&
+      degrees.some((d) => d === 2)
+    ) {
       return { unitBase: ub, degrees: degrees as number[] };
     }
   }
@@ -171,7 +208,9 @@ function findUnitBase(effBases: number[]): { unitBase: number; degrees: number[]
  * (here 2, since 4 = 2²) reduce to a quadratic in u = base^x. Not every
  * multi-term exponential equation qualifies; when it doesn't, this returns
  * null and the caller falls through to try other problem shapes. */
-function parseExpQuadratic(s: string): Extract<Problem, { kind: 'exponential-quadratic' }> | null {
+function parseExpQuadratic(
+  s: string,
+): Extract<Problem, { kind: 'exponential-quadratic' }> | null {
   const eqIdx = s.indexOf('=');
   if (eqIdx < 0) return null;
   const lhsRaw = s.slice(0, eqIdx);
@@ -188,7 +227,9 @@ function parseExpQuadratic(s: string): Extract<Problem, { kind: 'exponential-qua
     if (!t) return null;
     terms.push(t);
   }
-  const expTerms = terms.filter((t): t is Extract<QuadTerm, { kind: 'exp' }> => t.kind === 'exp');
+  const expTerms = terms.filter(
+    (t): t is Extract<QuadTerm, { kind: 'exp' }> => t.kind === 'exp',
+  );
   if (expTerms.length < 2) return null;
 
   const effBases = expTerms.map((t) => Math.pow(t.base, t.mult));
@@ -212,7 +253,8 @@ function parseExpQuadratic(s: string): Extract<Problem, { kind: 'exponential-qua
 }
 
 const baseTex = (b: number | 'e') => (b === 'e' ? 'e' : fmt(b));
-const logName = (b: number | 'e') => (b === 'e' ? '\\ln' : b === 10 ? '\\log' : `\\log_{${fmt(b)}}`);
+const logName = (b: number | 'e') =>
+  b === 'e' ? '\\ln' : b === 10 ? '\\log' : `\\log_{${fmt(b)}}`;
 const lnOf = (b: number | 'e') => (b === 'e' ? 1 : Math.log(b));
 
 /** Is `value` a neat whole power of `base`? Then the answer is exact. */
@@ -220,10 +262,15 @@ function exactPower(base: number, value: number): number | null {
   if (base <= 0 || base === 1 || value <= 0) return null;
   const p = Math.log(value) / Math.log(base);
   const r = Math.round(p);
-  return Math.abs(p - r) < 1e-10 && Math.abs(Math.pow(base, r) - value) < 1e-9 ? r : null;
+  return Math.abs(p - r) < 1e-10 && Math.abs(Math.pow(base, r) - value) < 1e-9
+    ? r
+    : null;
 }
 
-function solveExponential(p: Extract<Problem, { kind: 'exponential' }>, methodId: string): SolveResult {
+function solveExponential(
+  p: Extract<Problem, { kind: 'exponential' }>,
+  methodId: string,
+): SolveResult {
   const { coeff, base, mult, value } = p;
   const bNum = base === 'e' ? Math.E : base;
   const rhs = value / coeff;
@@ -232,7 +279,10 @@ function solveExponential(p: Extract<Problem, { kind: 'exponential' }>, methodId
   const steps: Step[] = [{ note: 'Write down the equation.', latex: original }];
 
   if (rhs <= 0) {
-    return { ok: false, error: `A positive base can never give ${fmt(rhs)}, so there is no solution.` };
+    return {
+      ok: false,
+      error: `A positive base can never give ${fmt(rhs)}, so there is no solution.`,
+    };
   }
   if (coeff !== 1) {
     steps.push({
@@ -255,7 +305,10 @@ function solveExponential(p: Extract<Problem, { kind: 'exponential' }>, methodId
       latex: mult === 1 ? `x = ${power}` : `${fmt(mult)}x = ${power}`,
     });
     if (mult !== 1) {
-      steps.push({ note: `Divide by ${fmt(mult)}.`, latex: `x = ${fmt(power / mult, 6)}` });
+      steps.push({
+        note: `Divide by ${fmt(mult)}.`,
+        latex: `x = ${fmt(power / mult, 6)}`,
+      });
     }
     const x = power / mult;
     return {
@@ -325,7 +378,10 @@ function termTex(t: QuadTerm, leading: boolean): string {
 /** "u^{2} + 2u - 15 = 0" — the reduced quadratic, in standard signed form. */
 function quadInULatex(a: number, b: number, c: number): string {
   const aPart = `${a === 1 ? '' : a === -1 ? '-' : fmt(a)}u^{2}`;
-  const bPart = b === 0 ? '' : ` ${b > 0 ? '+' : '-'} ${Math.abs(b) === 1 ? '' : fmt(Math.abs(b))}u`;
+  const bPart =
+    b === 0
+      ? ''
+      : ` ${b > 0 ? '+' : '-'} ${Math.abs(b) === 1 ? '' : fmt(Math.abs(b))}u`;
   const cPart = c === 0 ? '' : ` ${c > 0 ? '+' : '-'} ${fmt(Math.abs(c))}`;
   return `${aPart}${bPart}${cPart} = 0`;
 }
@@ -337,13 +393,18 @@ function quadInULatex(a: number, b: number, c: number): string {
  * together (quadratics, then logs), so the steps below show both halves
  * rather than folding the quadratic-solving into one opaque line.
  */
-function solveExponentialQuadratic(p: Extract<Problem, { kind: 'exponential-quadratic' }>, methodId: string): SolveResult {
+function solveExponentialQuadratic(
+  p: Extract<Problem, { kind: 'exponential-quadratic' }>,
+  methodId: string,
+): SolveResult {
   const { terms, rhs, unitBase, a, b, c } = p;
 
   const original = `${terms.map((t, i) => termTex(t, i === 0)).join(' ')} = ${fmt(rhs)}`;
   const steps: Step[] = [{ note: 'Write down the equation.', latex: original }];
 
-  const expTerms = terms.filter((t): t is Extract<QuadTerm, { kind: 'exp' }> => t.kind === 'exp');
+  const expTerms = terms.filter(
+    (t): t is Extract<QuadTerm, { kind: 'exp' }> => t.kind === 'exp',
+  );
   const effBases = expTerms.map((t) => Math.pow(t.base, t.mult));
   const degrees = effBases.map((eb) => exactPower(unitBase, eb)!);
 
@@ -352,7 +413,10 @@ function solveExponentialQuadratic(p: Extract<Problem, { kind: 'exponential-quad
       const degree = degrees[i];
       if (degree === 1 && t.mult === 1 && t.k === 0) return null;
       const baseToK = Math.pow(t.base, t.k);
-      const uPart = degree === 1 ? `${fmt(unitBase)}^{x}` : `(${fmt(unitBase)}^{x})^{${degree}}`;
+      const uPart =
+        degree === 1
+          ? `${fmt(unitBase)}^{x}`
+          : `(${fmt(unitBase)}^{x})^{${degree}}`;
       const rhsTex = t.k === 0 ? uPart : `${fmt(baseToK)} \\times ${uPart}`;
       return `${fmt(t.base)}^{${expLatex(t.mult, t.k)}} = ${rhsTex}`;
     })
@@ -372,7 +436,11 @@ function solveExponentialQuadratic(p: Extract<Problem, { kind: 'exponential-quad
 
   const info = quadraticRoots(a, b, c);
   if (info.nature === 'complex') {
-    return { ok: false, error: 'That quadratic has no real solutions for u, so the original equation has none either.' };
+    return {
+      ok: false,
+      error:
+        'That quadratic has no real solutions for u, so the original equation has none either.',
+    };
   }
 
   steps.push({
@@ -387,19 +455,27 @@ function solveExponentialQuadratic(p: Extract<Problem, { kind: 'exponential-quad
         : `u = ${fmt(info.numericRoots[0], 6)} \\quad\\text{or}\\quad u = ${fmt(info.numericRoots[1], 6)}`,
   });
 
-  const uRoots = info.nature === 'double' ? [info.numericRoots[0]] : info.numericRoots;
+  const uRoots =
+    info.nature === 'double' ? [info.numericRoots[0]] : info.numericRoots;
   const valid = uRoots.filter((u) => u > 1e-9);
   const rejected = uRoots.filter((u) => u <= 1e-9);
 
   if (rejected.length > 0) {
     steps.push({
       note: `$u = ${fmt(unitBase)}^{x}$ can never be zero or negative — a positive base to any power is always positive — so ${rejected.map((u) => `$u = ${fmt(u, 6)}$`).join(' and ')} ${rejected.length > 1 ? 'are' : 'is'} rejected.`,
-      latex: valid.length > 0 ? valid.map((u) => `u = ${fmt(u, 6)}`).join(', ') : '\\text{no valid values of } u \\text{ remain}',
+      latex:
+        valid.length > 0
+          ? valid.map((u) => `u = ${fmt(u, 6)}`).join(', ')
+          : '\\text{no valid values of } u \\text{ remain}',
     });
   }
 
   if (valid.length === 0) {
-    return { ok: false, error: 'Every value of u came out zero or negative, and u can never be negative, so this equation has no real solution.' };
+    return {
+      ok: false,
+      error:
+        'Every value of u came out zero or negative, and u can never be negative, so this equation has no real solution.',
+    };
   }
 
   const xs = valid.map((u) => {
@@ -419,7 +495,10 @@ function solveExponentialQuadratic(p: Extract<Problem, { kind: 'exponential-quad
     return x;
   });
 
-  const answerLatex = xs.length > 1 ? `x = ${fmt(xs[0], 6)} \\quad\\text{or}\\quad x = ${fmt(xs[1], 6)}` : `x = ${fmt(xs[0], 6)}`;
+  const answerLatex =
+    xs.length > 1
+      ? `x = ${fmt(xs[0], 6)} \\quad\\text{or}\\quad x = ${fmt(xs[1], 6)}`
+      : `x = ${fmt(xs[0], 6)}`;
 
   return {
     ok: true,
@@ -439,8 +518,18 @@ export const logarithmsSolver: Solver = {
   blurb: 'Solve exponential equations and evaluate logarithms.',
   placeholder: 'e.g.  2^x = 32,  log2(32),  or  4^x+2^(x+1)=15',
   methods: [
-    { id: 'same-base', name: 'Equating indices', blurb: 'Rewrite both sides with the same base, then match the powers. Exact when it works.' },
-    { id: 'logs', name: 'Taking logs', blurb: 'Take logarithms of both sides and use the power law. Always works.' },
+    {
+      id: 'same-base',
+      name: 'Equating indices',
+      blurb:
+        'Rewrite both sides with the same base, then match the powers. Exact when it works.',
+    },
+    {
+      id: 'logs',
+      name: 'Taking logs',
+      blurb:
+        'Take logarithms of both sides and use the power law. Always works.',
+    },
   ],
   defaultMethodId: 'same-base',
   detect(input) {
@@ -456,11 +545,15 @@ export const logarithmsSolver: Solver = {
     try {
       p = parse(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that.',
+      };
     }
 
     if (p.kind === 'exponential') return solveExponential(p, methodId);
-    if (p.kind === 'exponential-quadratic') return solveExponentialQuadratic(p, methodId);
+    if (p.kind === 'exponential-quadratic')
+      return solveExponentialQuadratic(p, methodId);
 
     if (p.kind === 'log-equation') {
       const { base, value } = p;
@@ -521,7 +614,10 @@ export const logarithmsSolver: Solver = {
     const { base, value } = p;
     const bNum = base === 'e' ? Math.E : base;
     if (value <= 0) {
-      return { ok: false, error: 'You can only take the logarithm of a positive number.' };
+      return {
+        ok: false,
+        error: 'You can only take the logarithm of a positive number.',
+      };
     }
     const result = Math.log(value) / lnOf(base);
     const exact = base === 'e' ? null : exactPower(bNum, value);
@@ -537,7 +633,11 @@ export const logarithmsSolver: Solver = {
         latex: `${fmt(value)} = ${fmt(bNum)}^{${exact}}`,
         annotation: 'exact power',
       });
-      steps.push({ note: 'So the logarithm is that index.', latex: `${logName(base)}(${fmt(value)}) = ${exact}`, annotation: 'answer' });
+      steps.push({
+        note: 'So the logarithm is that index.',
+        latex: `${logName(base)}(${fmt(value)}) = ${exact}`,
+        annotation: 'answer',
+      });
     } else {
       // One line used to do three things: state the rule, look up both
       // logarithms, and divide. Split so each is checkable on a calculator.

@@ -43,7 +43,8 @@ export function StructuredInputForm({
   // left blank) — "give me at least one" only makes sense when *nothing*
   // else is required, otherwise the required fields already guarantee
   // there's something to solve.
-  const allOptional = fields.length > 0 && fields.every((f) => f.kind === 'number' && f.optional);
+  const allOptional =
+    fields.length > 0 && fields.every((f) => f.kind === 'number' && f.optional);
   // Specialist's own vector work is mostly 3D — 2D is the one click away.
   const [dims, setDims] = useState<Dims>(3);
   const [values, setValues] = useState<Record<string, string[]>>(() =>
@@ -79,7 +80,11 @@ export function StructuredInputForm({
       continue;
     }
     const nums = comps.map((s) => Number(s.trim()));
-    if (comps.some((s) => s.trim() === '') || nums.some((n) => !Number.isFinite(n))) complete = false;
+    if (
+      comps.some((s) => s.trim() === '') ||
+      nums.some((n) => !Number.isFinite(n))
+    )
+      complete = false;
     parsed[f.id] = nums;
   }
   // "Fill in what you know" needs enough of the optional fields, not all —
@@ -103,17 +108,33 @@ export function StructuredInputForm({
       <MethodDiagram methodId={method.id} />
 
       {hasPoint && (
-        <div className="dims-toggle" role="radiogroup" aria-label="Number of dimensions">
-          <button type="button" aria-pressed={dims === 2} onClick={() => setDims(2)}>
+        <div
+          className="dims-toggle"
+          role="radiogroup"
+          aria-label="Number of dimensions"
+        >
+          <button
+            type="button"
+            aria-pressed={dims === 2}
+            onClick={() => setDims(2)}
+          >
             2D
           </button>
-          <button type="button" aria-pressed={dims === 3} onClick={() => setDims(3)}>
+          <button
+            type="button"
+            aria-pressed={dims === 3}
+            onClick={() => setDims(3)}
+          >
             3D
           </button>
         </div>
       )}
 
-      {allOptional && <p className="setting-hint">Fill in whatever you know — the rest gets worked out.</p>}
+      {allOptional && (
+        <p className="setting-hint">
+          Fill in whatever you know — the rest gets worked out.
+        </p>
+      )}
 
       {fixedFields.map((f) => (
         <div className="structured-field" key={f.id}>
@@ -146,7 +167,9 @@ export function StructuredInputForm({
                 value={values[f.id][0]}
                 onChange={(e) => setComponent(f.id, 0, e.target.value)}
               />
-              <span className="ratio-colon" aria-hidden="true">:</span>
+              <span className="ratio-colon" aria-hidden="true">
+                :
+              </span>
               <input
                 className="expr-input num-input"
                 type="text"

@@ -68,8 +68,9 @@ const REFERENCE = new RegExp(
 /** Every number an answer states, in the order written. */
 function answerValues(latex: string | undefined): number[] {
   if (!latex) return [];
-  const cleaned = latex.replace(/\\d?frac\s*\{(-?[\d.]+)\}\s*\{(-?[\d.]+)\}/g, (_, a, b) =>
-    String(Number(a) / Number(b)),
+  const cleaned = latex.replace(
+    /\\d?frac\s*\{(-?[\d.]+)\}\s*\{(-?[\d.]+)\}/g,
+    (_, a, b) => String(Number(a) / Number(b)),
   );
   return (cleaned.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
 }
@@ -160,17 +161,24 @@ function attempt(
   // A method that reaches a conclusion without a value — "no triangle exists",
   // proved in three steps — is a real answer, and used to be thrown away in
   // favour of another method's error message. Keep the best one seen.
-  let reasoned: { solver: Solver; methodId: string; result: SolveResult } | null = first.ok
+  let reasoned: {
+    solver: Solver;
+    methodId: string;
+    result: SolveResult;
+  } | null = first.ok
     ? { solver, methodId: solver.defaultMethodId, result: first }
     : null;
 
   for (const method of solver.methods) {
     if (method.id === solver.defaultMethodId) continue;
     const alt = solveOne(solver, text, method.id);
-    if (alt.ok && alt.solution.answerLatex) return { solver, methodId: method.id, result: alt };
+    if (alt.ok && alt.solution.answerLatex)
+      return { solver, methodId: method.id, result: alt };
     if (alt.ok) reasoned ??= { solver, methodId: method.id, result: alt };
   }
-  return reasoned ?? { solver, methodId: solver.defaultMethodId, result: first };
+  return (
+    reasoned ?? { solver, methodId: solver.defaultMethodId, result: first }
+  );
 }
 
 /**
@@ -223,7 +231,10 @@ export function subjectOf(text: string): string | null {
   // word "solve", which the next part's parser would rightly refuse.
   const body = normalise(text)
     .text.split('=')[0]
-    .replace(/\b(?:differentiate|integrate|sketch|graph|expand|factorise|factorize|simplify)\b/gi, ' ')
+    .replace(
+      /\b(?:differentiate|integrate|sketch|graph|expand|factorise|factorize|simplify)\b/gi,
+      ' ',
+    )
     .replace(/\s+/g, ' ')
     .trim();
   return body === '' ? null : body;
@@ -253,7 +264,11 @@ function readings(text: string, prev: WorkedPart): string[] {
   const pick = REF_PICK.exec(text);
   if (pick) {
     const chosen = pickValue(pick[1], answerValues(latex));
-    if (chosen) return [text.replace(REF_PICK, ` ${chosen} `).replace(/\s+/g, ' ').trim(), text];
+    if (chosen)
+      return [
+        text.replace(REF_PICK, ` ${chosen} `).replace(/\s+/g, ' ').trim(),
+        text,
+      ];
   }
 
   // "Integrate the answer" means the answer even though "integrate" acts on a
@@ -292,7 +307,8 @@ function trySplit(
 
   // The tail may itself be several parts ("solve … then differentiate … then
   // integrate …"), so recurse before treating it as a single piece.
-  const deeper = depth > 0 ? trySplit(rightText, re, solveOne, depth - 1) : null;
+  const deeper =
+    depth > 0 ? trySplit(rightText, re, solveOne, depth - 1) : null;
   const tails = deeper ?? [];
   if (tails.length > 0) {
     // Each tail part still has to resolve references against what precedes it.
@@ -336,7 +352,10 @@ export function work(
       for (const reading of [raw, foldArithmetic(raw)]) {
         const result = solveOne(preferred.solver, reading, preferred.methodId);
         if (result.ok) {
-          return { parts: [{ label: 'a', text: reading, ...preferred, result }], split: false };
+          return {
+            parts: [{ label: 'a', text: reading, ...preferred, result }],
+            split: false,
+          };
         }
       }
       return null;

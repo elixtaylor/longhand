@@ -19,7 +19,8 @@ export function round(x: number, dp = 2): number {
   // Past 2^53 the scaled value has no fractional bits left, so rounding it
   // invents digits: e^25 printed as …337.45789 when it is …337.38587. Let
   // toFixed do it at that size, which works from the decimal expansion.
-  if (!Number.isSafeInteger(Math.round(scaled))) return Number(x.toFixed(Math.min(dp, 100)));
+  if (!Number.isSafeInteger(Math.round(scaled)))
+    return Number(x.toFixed(Math.min(dp, 100)));
   const nudged = scaled + Math.sign(scaled) * Math.abs(scaled) * 1e-12;
   return Math.round(nudged) / f;
 }
@@ -65,7 +66,9 @@ export function parseNumberList(input: string): number[] {
     .filter(Boolean);
   const nums = parts.map(Number);
   if (nums.some((n) => !Number.isFinite(n))) {
-    throw new Error('That list should only contain numbers, e.g.  4, 8, 15, 16, 23');
+    throw new Error(
+      'That list should only contain numbers, e.g.  4, 8, 15, 16, 23',
+    );
   }
   return nums;
 }
@@ -87,7 +90,8 @@ export function parseParams(input: string): Record<string, number> {
   // arithmetic. Rejecting those dropped the angle entirely, which left only
   // two knowns — enough for the right-triangle solver to claim the question
   // and apply Pythagoras to a triangle that has no right angle.
-  const re = /([A-Za-z][A-Za-z0-9_]*)\s*=\s*(-?\d*\.?\d+)(?!\d|\.\d|\s*[+\-*/^×÷]\s*\d)/g;
+  const re =
+    /([A-Za-z][A-Za-z0-9_]*)\s*=\s*(-?\d*\.?\d+)(?!\d|\.\d|\s*[+\-*/^×÷]\s*\d)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(input))) out[m[1]] = Number(m[2]);
   return out;

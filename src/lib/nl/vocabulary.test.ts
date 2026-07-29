@@ -12,7 +12,17 @@ import { differentiationSolver } from '../../solvers/calculus/differentiate';
 
 describe('telling maths from English', () => {
   it('accepts real expression words', () => {
-    for (const w of ['sin', 'cos', 'tan', 'log', 'ln', 'sqrt', 'pi', 'dx', 'det']) {
+    for (const w of [
+      'sin',
+      'cos',
+      'tan',
+      'log',
+      'ln',
+      'sqrt',
+      'pi',
+      'dx',
+      'det',
+    ]) {
       expect(isProseWord(w), `${w} is maths`).toBe(false);
     }
   });
@@ -31,7 +41,16 @@ describe('telling maths from English', () => {
   });
 
   it('rejects English words, including three-letter ones', () => {
-    for (const w of ['and', 'then', 'the', 'that', 'find', 'stationary', 'points', 'answer']) {
+    for (const w of [
+      'and',
+      'then',
+      'the',
+      'that',
+      'find',
+      'stationary',
+      'points',
+      'answer',
+    ]) {
       expect(isProseWord(w), `${w} is English`).toBe(true);
     }
   });
@@ -47,7 +66,9 @@ describe('telling maths from English', () => {
 describe('parsers refuse what they cannot read', () => {
   it('does not turn an English tail into a product of variables', () => {
     // Was: a·n·d·s·t·a·t·i·o·n·… giving f'(x) = 3x² − 3·and·stationary·points.
-    expect(() => parseExpr('x^3 - 3x and stationary points')).toThrow(ExprError);
+    expect(() => parseExpr('x^3 - 3x and stationary points')).toThrow(
+      ExprError,
+    );
     expect(() => parsePoly('x^2 - 4 and then some')).toThrow(ParseError);
   });
 
@@ -65,7 +86,10 @@ describe('parsers refuse what they cannot read', () => {
   });
 
   it('reports a mixed-topic question instead of half-answering it', () => {
-    const r = differentiationSolver.solve('x^2 sin x and integrate 3x^2', 'rules');
+    const r = differentiationSolver.solve(
+      'x^2 sin x and integrate 3x^2',
+      'rules',
+    );
     expect(r.ok).toBe(false);
   });
 });

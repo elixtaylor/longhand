@@ -21,7 +21,9 @@ describe('percentages', () => {
     expect(ans(percentageSolver, '20% 150')).toBe('30');
   });
   it('agrees between the decimal and unitary methods', () => {
-    expect(ans(percentageSolver, '20% of 150', 'decimal')).toBe(ans(percentageSolver, '20% of 150', 'unitary'));
+    expect(ans(percentageSolver, '20% of 150', 'decimal')).toBe(
+      ans(percentageSolver, '20% of 150', 'unitary'),
+    );
   });
   it('increases by a percentage', () => {
     expect(ans(percentageSolver, 'increase 80 by 15%')).toBe('92');
@@ -34,7 +36,9 @@ describe('percentages', () => {
   });
   it('reverses a percentage increase', () => {
     // 80 increased by 10% is 88, so working back must give 80
-    expect(ans(percentageSolver, 'after a 10% increase the price is 88')).toBe('80');
+    expect(ans(percentageSolver, 'after a 10% increase the price is 88')).toBe(
+      '80',
+    );
   });
   it('does not claim compound-interest problems', () => {
     expect(percentageSolver.detect('$5000 at 4% for 3 years compound')).toBe(0);
@@ -53,7 +57,9 @@ describe('indices & surds', () => {
   });
   it('rationalises a denominator', () => {
     // 1/√2 = √2/2
-    expect(ans(indicesSolver, '1/sqrt 2', 'rationalise')).toBe('\\dfrac{\\sqrt{2}}{2}');
+    expect(ans(indicesSolver, '1/sqrt 2', 'rationalise')).toBe(
+      '\\dfrac{\\sqrt{2}}{2}',
+    );
   });
   it('applies the multiplication index law', () => {
     expect(ans(indicesSolver, '2^3 × 2^4')).toBe('2^{7}');
@@ -78,7 +84,9 @@ describe('inequalities', () => {
     expect(ans(inequalitySolver, 'x^2 - 5x + 6 < 0')).toBe('2 < x < 3');
   });
   it('solves a quadratic inequality outside the roots', () => {
-    expect(ans(inequalitySolver, 'x^2 - 5x + 6 > 0')).toBe('x < 2 \\;\\text{or}\\; x > 3');
+    expect(ans(inequalitySolver, 'x^2 - 5x + 6 > 0')).toBe(
+      'x < 2 \\;\\text{or}\\; x > 3',
+    );
   });
   it('handles an inequality that is always true', () => {
     const r = inequalitySolver.solve('x^2 + 1 > 0', 'auto');
@@ -104,15 +112,21 @@ describe('sketching curves', () => {
   it('classifies a minimum correctly', () => {
     const r = functionsSolver.solve('sketch y = x^2 - 4x + 3', 'features');
     if (r.ok) {
-      expect(r.solution.steps.some((s) => s.annotation === 'a minimum')).toBe(true);
+      expect(r.solution.steps.some((s) => s.annotation === 'a minimum')).toBe(
+        true,
+      );
     }
   });
   it('finds both turning points of a cubic', () => {
     const r = functionsSolver.solve('sketch y = x^3 - 3x', 'features');
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.solution.steps.some((s) => s.annotation === 'a maximum')).toBe(true);
-      expect(r.solution.steps.some((s) => s.annotation === 'a minimum')).toBe(true);
+      expect(r.solution.steps.some((s) => s.annotation === 'a maximum')).toBe(
+        true,
+      );
+      expect(r.solution.steps.some((s) => s.annotation === 'a minimum')).toBe(
+        true,
+      );
     }
   });
 });
@@ -123,7 +137,9 @@ describe('probability', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.solution.answerLatex).toBe('\\frac{3}{8}');
-      expect(r.solution.steps.some((s) => s.annotation === 'complement')).toBe(true);
+      expect(r.solution.steps.some((s) => s.annotation === 'complement')).toBe(
+        true,
+      );
     }
   });
   it('rejects more favourable outcomes than total', () => {
@@ -136,7 +152,10 @@ describe('probability', () => {
     if (r.ok) expect(r.solution.answerLatex).toBe('\\frac{7}{10}');
   });
   it('applies conditional probability', () => {
-    const r = probabilitySolver.solve('P(A)=0.5, P(B)=0.4 given', 'conditional');
+    const r = probabilitySolver.solve(
+      'P(A)=0.5, P(B)=0.4 given',
+      'conditional',
+    );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toBe('\\frac{1}{2}');
   });
@@ -164,7 +183,10 @@ describe('networks', () => {
   const graph = 'A-B 5, B-C 3, A-C 9, C-D 2';
   it('finds a shortest path', () => {
     // A→B→C→D = 5+3+2 = 10, beating A→C→D = 11
-    const r = networksSolver.solve(`${graph} shortest path A to D`, 'shortest-path');
+    const r = networksSolver.solve(
+      `${graph} shortest path A to D`,
+      'shortest-path',
+    );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toContain('10');
   });
@@ -175,29 +197,43 @@ describe('networks', () => {
     if (r.ok) expect(r.solution.answerLatex).toContain('10');
   });
   it('reports an unreachable destination', () => {
-    expect(networksSolver.solve('A-B 5, C-D 2 shortest path A to D', 'shortest-path').ok).toBe(false);
+    expect(
+      networksSolver.solve('A-B 5, C-D 2 shortest path A to D', 'shortest-path')
+        .ok,
+    ).toBe(false);
   });
 });
 
 describe('growth, decay & rates', () => {
   it('uses a half-life to find the remaining amount', () => {
     // Carbon-14: after one half-life exactly half remains
-    const r = ratesSolver.solve('half-life 5730, initial 100, t=5730', 'half-life');
+    const r = ratesSolver.solve(
+      'half-life 5730, initial 100, t=5730',
+      'half-life',
+    );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toBe('y = 50');
   });
   it('uses a doubling time', () => {
-    const r = ratesSolver.solve('doubling time 10, initial 500, t=20', 'half-life');
+    const r = ratesSolver.solve(
+      'doubling time 10, initial 500, t=20',
+      'half-life',
+    );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toBe('y = 2000');
   });
   it('solves for the time to reach a target', () => {
     // half-life 10, from 100 down to 25 → two half-lives → t = 20
-    const r = ratesSolver.solve('half-life 10, initial 100, target=25', 'half-life');
+    const r = ratesSolver.solve(
+      'half-life 10, initial 100, target=25',
+      'half-life',
+    );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toBe('t = 20');
   });
   it('asks for a rate when none is given', () => {
-    expect(ratesSolver.solve('exponential growth', 'exponential').ok).toBe(false);
+    expect(ratesSolver.solve('exponential growth', 'exponential').ok).toBe(
+      false,
+    );
   });
 });

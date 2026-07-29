@@ -1,5 +1,17 @@
-import { fmt, parseParams, formatParams, deg2rad, rad2deg, round } from '../../lib/math/num';
-import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
+import {
+  fmt,
+  parseParams,
+  formatParams,
+  deg2rad,
+  rad2deg,
+  round,
+} from '../../lib/math/num';
+import type {
+  Solver,
+  Step,
+  SolveResult,
+  FieldSchema,
+} from '../../lib/engine/types';
 
 /**
  * Non-right-angled triangles: the sine rule, the cosine rule, and area.
@@ -34,8 +46,16 @@ function angles(t: Tri): number {
   return [t.A, t.B, t.C].filter((v) => v !== undefined).length;
 }
 
-function finish(steps: Step[], methodName: string, headline: string, answer?: string): SolveResult {
-  return { ok: true, solution: { headline, methodName, steps, answerLatex: answer } };
+function finish(
+  steps: Step[],
+  methodName: string,
+  headline: string,
+  answer?: string,
+): SolveResult {
+  return {
+    ok: true,
+    solution: { headline, methodName, steps, answerLatex: answer },
+  };
 }
 
 /**
@@ -47,7 +67,11 @@ function diagramStep(a: number, b: number, c: number): Step | null {
   if (![a, b, c].every((s) => Number.isFinite(s) && s > 0)) return null;
   if (a + b <= c || a + c <= b || b + c <= a) return null;
   const ang = (opp: number, x: number, y: number) =>
-    rad2deg(Math.acos(Math.max(-1, Math.min(1, (x * x + y * y - opp * opp) / (2 * x * y)))));
+    rad2deg(
+      Math.acos(
+        Math.max(-1, Math.min(1, (x * x + y * y - opp * opp) / (2 * x * y))),
+      ),
+    );
   return {
     note: 'The triangle drawn to scale, with every side and angle labelled.',
     visual: {
@@ -85,7 +109,9 @@ function whyImpossible(t: Tri): string | null {
       return `An angle in a triangle is between 0° and 180°, and ${k} = ${fmt(v)}°.`;
     }
   }
-  const given = (['A', 'B', 'C'] as const).map((k) => t[k]).filter((v): v is number => v !== undefined);
+  const given = (['A', 'B', 'C'] as const)
+    .map((k) => t[k])
+    .filter((v): v is number => v !== undefined);
   const sum = given.reduce((x, y) => x + y, 0);
   if (given.length >= 2 && sum >= 180) {
     return `The angles given already add to ${fmt(sum)}°, and a triangle's three angles add to exactly 180°.`;
@@ -116,11 +142,14 @@ function bySineRule(t: Tri): SolveResult {
   }
 
   // A complete side/angle pair is the anchor for everything else.
-  const anchor = PAIRS.find(([s, ang]) => tri[s] !== undefined && tri[ang] !== undefined);
+  const anchor = PAIRS.find(
+    ([s, ang]) => tri[s] !== undefined && tri[ang] !== undefined,
+  );
   if (!anchor) {
     return {
       ok: false,
-      error: 'The sine rule needs a matching side and opposite angle (e.g. a=7, A=35) plus one more value.',
+      error:
+        'The sine rule needs a matching side and opposite angle (e.g. a=7, A=35) plus one more value.',
     };
   }
   const [as, aa] = anchor;
@@ -128,7 +157,9 @@ function bySineRule(t: Tri): SolveResult {
   const aAng = tri[aa]!;
 
   // Find a side whose opposite angle is known.
-  const targetSide = PAIRS.find(([s, ang]) => tri[s] === undefined && tri[ang] !== undefined);
+  const targetSide = PAIRS.find(
+    ([s, ang]) => tri[s] === undefined && tri[ang] !== undefined,
+  );
   if (targetSide) {
     const [ts, ta] = targetSide;
     const val = (aSide * Math.sin(deg2rad(tri[ta]!))) / Math.sin(deg2rad(aAng));
@@ -141,11 +172,18 @@ function bySineRule(t: Tri): SolveResult {
       latex: `${ts} = \\dfrac{${fmt(aSide)} \\times \\sin ${fmt(tri[ta]!)}${DEG}}{\\sin ${fmt(aAng)}${DEG}} = ${fmt(val)}`,
       annotation: 'side found',
     });
-    return finish(steps, 'Sine rule', 'Solve the triangle', `${ts} = ${fmt(val)}`);
+    return finish(
+      steps,
+      'Sine rule',
+      'Solve the triangle',
+      `${ts} = ${fmt(val)}`,
+    );
   }
 
   // Otherwise find an angle whose opposite side is known (the ambiguous case).
-  const targetAng = PAIRS.find(([s, ang]) => tri[ang] === undefined && tri[s] !== undefined);
+  const targetAng = PAIRS.find(
+    ([s, ang]) => tri[ang] === undefined && tri[s] !== undefined,
+  );
   if (targetAng) {
     const [ts, ta] = targetAng;
     const sinVal = (tri[ts]! * Math.sin(deg2rad(aAng))) / aSide;
@@ -184,7 +222,9 @@ function bySineRule(t: Tri): SolveResult {
     steps.push({
       note: 'Apply the inverse sine.',
       latex: `${ta} = \\sin^{-1}(${fmt(sinVal, 4)}) = ${fmt(ang)}${DEG}`,
-      annotation: secondTriangle ? `or ${fmt(obtuse)}° — check the ambiguous case` : 'angle found',
+      annotation: secondTriangle
+        ? `or ${fmt(obtuse)}° — check the ambiguous case`
+        : 'angle found',
     });
     if (secondTriangle) {
       steps.push({
@@ -192,10 +232,18 @@ function bySineRule(t: Tri): SolveResult {
         latex: `${ta} = ${fmt(ang)}${DEG} \\quad\\text{or}\\quad ${ta} = ${fmt(obtuse)}${DEG}`,
       });
     }
-    return finish(steps, 'Sine rule', 'Solve the triangle', `${ta} = ${fmt(ang)}${DEG}`);
+    return finish(
+      steps,
+      'Sine rule',
+      'Solve the triangle',
+      `${ta} = ${fmt(ang)}${DEG}`,
+    );
   }
 
-  return { ok: false, error: 'Give one more measurement so there is something to find.' };
+  return {
+    ok: false,
+    error: 'Give one more measurement so there is something to find.',
+  };
 }
 
 function missingAngle(t: Tri): ['A' | 'B' | 'C' | null, number] {
@@ -218,29 +266,51 @@ function byCosineRule(t: Tri): SolveResult {
   if (t.a !== undefined && t.b !== undefined && t.c !== undefined) {
     const { a, b, c } = t;
     if (a + b <= c || a + c <= b || b + c <= a) {
-      return { ok: false, error: 'Those three lengths can’t form a triangle (two sides must add to more than the third).' };
+      return {
+        ok: false,
+        error:
+          'Those three lengths can’t form a triangle (two sides must add to more than the third).',
+      };
     }
     const cosC = (a * a + b * b - c * c) / (2 * a * b);
     const C = rad2deg(Math.acos(cosC));
-    steps.push({ note: 'All three sides are known, so rearrange to make the angle the subject.', latex: `\\cos C = \\dfrac{a^{2} + b^{2} - c^{2}}{2ab}` });
+    steps.push({
+      note: 'All three sides are known, so rearrange to make the angle the subject.',
+      latex: `\\cos C = \\dfrac{a^{2} + b^{2} - c^{2}}{2ab}`,
+    });
     steps.push({
       note: 'Substitute the three side lengths.',
       latex: `\\cos C = \\dfrac{${fmt(a)}^{2} + ${fmt(b)}^{2} - ${fmt(c)}^{2}}{2 \\times ${fmt(a)} \\times ${fmt(b)}} = \\dfrac{${fmt(a * a + b * b - c * c, 4)}}{${fmt(2 * a * b, 4)}} = ${fmt(cosC, 4)}`,
     });
-    steps.push({ note: 'Take the inverse cosine.', latex: `C = \\cos^{-1}(${fmt(cosC, 4)}) = ${fmt(C)}${DEG}`, annotation: 'angle found' });
+    steps.push({
+      note: 'Take the inverse cosine.',
+      latex: `C = \\cos^{-1}(${fmt(cosC, 4)}) = ${fmt(C)}${DEG}`,
+      annotation: 'angle found',
+    });
     const dia = diagramStep(a, b, c);
     if (dia) steps.push(dia);
-    return finish(steps, 'Cosine rule', 'Find the angle from three sides', `C = ${fmt(C)}${DEG}`);
+    return finish(
+      steps,
+      'Cosine rule',
+      'Find the angle from three sides',
+      `C = ${fmt(C)}${DEG}`,
+    );
   }
 
   // SAS → find the third side.
-  const sas = PAIRS.find(([s, ang]) => t[s] === undefined && t[ang] !== undefined);
+  const sas = PAIRS.find(
+    ([s, ang]) => t[s] === undefined && t[ang] !== undefined,
+  );
   if (sas) {
     const [ts, ta] = sas;
     const others = (['a', 'b', 'c'] as const).filter((k) => k !== ts);
     const [x, y] = others.map((k) => t[k]);
     if (x === undefined || y === undefined) {
-      return { ok: false, error: 'The cosine rule needs two sides and the angle between them, e.g.  a=7, b=9, C=40.' };
+      return {
+        ok: false,
+        error:
+          'The cosine rule needs two sides and the angle between them, e.g.  a=7, b=9, C=40.',
+      };
     }
     const ang = t[ta]!;
     const sq = x * x + y * y - 2 * x * y * Math.cos(deg2rad(ang));
@@ -294,17 +364,28 @@ function byCosineRule(t: Tri): SolveResult {
     const full = { ...t, [ts]: val } as Tri;
     const dia = diagramStep(full.a!, full.b!, full.c!);
     if (dia) steps.push(dia);
-    return finish(steps, 'Cosine rule', 'Find the third side', `${ts} = ${fmt(val)}`);
+    return finish(
+      steps,
+      'Cosine rule',
+      'Find the third side',
+      `${ts} = ${fmt(val)}`,
+    );
   }
 
-  return { ok: false, error: 'Give two sides and the angle between them (e.g. a=7, b=9, C=40), or all three sides.' };
+  return {
+    ok: false,
+    error:
+      'Give two sides and the angle between them (e.g. a=7, b=9, C=40), or all three sides.',
+  };
 }
 
 /* ------------------------------------------------------------------- area */
 function byArea(t: Tri): SolveResult {
   const steps: Step[] = [];
 
-  const sas = PAIRS.find(([s, ang]) => t[s] === undefined && t[ang] !== undefined);
+  const sas = PAIRS.find(
+    ([s, ang]) => t[s] === undefined && t[ang] !== undefined,
+  );
   if (sas) {
     const [, ta] = sas;
     const others = (['a', 'b', 'c'] as const).filter((k) => k !== sas[0]);
@@ -312,13 +393,25 @@ function byArea(t: Tri): SolveResult {
     if (x !== undefined && y !== undefined) {
       const ang = t[ta]!;
       const area = 0.5 * x * y * Math.sin(deg2rad(ang));
-      steps.push({ note: 'With two sides and the angle between them, use the sine area rule.', latex: `\\text{Area} = \\tfrac{1}{2}ab\\sin C` });
+      steps.push({
+        note: 'With two sides and the angle between them, use the sine area rule.',
+        latex: `\\text{Area} = \\tfrac{1}{2}ab\\sin C`,
+      });
       steps.push({
         note: 'Substitute the two sides and the included angle.',
         latex: `\\text{Area} = \\tfrac{1}{2} \\times ${fmt(x)} \\times ${fmt(y)} \\times \\sin ${fmt(ang)}${DEG}`,
       });
-      steps.push({ note: 'Work it out.', latex: `\\text{Area} = ${fmt(area)}`, annotation: 'square units' });
-      return finish(steps, 'Area (½ab sin C)', 'Find the area of the triangle', `\\text{Area} = ${fmt(area)}`);
+      steps.push({
+        note: 'Work it out.',
+        latex: `\\text{Area} = ${fmt(area)}`,
+        annotation: 'square units',
+      });
+      return finish(
+        steps,
+        'Area (½ab sin C)',
+        'Find the area of the triangle',
+        `\\text{Area} = ${fmt(area)}`,
+      );
     }
   }
 
@@ -329,17 +422,32 @@ function byArea(t: Tri): SolveResult {
     }
     const s = (a + b + c) / 2;
     const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-    steps.push({ note: 'With all three sides known, use Heron’s formula.', latex: `\\text{Area} = \\sqrt{s(s-a)(s-b)(s-c)}, \\quad s = \\dfrac{a+b+c}{2}` });
-    steps.push({ note: 'Find the semi-perimeter.', latex: `s = \\dfrac{${fmt(a)} + ${fmt(b)} + ${fmt(c)}}{2} = ${fmt(s)}` });
+    steps.push({
+      note: 'With all three sides known, use Heron’s formula.',
+      latex: `\\text{Area} = \\sqrt{s(s-a)(s-b)(s-c)}, \\quad s = \\dfrac{a+b+c}{2}`,
+    });
+    steps.push({
+      note: 'Find the semi-perimeter.',
+      latex: `s = \\dfrac{${fmt(a)} + ${fmt(b)} + ${fmt(c)}}{2} = ${fmt(s)}`,
+    });
     steps.push({
       note: 'Substitute into Heron’s formula.',
       latex: `\\text{Area} = \\sqrt{${fmt(s)}(${fmt(s - a)})(${fmt(s - b)})(${fmt(s - c)})} = ${fmt(area)}`,
       annotation: 'square units',
     });
-    return finish(steps, 'Area (Heron’s formula)', 'Find the area of the triangle', `\\text{Area} = ${fmt(area)}`);
+    return finish(
+      steps,
+      'Area (Heron’s formula)',
+      'Find the area of the triangle',
+      `\\text{Area} = ${fmt(area)}`,
+    );
   }
 
-  return { ok: false, error: 'For area, give two sides and the angle between them, or all three sides.' };
+  return {
+    ok: false,
+    error:
+      'For area, give two sides and the angle between them, or all three sides.',
+  };
 }
 
 // Shared by all three methods below: which one applies follows from which
@@ -371,14 +479,16 @@ export const triangleRulesSolver: Solver = {
     {
       id: 'cosine-rule',
       name: 'Cosine rule',
-      blurb: 'c² = a² + b² − 2ab cos C. Use it for two sides + included angle, or three sides.',
+      blurb:
+        'c² = a² + b² − 2ab cos C. Use it for two sides + included angle, or three sides.',
       fields: TRI_FIELDS,
       serialize: formatParams,
     },
     {
       id: 'area',
       name: 'Area',
-      blurb: '½ab sin C when you have the included angle, otherwise Heron’s formula.',
+      blurb:
+        '½ab sin C when you have the included angle, otherwise Heron’s formula.',
       fields: TRI_FIELDS,
       serialize: formatParams,
     },
@@ -395,7 +505,10 @@ export const triangleRulesSolver: Solver = {
   solve(input, methodId): SolveResult {
     const t = read(input);
     if (known(t) < 3) {
-      return { ok: false, error: 'A triangle needs three measurements, e.g.  a=7, b=9, C=40.' };
+      return {
+        ok: false,
+        error: 'A triangle needs three measurements, e.g.  a=7, b=9, C=40.',
+      };
     }
     // Check the givens describe a triangle before working with them. Without
     // this the cosine rule happily accepted C = 200° and a = −7, and the area

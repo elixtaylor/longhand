@@ -14,13 +14,21 @@ describe('Rational', () => {
   });
 
   it('adds and subtracts exactly', () => {
-    expect(new Rational(1, 2).add(new Rational(1, 3)).eq(new Rational(5, 6))).toBe(true);
-    expect(new Rational(3, 4).sub(new Rational(1, 6)).eq(new Rational(7, 12))).toBe(true);
+    expect(
+      new Rational(1, 2).add(new Rational(1, 3)).eq(new Rational(5, 6)),
+    ).toBe(true);
+    expect(
+      new Rational(3, 4).sub(new Rational(1, 6)).eq(new Rational(7, 12)),
+    ).toBe(true);
   });
 
   it('multiplies and divides exactly', () => {
-    expect(new Rational(2, 3).mul(new Rational(3, 4)).eq(new Rational(1, 2))).toBe(true);
-    expect(new Rational(1, 2).div(new Rational(3, 4)).eq(new Rational(2, 3))).toBe(true);
+    expect(
+      new Rational(2, 3).mul(new Rational(3, 4)).eq(new Rational(1, 2)),
+    ).toBe(true);
+    expect(
+      new Rational(1, 2).div(new Rational(3, 4)).eq(new Rational(2, 3)),
+    ).toBe(true);
   });
 
   it('parses integers, decimals, fractions and signs', () => {
@@ -39,5 +47,11 @@ describe('Rational', () => {
     expect(new Rational(0, 5).isZero()).toBe(true);
     expect(new Rational(6, 3).isInt()).toBe(true);
     expect(new Rational(-1, 2).isNeg()).toBe(true);
+  });
+
+  it('rejects unsafe integers so exact arithmetic cannot silently round', () => {
+    expect(() => new Rational(Number.MAX_SAFE_INTEGER + 1)).toThrow(
+      /safe integers/,
+    );
   });
 });

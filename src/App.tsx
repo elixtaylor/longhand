@@ -4,18 +4,38 @@ import type { ThemeId, RevealMode, TextSize } from './lib/ui';
 import { Workspace } from './components/Workspace';
 
 export default function App() {
-  const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'notebook');
-  const [revealMode, setRevealMode] = useLocalStorage<RevealMode>('longhand.reveal', 'all');
+  const [theme, setTheme] = useLocalStorage<ThemeId>(
+    'longhand.theme',
+    'notebook',
+  );
+  const [revealMode, setRevealMode] = useLocalStorage<RevealMode>(
+    'longhand.reveal',
+    'all',
+  );
   const [dark, setDark] = useLocalStorage<boolean>('longhand.dark', false);
-  const [textSize, setTextSize] = useLocalStorage<TextSize>('longhand.textSize', 'md');
+  const [textSize, setTextSize] = useLocalStorage<TextSize>(
+    'longhand.textSize',
+    'md',
+  );
   /**
    * Off by default: the working itself is what a student came for, and a
    * sentence above every line pushes the maths apart. The toggle sits with
    * the working rather than in settings, because it is a thing you reach for
    * mid-question and put back.
    */
-  const [showNotes, setShowNotes] = useLocalStorage<boolean>('longhand.notes', false);
+  const [showNotes, setShowNotes] = useLocalStorage<boolean>(
+    'longhand.notes',
+    false,
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+    window.requestAnimationFrame(() =>
+      document
+        .querySelector<HTMLButtonElement>('[aria-label="Open menu"]')
+        ?.focus(),
+    );
+  };
 
   // Apply the theme to <html> so the token sets in themes.css take effect.
   useEffect(() => {
@@ -82,7 +102,7 @@ export default function App() {
         showNotes={showNotes}
         onShowNotes={setShowNotes}
         sidebarOpen={sidebarOpen}
-        onSidebarClose={() => setSidebarOpen(false)}
+        onSidebarClose={closeSidebar}
         theme={theme}
         onTheme={setTheme}
         dark={dark}

@@ -91,12 +91,15 @@ function displayClosed(F: Poly, v: string): string {
 
   let body: string;
   if (factors.length > 0) {
-    const rest = current.degree() > 0 ? `\\left(${polyLatex(current)}\\right)` : '';
+    const rest =
+      current.degree() > 0 ? `\\left(${polyLatex(current)}\\right)` : '';
     const constant = current.degree() === 0 ? current.get(0) : Rational.int(1);
     const c = constant.eq(Rational.int(1)) ? '' : String(constant.n);
     body = `${c}${groupFactors(factors)}${rest}`;
   } else {
-    body = lead.eq(Rational.int(1)) ? polyLatex(scaled) : `\\left(${polyLatex(scaled)}\\right)`;
+    body = lead.eq(Rational.int(1))
+      ? polyLatex(scaled)
+      : `\\left(${polyLatex(scaled)}\\right)`;
   }
 
   return L === 1 ? body : `\\dfrac{${body}}{${L}}`;
@@ -110,7 +113,9 @@ function groupFactors(factors: string[]): string {
     if (!counts.has(f)) order.push(f);
     counts.set(f, (counts.get(f) ?? 0) + 1);
   }
-  return order.map((f) => (counts.get(f)! > 1 ? `${f}^{${counts.get(f)}}` : f)).join('');
+  return order
+    .map((f) => (counts.get(f)! > 1 ? `${f}^{${counts.get(f)}}` : f))
+    .join('');
 }
 
 function smallRationalRoot(p: Poly): Rational | null {
@@ -135,9 +140,12 @@ function divisorsOf(n: number): number[] {
 }
 function linearFactor(root: Rational, v: string): string {
   if (root.isZero()) return v;
-  if (root.isInt()) return root.isNeg() ? `(${v} + ${Math.abs(root.n)})` : `(${v} - ${root.n})`;
+  if (root.isInt())
+    return root.isNeg() ? `(${v} + ${Math.abs(root.n)})` : `(${v} - ${root.n})`;
   // p/q root → (qv − p)
-  return root.isNeg() ? `(${root.d}${v} + ${Math.abs(root.n)})` : `(${root.d}${v} - ${root.n})`;
+  return root.isNeg()
+    ? `(${root.d}${v} + ${Math.abs(root.n)})`
+    : `(${root.d}${v} - ${root.n})`;
 }
 /** Synthetic division by (x − root), assuming root really is a root. */
 function divideByRoot(p: Poly, root: Rational): Poly {
@@ -151,7 +159,9 @@ function divideByRoot(p: Poly, root: Rational): Poly {
   }
   const out = new Poly(m, p.variable);
   // (qx − p) form carries a factor of q, so scale it back out.
-  return root.isInt() || root.isZero() ? out : out.scale(new Rational(1, root.d));
+  return root.isInt() || root.isZero()
+    ? out
+    : out.scale(new Rational(1, root.d));
 }
 
 function parseSummand(input: string): Poly {
@@ -161,7 +171,8 @@ function parseSummand(input: string): Poly {
     .replace(/_?\{?r\s*=\s*1\}?\^?\{?n\}?/gi, ' ')
     .replace(/Σ|∑/g, ' ')
     .trim();
-  if (cleaned === '') throw new ParseError('Type the terms you are adding up, e.g.  sum r^2.');
+  if (cleaned === '')
+    throw new ParseError('Type the terms you are adding up, e.g.  sum r^2.');
   return parsePoly(cleaned, 'r');
 }
 
@@ -172,7 +183,12 @@ export const inductionSolver: Solver = {
   blurb: 'Prove a summation formula by induction, in the standard three steps.',
   placeholder: 'e.g.  sum r   or   sum r^2   or   sum 2r-1',
   methods: [
-    { id: 'sum', name: 'Proof by induction', blurb: 'Base case, inductive assumption, inductive step — the standard structure.' },
+    {
+      id: 'sum',
+      name: 'Proof by induction',
+      blurb:
+        'Base case, inductive assumption, inductive step — the standard structure.',
+    },
   ],
   defaultMethodId: 'sum',
   detect(input) {
@@ -189,10 +205,21 @@ export const inductionSolver: Solver = {
     try {
       f = parseSummand(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that sum.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that sum.',
+      };
     }
-    if (f.isZeroPoly()) return { ok: false, error: 'Type the terms you are adding up, e.g.  sum r^2.' };
-    if (f.degree() > 4) return { ok: false, error: 'This handles sums of polynomials up to degree 4.' };
+    if (f.isZeroPoly())
+      return {
+        ok: false,
+        error: 'Type the terms you are adding up, e.g.  sum r^2.',
+      };
+    if (f.degree() > 4)
+      return {
+        ok: false,
+        error: 'This handles sums of polynomials up to degree 4.',
+      };
 
     const F = closedForm(f, 'n');
     const summand = polyLatex(f);
@@ -208,7 +235,10 @@ export const inductionSolver: Solver = {
 
     if (!identical) {
       // Should never happen — the closed form is derived, not guessed.
-      return { ok: false, error: 'Could not verify the closed form for that sum.' };
+      return {
+        ok: false,
+        error: 'Could not verify the closed form for that sum.',
+      };
     }
 
     const L = commonDenominator(F);
@@ -243,8 +273,14 @@ export const inductionSolver: Solver = {
         latex: `= ${displayClosed(Fk, 'k')} + \\left(${polyLatex(fk1InK)}\\right)`,
       },
       {
-        note: L === 1 ? 'Collect like terms.' : `Put everything over the common denominator ${L} and collect like terms.`,
-        latex: L === 1 ? `= ${polyLatex(lhsStep)}` : `= \\dfrac{${polyLatex(scaledStep)}}{${L}}`,
+        note:
+          L === 1
+            ? 'Collect like terms.'
+            : `Put everything over the common denominator ${L} and collect like terms.`,
+        latex:
+          L === 1
+            ? `= ${polyLatex(lhsStep)}`
+            : `= \\dfrac{${polyLatex(scaledStep)}}{${L}}`,
       },
       {
         note: 'This is exactly the formula with $k+1$ in place of $n$.',

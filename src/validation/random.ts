@@ -51,8 +51,12 @@ export function close(actual: number, expected: number, tol = 1e-6): boolean {
  */
 export function numbersIn(latex: string): number[] {
   const cleaned = latex
-    .replace(/\\dfrac\{(-?[\d.]+)\}\{(-?[\d.]+)\}/g, (_m, a, b) => String(Number(a) / Number(b)))
-    .replace(/\\frac\{(-?[\d.]+)\}\{(-?[\d.]+)\}/g, (_m, a, b) => String(Number(a) / Number(b)))
+    .replace(/\\dfrac\{(-?[\d.]+)\}\{(-?[\d.]+)\}/g, (_m, a, b) =>
+      String(Number(a) / Number(b)),
+    )
+    .replace(/\\frac\{(-?[\d.]+)\}\{(-?[\d.]+)\}/g, (_m, a, b) =>
+      String(Number(a) / Number(b)),
+    )
     .replace(/\\[a-zA-Z]+/g, ' ')
     .replace(/[{}]/g, ' ')
     .replace(/−/g, '-');

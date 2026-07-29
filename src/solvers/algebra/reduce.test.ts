@@ -9,12 +9,17 @@ function solve(input: string) {
 }
 
 function answers(latex: string | undefined): number[] {
-  return [...(latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g)].map((m) => Number(m[1]));
+  return [...(latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g)].map((m) =>
+    Number(m[1]),
+  );
 }
 
 describe('reducing before solving', () => {
   it('squares out sqrt(A) = sqrt(B)', () => {
-    expect(answers(solve('sqrt(x+1) = sqrt(2x-3)').answerLatex)[0]).toBeCloseTo(4, 6);
+    expect(answers(solve('sqrt(x+1) = sqrt(2x-3)').answerLatex)[0]).toBeCloseTo(
+      4,
+      6,
+    );
   });
 
   it('squares out sqrt(A) = linear(x) and keeps only the genuine root', () => {
@@ -62,7 +67,9 @@ describe('reducing before solving', () => {
     const s = solve('2^(x+1)=3^(x-1)');
     expect(s.steps.length).toBeGreaterThanOrEqual(4);
     expect(s.steps.some((step) => step.latex?.includes('\\ln'))).toBe(true);
-    expect(s.steps.some((step) => /^-?\d*\.?\d+x\s*=/.test(step.latex ?? ''))).toBe(true);
+    expect(
+      s.steps.some((step) => /^-?\d*\.?\d+x\s*=/.test(step.latex ?? '')),
+    ).toBe(true);
     const x = answers(s.answerLatex)[0];
     expect(2 ** (x + 1)).toBeCloseTo(3 ** (x - 1), 3);
   });
@@ -86,8 +93,12 @@ describe('reducing before solving', () => {
   });
 
   it('is picked up by auto-detection for genuine double-occurrence cases', () => {
-    expect(interpret('sqrt(x+1) = sqrt(2x-3)').detection?.solver.id).toBe('reduce');
-    expect(interpret('ln(x) + ln(x+1) = 2').detection?.solver.id).toBe('reduce');
+    expect(interpret('sqrt(x+1) = sqrt(2x-3)').detection?.solver.id).toBe(
+      'reduce',
+    );
+    expect(interpret('ln(x) + ln(x+1) = 2').detection?.solver.id).toBe(
+      'reduce',
+    );
     expect(interpret('2^x = 3^x').detection?.solver.id).toBe('reduce');
   });
 });

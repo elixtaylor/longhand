@@ -2,6 +2,7 @@ import { Rational } from './rational';
 import { Poly } from './parse';
 import { parseExpr, evaluateExpr, type Expr } from './expr';
 import { realRoots } from './roots';
+import { MAX_EXPONENT } from '../safety';
 
 /**
  * Turning a general expression into something the equation solvers can work
@@ -35,10 +36,16 @@ export class PolyFrac {
   }
 
   add(o: PolyFrac): PolyFrac {
-    return new PolyFrac(this.num.mul(o.den).add(o.num.mul(this.den)), this.den.mul(o.den));
+    return new PolyFrac(
+      this.num.mul(o.den).add(o.num.mul(this.den)),
+      this.den.mul(o.den),
+    );
   }
   sub(o: PolyFrac): PolyFrac {
-    return new PolyFrac(this.num.mul(o.den).sub(o.num.mul(this.den)), this.den.mul(o.den));
+    return new PolyFrac(
+      this.num.mul(o.den).sub(o.num.mul(this.den)),
+      this.den.mul(o.den),
+    );
   }
   mul(o: PolyFrac): PolyFrac {
     return new PolyFrac(this.num.mul(o.num), this.den.mul(o.den));
@@ -85,7 +92,10 @@ export function exprToPolyFrac(e: Expr, variable: string): PolyFrac {
     case 'num':
       return PolyFrac.fromPoly(constPoly(e.v, variable));
     case 'var':
-      if (e.name !== variable) throw new ExpandError(`"${e.name}" is a second unknown — this reads one variable at a time.`);
+      if (e.name !== variable)
+        throw new ExpandError(
+          `"${e.name}" is a second unknown — this reads one variable at a time.`,
+        );
       return PolyFrac.fromPoly(varPoly(variable));
     case 'neg':
       return exprToPolyFrac(e.a, variable).neg();
@@ -99,15 +109,20 @@ export function exprToPolyFrac(e: Expr, variable: string): PolyFrac {
       return exprToPolyFrac(e.a, variable).div(exprToPolyFrac(e.b, variable));
     case 'pow': {
       const n = evaluateExpr(e.b);
-      if (!Number.isInteger(n)) {
-        throw new ExpandError('A power here needs a whole-number index to expand into ordinary algebra.');
+      if (!Number.isSafeInteger(n) || Math.abs(n) > MAX_EXPONENT) {
+        throw new ExpandError(
+          `A power here needs a whole-number index no larger than ${MAX_EXPONENT} to expand into ordinary algebra.`,
+        );
       }
       const base = exprToPolyFrac(e.a, variable);
-      if (n >= 0) return new PolyFrac(polyPow(base.num, n), polyPow(base.den, n));
+      if (n >= 0)
+        return new PolyFrac(polyPow(base.num, n), polyPow(base.den, n));
       return new PolyFrac(polyPow(base.den, -n), polyPow(base.num, -n));
     }
     case 'fn':
-      throw new ExpandError(`$${e.name}$ isn’t plain algebra — this collects terms, it doesn’t undo functions.`);
+      throw new ExpandError(
+        `$${e.name}$ isn’t plain algebra — this collects terms, it doesn’t undo functions.`,
+      );
   }
 }
 
@@ -153,10 +168,17 @@ export function polyAscii(poly: Poly): string {
     const neg = coeff.isNeg();
     const mag = coeff.abs();
     const magStr = mag.isInt() ? String(mag.n) : `${mag.n}/${mag.d}`;
-    const coeffStr = power === 0 ? magStr : mag.eq(Rational.int(1)) ? '' : magStr;
-    const varPart = power === 0 ? '' : power === 1 ? poly.variable : `${poly.variable}^${power}`;
+    const coeffStr =
+      power === 0 ? magStr : mag.eq(Rational.int(1)) ? '' : magStr;
+    const varPart =
+      power === 0
+        ? ''
+        : power === 1
+          ? poly.variable
+          : `${poly.variable}^${power}`;
     const body = coeffStr + varPart;
-    out += i === 0 ? (neg ? `-${body}` : body) : neg ? ` - ${body}` : ` + ${body}`;
+    out +=
+      i === 0 ? (neg ? `-${body}` : body) : neg ? ` - ${body}` : ` + ${body}`;
   });
   return out;
 }

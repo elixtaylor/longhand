@@ -4,12 +4,20 @@
   "version": "0.1.0",
   "type": "module",
   "description": "SACE maths, worked line by line — step-by-step working with your choice of method.",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:ui": "vitest run src/components",
+    "lint": "eslint src",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "deploy": "bash scripts/deploy.sh"
   },
@@ -19,13 +27,21 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.62.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/katex": "^0.16.7",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^25.0.1",
+    "prettier": "^3.9.6",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.65.0",
     "vite": "^6.0.7",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.10"
   }
 }

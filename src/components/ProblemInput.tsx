@@ -13,7 +13,7 @@ const KEYS: Key[] = [
   { label: 'x', insert: 'x' },
   { label: 'x²', insert: 'x^2' },
   { label: 'x³', insert: 'x^3' },
-  { label: 'xⁿ', insert: 'x^', },
+  { label: 'xⁿ', insert: 'x^' },
   { label: '( )', insert: '()', caretBack: 1 },
   { label: '| |', insert: '||', caretBack: 1 },
   { label: '+', insert: '+' },
@@ -108,7 +108,8 @@ export function ProblemInput({
   }
 
   // Preview the canonical rewrite when there is one — that is the maths the
-  // solver will actually see.
+  // solver will actually see. Keep the preview out of the layout until the
+  // student has started typing.
   const trimmed = (preview ?? value).trim();
 
   return (
@@ -125,6 +126,7 @@ export function ProblemInput({
         autoComplete="off"
         autoCapitalize="off"
         spellCheck={false}
+        maxLength={2000}
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
@@ -137,25 +139,23 @@ export function ProblemInput({
             type="button"
             className="palette-key"
             onClick={() => insert(k)}
-            tabIndex={-1}
           >
             {k.label}
           </button>
         ))}
       </div>
 
-      <div className="preview" aria-live="polite">
-        <span className="preview-label">Preview</span>
-        <span className="preview-body">
-          {trimmed === '' ? (
-            <span className="preview-empty">Start typing — plain English is fine…</span>
-          ) : isExpression(trimmed) ? (
-            <TeX tex={toPreviewLatex(trimmed)} display />
-          ) : (
-            <span className="preview-plain">{trimmed}</span>
-          )}
-        </span>
-      </div>
+      {trimmed !== '' && (
+        <div className="preview" aria-live="polite">
+          <span className="preview-body">
+            {isExpression(trimmed) ? (
+              <TeX tex={toPreviewLatex(trimmed)} display />
+            ) : (
+              <span className="preview-plain">{trimmed}</span>
+            )}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

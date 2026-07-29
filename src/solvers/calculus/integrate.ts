@@ -28,7 +28,10 @@ function cleanIntegrand(input: string): string {
 
 function parseIntegrand(input: string): Poly {
   const poly = parsePoly(cleanIntegrand(input), 'x');
-  if (poly.isZeroPoly()) throw new ParseError('Enter a function of x to integrate, e.g.  3x^2 + 2x - 5');
+  if (poly.isZeroPoly())
+    throw new ParseError(
+      'Enter a function of x to integrate, e.g.  3x^2 + 2x - 5',
+    );
   return poly;
 }
 
@@ -42,11 +45,17 @@ export function integrate(poly: Poly): Poly {
 }
 
 function frac(c: Rational): string {
-  return c.isInt() ? String(c.n) : `${c.n < 0 ? '-' : ''}\\frac{${Math.abs(c.n)}}{${c.d}}`;
+  return c.isInt()
+    ? String(c.n)
+    : `${c.n < 0 ? '-' : ''}\\frac{${Math.abs(c.n)}}{${c.d}}`;
 }
 function mono(coeff: Rational, power: number): string {
   if (power === 0) return frac(coeff);
-  const c = coeff.eq(Rational.int(1)) ? '' : coeff.eq(Rational.int(-1)) ? '-' : frac(coeff);
+  const c = coeff.eq(Rational.int(1))
+    ? ''
+    : coeff.eq(Rational.int(-1))
+      ? '-'
+      : frac(coeff);
   return `${c}${power === 1 ? 'x' : `x^{${power}}`}`;
 }
 
@@ -57,8 +66,17 @@ export const integrationSolver: Solver = {
   blurb: 'Find the indefinite integral of a polynomial.',
   placeholder: 'e.g.  3x^2 + 2x - 5',
   methods: [
-    { id: 'reverse-power', name: 'Reverse power rule', blurb: 'Add one to the power and divide by the new power. Don’t forget + C.' },
-    { id: 'definite', name: 'Definite integral', blurb: 'Integrate, then evaluate F(b) − F(a) — the area under the curve.' },
+    {
+      id: 'reverse-power',
+      name: 'Reverse power rule',
+      blurb:
+        'Add one to the power and divide by the new power. Don’t forget + C.',
+    },
+    {
+      id: 'definite',
+      name: 'Definite integral',
+      blurb: 'Integrate, then evaluate F(b) − F(a) — the area under the curve.',
+    },
   ],
   defaultMethodId: 'reverse-power',
   detect(input) {
@@ -70,12 +88,18 @@ export const integrationSolver: Solver = {
     try {
       poly = parseIntegrand(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that function.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that function.',
+      };
     }
 
     const anti = integrate(poly);
     const steps: Step[] = [
-      { note: 'Write the integral.', latex: `\\int \\left(${polyLatex(poly)}\\right)\\,dx` },
+      {
+        note: 'Write the integral.',
+        latex: `\\int \\left(${polyLatex(poly)}\\right)\\,dx`,
+      },
       {
         note: 'Integrate each term: add one to the power, then divide by the new power.',
         latex: `\\int ax^{n}\\,dx = \\frac{a}{n+1}\\,x^{\\,n+1} + C`,
@@ -98,7 +122,8 @@ export const integrationSolver: Solver = {
       const { lower, upper } = limits;
       const at = (x: number): number => {
         let total = 0;
-        for (const { power, coeff } of anti.terms()) total += coeff.toNumber() * Math.pow(x, power);
+        for (const { power, coeff } of anti.terms())
+          total += coeff.toNumber() * Math.pow(x, power);
         return total;
       };
       const upperVal = at(upper);

@@ -32,7 +32,12 @@ describe('quadraticRoots (exact core)', () => {
 });
 
 describe('quadraticsSolver — all three methods agree', () => {
-  const cases = ['2x^2 + 7x - 4 = 0', 'x^2 - 5x + 6', '6x^2 - 5x + 1 = 0', 'x^2 - 4x + 4'];
+  const cases = [
+    '2x^2 + 7x - 4 = 0',
+    'x^2 - 5x + 6',
+    '6x^2 - 5x + 1 = 0',
+    'x^2 - 4x + 4',
+  ];
   for (const input of cases) {
     it(`same answer via every method for ${input}`, () => {
       const answers = ['factorise', 'complete-square', 'formula'].map((m) => {

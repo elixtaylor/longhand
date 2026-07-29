@@ -7,7 +7,7 @@ Some **practice questions** are imported from openly-licensed textbooks. Those a
 listed in `src/data/imported.ts`, and every entry records its exact source and
 section so the attribution travels with the problem.
 
-## OpenStax — *Algebra and Trigonometry 2e*
+## OpenStax — _Algebra and Trigonometry 2e_
 
 - **Publisher:** OpenStax, Rice University
 - **URL:** https://openstax.org/books/algebra-and-trigonometry-2e
@@ -31,7 +31,7 @@ Three obligations come with CC BY-NC-SA 4.0:
    imported questions must be removed first.** Nothing else in the project is
    affected: the code, the engine, the solutions and the hand-written examples in
    `src/data/examples.ts` carry no such restriction.
-3. **ShareAlike** — adaptations of *that content* must carry the same licence.
+3. **ShareAlike** — adaptations of _that content_ must carry the same licence.
 
 To strip the imported content, delete `src/data/imported.ts` and the places that
 read it. The app degrades cleanly: it falls back to the hand-written examples.

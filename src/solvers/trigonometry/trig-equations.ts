@@ -40,7 +40,9 @@ function solutions(fn: Fn, k: number): number[] {
 }
 function norm(xs: number[]): number[] {
   const out = xs.map((x) => ((x % 360) + 360) % 360);
-  return [...new Set(out.map((x) => Math.round(x * 1e6) / 1e6))].sort((a, b) => a - b);
+  return [...new Set(out.map((x) => Math.round(x * 1e6) / 1e6))].sort(
+    (a, b) => a - b,
+  );
 }
 
 export const trigEquationSolver: Solver = {
@@ -50,18 +52,30 @@ export const trigEquationSolver: Solver = {
   blurb: 'Solve sin x = k, cos x = k or tan x = k.',
   placeholder: 'e.g.  sin x = 0.5',
   methods: [
-    { id: 'unit-circle', name: 'Unit circle', blurb: 'Find the principal value, then use symmetry to get every solution in the revolution.' },
+    {
+      id: 'unit-circle',
+      name: 'Unit circle',
+      blurb:
+        'Find the principal value, then use symmetry to get every solution in the revolution.',
+    },
   ],
   defaultMethodId: 'unit-circle',
   detect(input) {
-    return /^\s*(sin|cos|tan)\s*\(?\s*x\s*\)?\s*=\s*-?\d*\.?\d+\s*$/i.test(input) ? 0.96 : 0;
+    return /^\s*(sin|cos|tan)\s*\(?\s*x\s*\)?\s*=\s*-?\d*\.?\d+\s*$/i.test(
+      input,
+    )
+      ? 0.96
+      : 0;
   },
   solve(input): SolveResult {
     let eq: TrigEq;
     try {
       eq = parse(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that equation.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that equation.',
+      };
     }
     const { fn, k, radians } = eq;
 
@@ -91,7 +105,10 @@ export const trigEquationSolver: Solver = {
         latex: `x = \\${fn}^{-1}(${fmt(k)}) = ${fmt(principal)}${DEG}`,
         annotation: 'principal value',
       },
-      { note: symmetry, latex: sols.map((x) => `x = ${fmt(x)}${DEG}`).join(', \\quad ') },
+      {
+        note: symmetry,
+        latex: sols.map((x) => `x = ${fmt(x)}${DEG}`).join(', \\quad '),
+      },
       {
         note: 'Solutions over one full revolution $0^{\\circ} \\le x < 360^{\\circ}$.',
         latex: sols.map((x) => `${fmt(x)}${DEG}`).join(', \\quad '),

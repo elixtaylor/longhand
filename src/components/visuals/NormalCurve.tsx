@@ -24,7 +24,12 @@ export function NormalCurve({ data }: { data: NormalData }) {
     const x = xMin + ((xMax - xMin) * i) / SAMPLES;
     pts.push([x, phi(x)]);
   }
-  const curve = pts.map(([x, d], i) => `${i === 0 ? 'M' : 'L'}${sx(x).toFixed(1)},${sy(d).toFixed(1)}`).join(' ');
+  const curve = pts
+    .map(
+      ([x, d], i) =>
+        `${i === 0 ? 'M' : 'L'}${sx(x).toFixed(1)},${sy(d).toFixed(1)}`,
+    )
+    .join(' ');
 
   const shadeLo = lo ?? xMin;
   const shadeHi = hi ?? xMax;
@@ -32,7 +37,9 @@ export function NormalCurve({ data }: { data: NormalData }) {
   const shade =
     shadePts.length > 1
       ? `M${sx(shadePts[0][0]).toFixed(1)},${sy(0).toFixed(1)} ` +
-        shadePts.map(([x, d]) => `L${sx(x).toFixed(1)},${sy(d).toFixed(1)}`).join(' ') +
+        shadePts
+          .map(([x, d]) => `L${sx(x).toFixed(1)},${sy(d).toFixed(1)}`)
+          .join(' ') +
         ` L${sx(shadePts[shadePts.length - 1][0]).toFixed(1)},${sy(0).toFixed(1)} Z`
       : '';
 
@@ -51,26 +58,66 @@ export function NormalCurve({ data }: { data: NormalData }) {
       >
         {shade && <path d={shade} className="diagram-shade" />}
         <path d={curve} className="diagram-curve" />
-        <line x1={PAD / 2} y1={sy(0)} x2={W - PAD / 2} y2={sy(0)} className="diagram-axis" />
-        <line x1={sx(mean)} y1={sy(0)} x2={sx(mean)} y2={sy(1)} className="diagram-axis-dashed" />
+        <line
+          x1={PAD / 2}
+          y1={sy(0)}
+          x2={W - PAD / 2}
+          y2={sy(0)}
+          className="diagram-axis"
+        />
+        <line
+          x1={sx(mean)}
+          y1={sy(0)}
+          x2={sx(mean)}
+          y2={sy(1)}
+          className="diagram-axis-dashed"
+        />
 
         {ticks.map(({ k, x }) => (
           <g key={k}>
-            <line x1={sx(x)} y1={sy(0)} x2={sx(x)} y2={sy(0) + 4} className="diagram-axis" />
-            <text x={sx(x)} y={sy(0) + 16} className="diagram-label" textAnchor="middle">
+            <line
+              x1={sx(x)}
+              y1={sy(0)}
+              x2={sx(x)}
+              y2={sy(0) + 4}
+              className="diagram-axis"
+            />
+            <text
+              x={sx(x)}
+              y={sy(0) + 16}
+              className="diagram-label"
+              textAnchor="middle"
+            >
               {k === 0 ? 'μ' : `${k > 0 ? '+' : ''}${k}σ`}
             </text>
           </g>
         ))}
 
         {lo !== null && lo > xMin && (
-          <line x1={sx(lo)} y1={sy(0)} x2={sx(lo)} y2={sy(phi(lo))} className="diagram-bound" />
+          <line
+            x1={sx(lo)}
+            y1={sy(0)}
+            x2={sx(lo)}
+            y2={sy(phi(lo))}
+            className="diagram-bound"
+          />
         )}
         {hi !== null && hi < xMax && (
-          <line x1={sx(hi)} y1={sy(0)} x2={sx(hi)} y2={sy(phi(hi))} className="diagram-bound" />
+          <line
+            x1={sx(hi)}
+            y1={sy(0)}
+            x2={sx(hi)}
+            y2={sy(phi(hi))}
+            className="diagram-bound"
+          />
         )}
         {label && (
-          <text x={W / 2} y={PAD - 10} className="diagram-label diagram-label-key" textAnchor="middle">
+          <text
+            x={W / 2}
+            y={PAD - 10}
+            className="diagram-label diagram-label-key"
+            textAnchor="middle"
+          >
             {label}
           </text>
         )}

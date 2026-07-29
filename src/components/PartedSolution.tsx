@@ -27,7 +27,8 @@ export function PartedSolution({
       <div className="parts-head">
         <span className="parts-count">{worked.parts.length} parts</span>
         <span className="parts-note">
-          This question spans {new Set(worked.parts.map((p) => p.solver.id)).size} topics — each is
+          This question spans{' '}
+          {new Set(worked.parts.map((p) => p.solver.id)).size} topics — each is
           worked separately below.
         </span>
       </div>
@@ -56,7 +57,8 @@ export function PartedSolution({
                 // the thing they meant.
                 <p className="part-carried">
                   You wrote <em>“{part.carried.trim()}”</em> — read as{' '}
-                  <em>“{part.text.trim()}”</em>, using part ({prevLabel(part.label)}).
+                  <em>“{part.text.trim()}”</em>, using part (
+                  {prevLabel(part.label)}).
                 </p>
               )}
             </div>
@@ -71,13 +73,21 @@ export function PartedSolution({
           </header>
 
           {part.result.ok ? (
-            <StepList solution={part.result.solution} revealMode={revealMode} showNotes={showNotes} />
+            <StepList
+              solution={part.result.solution}
+              revealMode={revealMode}
+              showNotes={showNotes}
+            />
           ) : (
             <p className="part-error">{part.result.error}</p>
           )}
 
           {onFocusPart && part.result.ok && (
-            <button type="button" className="btn btn-sm" onClick={() => onFocusPart(part)}>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => onFocusPart(part)}
+            >
               Work part ({part.label}) on its own
             </button>
           )}

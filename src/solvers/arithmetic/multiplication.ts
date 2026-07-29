@@ -61,7 +61,9 @@ function solveByColumn(a: number, b: number): SolveResult {
   }
 
   steps.push({
-    note: neg ? 'Apply the sign — one number was negative.' : 'That gives the product.',
+    note: neg
+      ? 'Apply the sign — one number was negative.'
+      : 'That gives the product.',
     latex: `${a} \\times ${b} = ${neg ? -total : total}`,
     annotation: 'product',
   });
@@ -102,7 +104,9 @@ function solveByGrid(a: number, b: number): SolveResult {
       latex: `${allCells(colParts, rowParts).join(' + ')} = ${total}`,
     },
     {
-      note: neg ? 'Apply the sign — one number was negative.' : 'That gives the product.',
+      note: neg
+        ? 'Apply the sign — one number was negative.'
+        : 'That gives the product.',
       latex: `${a} \\times ${b} = ${neg ? -total : total}`,
       annotation: 'product',
     },
@@ -132,8 +136,17 @@ export const multiplicationSolver: Solver = {
   blurb: 'Multiply two whole numbers, step by step.',
   placeholder: 'e.g.  234 × 56',
   methods: [
-    { id: 'grid', name: 'Grid / box', blurb: 'Split by place value into a grid, multiply each cell, then add. Great for seeing why it works.' },
-    { id: 'column', name: 'Column (long)', blurb: 'The traditional vertical algorithm with partial products.' },
+    {
+      id: 'grid',
+      name: 'Grid / box',
+      blurb:
+        'Split by place value into a grid, multiply each cell, then add. Great for seeing why it works.',
+    },
+    {
+      id: 'column',
+      name: 'Column (long)',
+      blurb: 'The traditional vertical algorithm with partial products.',
+    },
   ],
   defaultMethodId: 'grid',
   detect(input) {
@@ -146,8 +159,13 @@ export const multiplicationSolver: Solver = {
     try {
       pair = parsePair(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that.',
+      };
     }
-    return methodId === 'column' ? solveByColumn(pair.a, pair.b) : solveByGrid(pair.a, pair.b);
+    return methodId === 'column'
+      ? solveByColumn(pair.a, pair.b)
+      : solveByGrid(pair.a, pair.b);
   },
 };

@@ -56,7 +56,10 @@ describe('registry integrity', () => {
       for (const p of probes) {
         const started = Date.now();
         const score = s.detect(p);
-        expect(Date.now() - started, `${s.id} took too long on "${p}"`).toBeLessThan(250);
+        expect(
+          Date.now() - started,
+          `${s.id} took too long on "${p}"`,
+        ).toBeLessThan(250);
         expect(Number.isFinite(score), `${s.id} on "${p}"`).toBe(true);
         expect(score).toBeGreaterThanOrEqual(0);
         expect(score).toBeLessThanOrEqual(1);
@@ -66,10 +69,22 @@ describe('registry integrity', () => {
 
   /** Whatever a detector claims, the solver behind it must respond sanely. */
   it('never lets a solve throw on any probe it claims', () => {
-    const probes = ['', 'x', '???', '3+4i', '[[1,2]]', 'sum r', '2^x = 32', 'a=3, b=4'];
+    const probes = [
+      '',
+      'x',
+      '???',
+      '3+4i',
+      '[[1,2]]',
+      'sum r',
+      '2^x = 32',
+      'a=3, b=4',
+    ];
     for (const s of solvers) {
       for (const p of probes) {
-        expect(() => s.solve(p, s.defaultMethodId), `${s.id} threw on "${p}"`).not.toThrow();
+        expect(
+          () => s.solve(p, s.defaultMethodId),
+          `${s.id} threw on "${p}"`,
+        ).not.toThrow();
       }
     }
   });
@@ -100,16 +115,25 @@ describe('detectSolver', () => {
     expect(examples.length).toBeGreaterThan(0);
     for (const ex of examples) {
       const solver = getSolver(ex.solverId);
-      expect(solver, `example "${ex.label}" points at unknown topic "${ex.solverId}"`).toBeTruthy();
+      expect(
+        solver,
+        `example "${ex.label}" points at unknown topic "${ex.solverId}"`,
+      ).toBeTruthy();
       const methodId = ex.methodId ?? solver!.defaultMethodId;
       expect(
         solver!.methods.some((m) => m.id === methodId),
         `example "${ex.label}" uses unknown method "${methodId}"`,
       ).toBe(true);
       const res = solver!.solve(ex.input, methodId);
-      expect(res.ok, `example "${ex.label}" failed: ${res.ok ? '' : res.error}`).toBe(true);
+      expect(
+        res.ok,
+        `example "${ex.label}" failed: ${res.ok ? '' : res.error}`,
+      ).toBe(true);
       if (res.ok) {
-        expect(res.solution.steps.length, `example "${ex.label}" produced no steps`).toBeGreaterThan(0);
+        expect(
+          res.solution.steps.length,
+          `example "${ex.label}" produced no steps`,
+        ).toBeGreaterThan(0);
       }
     }
   });
@@ -125,7 +149,10 @@ describe('detectSolver', () => {
       const found = detectSolver(input);
       expect(found, `nothing detected for ${input}`).not.toBeNull();
       const res = found!.solver.solve(input, found!.solver.defaultMethodId);
-      expect(res.ok, `${input} detected as ${found!.solver.id} but failed to solve`).toBe(true);
+      expect(
+        res.ok,
+        `${input} detected as ${found!.solver.id} but failed to solve`,
+      ).toBe(true);
     }
   });
 });

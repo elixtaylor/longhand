@@ -1,7 +1,11 @@
 import { statisticsSolver } from './descriptive';
 import { distributionsSolver } from './distributions';
 
-const sol = (s: { solve: (i: string, m: string) => any }, input: string, method: string) => {
+const sol = (
+  s: { solve: (i: string, m: string) => any },
+  input: string,
+  method: string,
+) => {
   const r = s.solve(input, method);
   expect(r.ok, `failed to solve "${input}": ${r.ok ? '' : r.error}`).toBe(true);
   return r.ok ? r.solution : null!;
@@ -38,7 +42,9 @@ describe('statisticsSolver', () => {
   it('leaves a clean arithmetic run to the sequences topic', () => {
     // A patterned list is far more likely to be a sequence question.
     expect(statisticsSolver.detect('3, 7, 11, 15')).toBeLessThan(0.8);
-    expect(statisticsSolver.detect('4, 8, 15, 16, 23, 42')).toBeGreaterThan(0.8);
+    expect(statisticsSolver.detect('4, 8, 15, 16, 23, 42')).toBeGreaterThan(
+      0.8,
+    );
   });
 });
 
@@ -58,7 +64,11 @@ describe('distributionsSolver', () => {
 
   it('standardises a normal value', () => {
     // z = (120-100)/15 = 1.3333 → Φ ≈ 0.9088
-    const s = sol(distributionsSolver, 'normal mean=100, sd=15, x=120', 'normal');
+    const s = sol(
+      distributionsSolver,
+      'normal mean=100, sd=15, x=120',
+      'normal',
+    );
     expect(s.answerLatex).toContain('0.908');
   });
 
@@ -69,12 +79,18 @@ describe('distributionsSolver', () => {
 
   it('builds a 95% confidence interval', () => {
     // 50 ± 1.96 × 8/10 = 50 ± 1.568
-    const s = sol(distributionsSolver, 'confidence mean=50, sd=8, n=100', 'confidence');
+    const s = sol(
+      distributionsSolver,
+      'confidence mean=50, sd=8, n=100',
+      'confidence',
+    );
     expect(s.answerLatex).toContain('48.432');
     expect(s.answerLatex).toContain('51.568');
   });
 
   it('rejects an impossible probability', () => {
-    expect(distributionsSolver.solve('binomial n=10, p=1.5, x=3', 'binomial').ok).toBe(false);
+    expect(
+      distributionsSolver.solve('binomial n=10, p=1.5, x=3', 'binomial').ok,
+    ).toBe(false);
   });
 });

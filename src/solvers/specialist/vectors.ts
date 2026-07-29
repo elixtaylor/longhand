@@ -1,5 +1,10 @@
 import { fmt, rad2deg } from '../../lib/math/num';
-import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
+import type {
+  Solver,
+  Step,
+  SolveResult,
+  FieldSchema,
+} from '../../lib/engine/types';
 
 /**
  * Vectors in the plane and in three dimensions
@@ -26,10 +31,21 @@ function parseVec(s: string): Vec {
   return parts;
 }
 
-const VEC = '\\(?\\[?<?\\s*-?\\d*\\.?\\d+\\s*(?:,\\s*-?\\d*\\.?\\d+\\s*){1,2}\\)?\\]?>?';
+const VEC =
+  '\\(?\\[?<?\\s*-?\\d*\\.?\\d+\\s*(?:,\\s*-?\\d*\\.?\\d+\\s*){1,2}\\)?\\]?>?';
 
 interface Problem {
-  op: 'add' | 'sub' | 'scale' | 'dot' | 'cross' | 'magnitude' | 'unit' | 'angle' | 'collinear' | 'ratio';
+  op:
+    | 'add'
+    | 'sub'
+    | 'scale'
+    | 'dot'
+    | 'cross'
+    | 'magnitude'
+    | 'unit'
+    | 'angle'
+    | 'collinear'
+    | 'ratio';
   a: Vec;
   b?: Vec;
   /** Third point, for collinear. */
@@ -44,21 +60,41 @@ interface Problem {
 function parse(input: string): Problem {
   const s = input.trim();
 
-  const mag = s.match(new RegExp(`^\\|\\s*(${VEC})\\s*\\|$`)) ?? s.match(/^(?:magnitude|mod|length)\s*(.+)$/i);
+  const mag =
+    s.match(new RegExp(`^\\|\\s*(${VEC})\\s*\\|$`)) ??
+    s.match(/^(?:magnitude|mod|length)\s*(.+)$/i);
   if (mag) return { op: 'magnitude', a: parseVec(mag[1]) };
 
   const unit = s.match(/^(?:unit|normalise|normalize)\s*(.+)$/i);
   if (unit) return { op: 'unit', a: parseVec(unit[1]) };
 
-  const angle = s.match(new RegExp(`^angle\\s*(?:between\\s*)?(${VEC})\\s*(?:and|,)?\\s*(${VEC})$`, 'i'));
-  if (angle) return { op: 'angle', a: parseVec(angle[1]), b: parseVec(angle[2]) };
+  const angle = s.match(
+    new RegExp(
+      `^angle\\s*(?:between\\s*)?(${VEC})\\s*(?:and|,)?\\s*(${VEC})$`,
+      'i',
+    ),
+  );
+  if (angle)
+    return { op: 'angle', a: parseVec(angle[1]), b: parseVec(angle[2]) };
 
-  const collinear = s.match(new RegExp(`^collinear\\s+(${VEC})\\s+(${VEC})\\s+(${VEC})$`, 'i'));
+  const collinear = s.match(
+    new RegExp(`^collinear\\s+(${VEC})\\s+(${VEC})\\s+(${VEC})$`, 'i'),
+  );
   if (collinear) {
-    return { op: 'collinear', a: parseVec(collinear[1]), b: parseVec(collinear[2]), c: parseVec(collinear[3]) };
+    return {
+      op: 'collinear',
+      a: parseVec(collinear[1]),
+      b: parseVec(collinear[2]),
+      c: parseVec(collinear[3]),
+    };
   }
 
-  const ratio = s.match(new RegExp(`^ratio\\s+(${VEC})\\s+(${VEC})\\s+(-?\\d+)\\s*:\\s*(-?\\d+)$`, 'i'));
+  const ratio = s.match(
+    new RegExp(
+      `^ratio\\s+(${VEC})\\s+(${VEC})\\s+(-?\\d+)\\s*:\\s*(-?\\d+)$`,
+      'i',
+    ),
+  );
   if (ratio) {
     return {
       op: 'ratio',
@@ -72,15 +108,25 @@ function parse(input: string): Problem {
   const scale = s.match(new RegExp(`^(-?\\d*\\.?\\d+)\\s*[*×]?\\s*(${VEC})$`));
   if (scale) return { op: 'scale', a: parseVec(scale[2]), k: Number(scale[1]) };
 
-  const bin = s.match(new RegExp(`^(${VEC})\\s*([+\\-]|[.·]|[x×])\\s*(${VEC})$`, 'i'));
+  const bin = s.match(
+    new RegExp(`^(${VEC})\\s*([+\\-]|[.·]|[x×])\\s*(${VEC})$`, 'i'),
+  );
   if (bin) {
     const opRaw = bin[2].toLowerCase();
     const op: Problem['op'] =
-      opRaw === '+' ? 'add' : opRaw === '-' ? 'sub' : opRaw === '.' || opRaw === '·' ? 'dot' : 'cross';
+      opRaw === '+'
+        ? 'add'
+        : opRaw === '-'
+          ? 'sub'
+          : opRaw === '.' || opRaw === '·'
+            ? 'dot'
+            : 'cross';
     return { op, a: parseVec(bin[1]), b: parseVec(bin[3]) };
   }
 
-  throw new Error('Try  (3,4) + (1,2),  (1,2,3) . (4,5,6),  |(3,4)|  or  angle (1,0) (1,1).');
+  throw new Error(
+    'Try  (3,4) + (1,2),  (1,2,3) . (4,5,6),  |(3,4)|  or  angle (1,0) (1,1).',
+  );
 }
 
 const dot = (a: Vec, b: Vec) => a.reduce((s, x, i) => s + x * b[i], 0);
@@ -115,14 +161,16 @@ export const vectorsSolver: Solver = {
       name: 'Collinearity',
       blurb: 'Test whether three points all lie on one straight line.',
       fields: POINT_FIELDS_3,
-      serialize: (v) => `collinear (${v.a.join(',')}) (${v.b.join(',')}) (${v.c.join(',')})`,
+      serialize: (v) =>
+        `collinear (${v.a.join(',')}) (${v.b.join(',')}) (${v.c.join(',')})`,
     },
     {
       id: 'ratio',
       name: 'Ratio of division',
       blurb: 'Find the point that divides a segment AB in a given ratio.',
       fields: RATIO_FIELDS,
-      serialize: (v) => `ratio (${v.a.join(',')}) (${v.b.join(',')}) ${v.ratio[0]}:${v.ratio[1]}`,
+      serialize: (v) =>
+        `ratio (${v.a.join(',')}) (${v.b.join(',')}) ${v.ratio[0]}:${v.ratio[1]}`,
     },
   ],
   defaultMethodId: 'component',
@@ -139,7 +187,10 @@ export const vectorsSolver: Solver = {
     try {
       p = parse(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read those vectors.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read those vectors.',
+      };
     }
     // Each method owns a disjoint set of ops — collinear/ratio input isn't a
     // wrong answer under 'component', it's simply not what that method
@@ -149,17 +200,29 @@ export const vectorsSolver: Solver = {
     // all three into one, silently switching back to Component form the
     // moment a structured form's own submission is fingerprinted against it.
     if (methodId === 'collinear' && p.op !== 'collinear') {
-      return { ok: false, error: 'Enter three points to test for collinearity.' };
+      return {
+        ok: false,
+        error: 'Enter three points to test for collinearity.',
+      };
     }
     if (methodId === 'ratio' && p.op !== 'ratio') {
       return { ok: false, error: 'Enter two points and a ratio.' };
     }
-    if (methodId === 'component' && (p.op === 'collinear' || p.op === 'ratio')) {
-      return { ok: false, error: 'Use the Collinearity or Ratio of division method for that.' };
+    if (
+      methodId === 'component' &&
+      (p.op === 'collinear' || p.op === 'ratio')
+    ) {
+      return {
+        ok: false,
+        error: 'Use the Collinearity or Ratio of division method for that.',
+      };
     }
     const { a, b, k } = p;
     if (b && a.length !== b.length) {
-      return { ok: false, error: 'Both vectors need the same number of components.' };
+      return {
+        ok: false,
+        error: 'Both vectors need the same number of components.',
+      };
     }
 
     if (p.op === 'add' || p.op === 'sub') {
@@ -172,12 +235,19 @@ export const vectorsSolver: Solver = {
           headline: `Work out $${vecTex(a)} ${symbol} ${vecTex(b!)}$`,
           methodName: p.op === 'add' ? 'Vector addition' : 'Vector subtraction',
           steps: [
-            { note: `${p.op === 'add' ? 'Add' : 'Subtract'} the matching components.`, latex: `${colTex(a)} ${symbol} ${colTex(b!)}` },
+            {
+              note: `${p.op === 'add' ? 'Add' : 'Subtract'} the matching components.`,
+              latex: `${colTex(a)} ${symbol} ${colTex(b!)}`,
+            },
             {
               note: 'Work through component by component.',
               latex: `= \\begin{pmatrix} ${a.map((x, i) => `${fmt(x)} ${symbol} ${fmt(b![i])}`).join(' \\\\ ')} \\end{pmatrix}`,
             },
-            { note: 'Simplify.', latex: `= ${colTex(out)} = ${vecTex(out)}`, annotation: 'answer' },
+            {
+              note: 'Simplify.',
+              latex: `= ${colTex(out)} = ${vecTex(out)}`,
+              annotation: 'answer',
+            },
           ],
           answerLatex: vecTex(out),
         },
@@ -192,9 +262,19 @@ export const vectorsSolver: Solver = {
           headline: `Work out $${fmt(k!)}${vecTex(a)}$`,
           methodName: 'Scalar multiple',
           steps: [
-            { note: 'Multiply every component by the scalar.', latex: `${fmt(k!)} ${colTex(a)}` },
-            { note: 'Work through each one.', latex: `= \\begin{pmatrix} ${a.map((x) => `${fmt(k!)} \\times ${fmt(x)}`).join(' \\\\ ')} \\end{pmatrix} = ${colTex(out)}` },
-            { note: 'The direction is unchanged; the length is scaled.', latex: `= ${vecTex(out)}`, annotation: k! < 0 ? 'negative → reverses direction' : 'answer' },
+            {
+              note: 'Multiply every component by the scalar.',
+              latex: `${fmt(k!)} ${colTex(a)}`,
+            },
+            {
+              note: 'Work through each one.',
+              latex: `= \\begin{pmatrix} ${a.map((x) => `${fmt(k!)} \\times ${fmt(x)}`).join(' \\\\ ')} \\end{pmatrix} = ${colTex(out)}`,
+            },
+            {
+              note: 'The direction is unchanged; the length is scaled.',
+              latex: `= ${vecTex(out)}`,
+              annotation: k! < 0 ? 'negative → reverses direction' : 'answer',
+            },
           ],
           answerLatex: vecTex(out),
         },
@@ -209,9 +289,19 @@ export const vectorsSolver: Solver = {
           headline: `Find $|${vecTex(a)}|$`,
           methodName: 'Magnitude',
           steps: [
-            { note: 'The magnitude is the length — Pythagoras in as many dimensions as you have.', latex: `|\\mathbf{a}| = \\sqrt{${a.map((_, i) => `a_{${i + 1}}^{2}`).join(' + ')}}` },
-            { note: 'Substitute the components.', latex: `= \\sqrt{${a.map((x) => `${fmt(x)}^{2}`).join(' + ')}} = \\sqrt{${fmt(dot(a, a))}}` },
-            { note: 'Work it out.', latex: `= ${fmt(m, 4)}`, annotation: 'length' },
+            {
+              note: 'The magnitude is the length — Pythagoras in as many dimensions as you have.',
+              latex: `|\\mathbf{a}| = \\sqrt{${a.map((_, i) => `a_{${i + 1}}^{2}`).join(' + ')}}`,
+            },
+            {
+              note: 'Substitute the components.',
+              latex: `= \\sqrt{${a.map((x) => `${fmt(x)}^{2}`).join(' + ')}} = \\sqrt{${fmt(dot(a, a))}}`,
+            },
+            {
+              note: 'Work it out.',
+              latex: `= ${fmt(m, 4)}`,
+              annotation: 'length',
+            },
           ],
           answerLatex: `|\\mathbf{a}| = ${fmt(m, 4)}`,
         },
@@ -220,7 +310,11 @@ export const vectorsSolver: Solver = {
 
     if (p.op === 'unit') {
       const m = mag(a);
-      if (m === 0) return { ok: false, error: 'The zero vector has no direction, so it has no unit vector.' };
+      if (m === 0)
+        return {
+          ok: false,
+          error: 'The zero vector has no direction, so it has no unit vector.',
+        };
       const out = a.map((x) => x / m);
       return {
         ok: true,
@@ -228,9 +322,19 @@ export const vectorsSolver: Solver = {
           headline: `Find the unit vector of $${vecTex(a)}$`,
           methodName: 'Unit vector',
           steps: [
-            { note: 'A unit vector points the same way but has length 1.', latex: `\\hat{\\mathbf{a}} = \\dfrac{\\mathbf{a}}{|\\mathbf{a}|}` },
-            { note: 'First find the magnitude.', latex: `|\\mathbf{a}| = \\sqrt{${fmt(dot(a, a))}} = ${fmt(m, 4)}` },
-            { note: 'Divide each component by it.', latex: `\\hat{\\mathbf{a}} = \\dfrac{1}{${fmt(m, 4)}}${colTex(a)} = ${colTex(out)}`, annotation: 'length 1' },
+            {
+              note: 'A unit vector points the same way but has length 1.',
+              latex: `\\hat{\\mathbf{a}} = \\dfrac{\\mathbf{a}}{|\\mathbf{a}|}`,
+            },
+            {
+              note: 'First find the magnitude.',
+              latex: `|\\mathbf{a}| = \\sqrt{${fmt(dot(a, a))}} = ${fmt(m, 4)}`,
+            },
+            {
+              note: 'Divide each component by it.',
+              latex: `\\hat{\\mathbf{a}} = \\dfrac{1}{${fmt(m, 4)}}${colTex(a)} = ${colTex(out)}`,
+              annotation: 'length 1',
+            },
           ],
           answerLatex: vecTex(out),
         },
@@ -242,9 +346,19 @@ export const vectorsSolver: Solver = {
       const ma = mag(a);
       const mb = mag(b!);
       const steps: Step[] = [
-        { note: 'The dot product multiplies matching components and adds the results.', latex: `\\mathbf{a} \\cdot \\mathbf{b} = ${a.map((_, i) => `a_{${i + 1}}b_{${i + 1}}`).join(' + ')}` },
-        { note: 'Substitute the components.', latex: `= ${a.map((x, i) => `(${fmt(x)})(${fmt(b![i])})`).join(' + ')}` },
-        { note: 'Work it out.', latex: `= ${a.map((x, i) => fmt(x * b![i])).join(' + ')} = ${fmt(d)}`, annotation: 'scalar — not a vector' },
+        {
+          note: 'The dot product multiplies matching components and adds the results.',
+          latex: `\\mathbf{a} \\cdot \\mathbf{b} = ${a.map((_, i) => `a_{${i + 1}}b_{${i + 1}}`).join(' + ')}`,
+        },
+        {
+          note: 'Substitute the components.',
+          latex: `= ${a.map((x, i) => `(${fmt(x)})(${fmt(b![i])})`).join(' + ')}`,
+        },
+        {
+          note: 'Work it out.',
+          latex: `= ${a.map((x, i) => fmt(x * b![i])).join(' + ')} = ${fmt(d)}`,
+          annotation: 'scalar — not a vector',
+        },
       ];
       if (ma > 0 && mb > 0) {
         const cos = d / (ma * mb);
@@ -273,7 +387,11 @@ export const vectorsSolver: Solver = {
       const d = dot(a, b!);
       const ma = mag(a);
       const mb = mag(b!);
-      if (ma === 0 || mb === 0) return { ok: false, error: 'The zero vector has no direction, so there is no angle.' };
+      if (ma === 0 || mb === 0)
+        return {
+          ok: false,
+          error: 'The zero vector has no direction, so there is no angle.',
+        };
       const cos = Math.max(-1, Math.min(1, d / (ma * mb)));
       const deg = rad2deg(Math.acos(cos));
       return {
@@ -282,10 +400,23 @@ export const vectorsSolver: Solver = {
           headline: `Find the angle between $${vecTex(a)}$ and $${vecTex(b!)}$`,
           methodName: 'Angle via the dot product',
           steps: [
-            { note: 'Rearrange the dot product formula to make the angle the subject.', latex: `\\cos\\theta = \\dfrac{\\mathbf{a} \\cdot \\mathbf{b}}{|\\mathbf{a}||\\mathbf{b}|}` },
-            { note: 'Work out the dot product.', latex: `\\mathbf{a} \\cdot \\mathbf{b} = ${a.map((x, i) => `(${fmt(x)})(${fmt(b![i])})`).join(' + ')} = ${fmt(d)}` },
-            { note: 'Work out both magnitudes.', latex: `|\\mathbf{a}| = ${fmt(ma, 4)}, \\quad |\\mathbf{b}| = ${fmt(mb, 4)}` },
-            { note: 'Substitute and take the inverse cosine.', latex: `\\theta = \\cos^{-1}\\!\\left(\\dfrac{${fmt(d)}}{${fmt(ma * mb, 4)}}\\right) = ${fmt(deg, 2)}^{\\circ}`, annotation: 'angle between' },
+            {
+              note: 'Rearrange the dot product formula to make the angle the subject.',
+              latex: `\\cos\\theta = \\dfrac{\\mathbf{a} \\cdot \\mathbf{b}}{|\\mathbf{a}||\\mathbf{b}|}`,
+            },
+            {
+              note: 'Work out the dot product.',
+              latex: `\\mathbf{a} \\cdot \\mathbf{b} = ${a.map((x, i) => `(${fmt(x)})(${fmt(b![i])})`).join(' + ')} = ${fmt(d)}`,
+            },
+            {
+              note: 'Work out both magnitudes.',
+              latex: `|\\mathbf{a}| = ${fmt(ma, 4)}, \\quad |\\mathbf{b}| = ${fmt(mb, 4)}`,
+            },
+            {
+              note: 'Substitute and take the inverse cosine.',
+              latex: `\\theta = \\cos^{-1}\\!\\left(\\dfrac{${fmt(d)}}{${fmt(ma * mb, 4)}}\\right) = ${fmt(deg, 2)}^{\\circ}`,
+              annotation: 'angle between',
+            },
           ],
           answerLatex: `\\theta = ${fmt(deg, 2)}^{\\circ}`,
         },
@@ -295,14 +426,20 @@ export const vectorsSolver: Solver = {
     if (p.op === 'collinear') {
       const [A, B, C] = [a, b!, p.c!];
       if (![B, C].every((v) => v.length === A.length)) {
-        return { ok: false, error: 'All three points need the same number of components.' };
+        return {
+          ok: false,
+          error: 'All three points need the same number of components.',
+        };
       }
       const ab = B.map((x, i) => x - A[i]);
       const ac = C.map((x, i) => x - A[i]);
       const EPS = 1e-9;
       const pivot = ab.findIndex((x) => Math.abs(x) > EPS);
       if (pivot === -1) {
-        return { ok: false, error: 'A and B must be different points to test collinearity.' };
+        return {
+          ok: false,
+          error: 'A and B must be different points to test collinearity.',
+        };
       }
       const k = ac[pivot] / ab[pivot];
       const collinear = ac.every((x, j) => Math.abs(x - k * ab[j]) < EPS);
@@ -354,7 +491,9 @@ export const vectorsSolver: Solver = {
           headline: `Test whether $${pointTex('A', A)}, ${pointTex('B', B)}, ${pointTex('C', C)}$ are collinear`,
           methodName: 'Collinearity',
           steps,
-          answerLatex: collinear ? `A,\\ B,\\ C\\ \\text{are collinear}` : `A,\\ B,\\ C\\ \\text{are not collinear}`,
+          answerLatex: collinear
+            ? `A,\\ B,\\ C\\ \\text{are collinear}`
+            : `A,\\ B,\\ C\\ \\text{are not collinear}`,
         },
       };
     }
@@ -362,8 +501,18 @@ export const vectorsSolver: Solver = {
     if (p.op === 'ratio') {
       const [A, B] = [a, b!];
       const { m, n } = p;
-      if (m === undefined || n === undefined || !Number.isFinite(m) || !Number.isFinite(n) || m <= 0 || n <= 0) {
-        return { ok: false, error: 'Both parts of the ratio must be positive numbers.' };
+      if (
+        m === undefined ||
+        n === undefined ||
+        !Number.isFinite(m) ||
+        !Number.isFinite(n) ||
+        m <= 0 ||
+        n <= 0
+      ) {
+        return {
+          ok: false,
+          error: 'Both parts of the ratio must be positive numbers.',
+        };
       }
       const numerator = A.map((x, i) => n * x + m * B[i]);
       const P = numerator.map((x) => x / (m + n));
@@ -398,7 +547,11 @@ export const vectorsSolver: Solver = {
 
     // Cross product — three dimensions only.
     if (a.length !== 3) {
-      return { ok: false, error: 'The cross product is only defined for three-dimensional vectors.' };
+      return {
+        ok: false,
+        error:
+          'The cross product is only defined for three-dimensional vectors.',
+      };
     }
     const [a1, a2, a3] = a;
     const [b1, b2, b3] = b!;
@@ -417,7 +570,11 @@ export const vectorsSolver: Solver = {
             note: 'Expand along the top row.',
             latex: `= \\mathbf{i}(${fmt(a2)}\\times${fmt(b3)} - ${fmt(a3)}\\times${fmt(b2)}) - \\mathbf{j}(${fmt(a1)}\\times${fmt(b3)} - ${fmt(a3)}\\times${fmt(b1)}) + \\mathbf{k}(${fmt(a1)}\\times${fmt(b2)} - ${fmt(a2)}\\times${fmt(b1)})`,
           },
-          { note: 'Work out each component.', latex: `= ${colTex(out)} = ${vecTex(out)}`, annotation: 'perpendicular to both' },
+          {
+            note: 'Work out each component.',
+            latex: `= ${colTex(out)} = ${vecTex(out)}`,
+            annotation: 'perpendicular to both',
+          },
         ],
         answerLatex: vecTex(out),
       },

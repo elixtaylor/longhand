@@ -57,7 +57,8 @@ function wholeCall(text: string, name: string): string | null {
     if (s[i] === '(') depth++;
     else if (s[i] === ')') {
       depth--;
-      if (depth === 0) return i === s.length - 1 ? s.slice(m[0].length, i) : null;
+      if (depth === 0)
+        return i === s.length - 1 ? s.slice(m[0].length, i) : null;
     }
   }
   return null;
@@ -75,7 +76,11 @@ function verifyAgainst(original: [string, string], x: number): boolean {
   try {
     const a = evaluateExpr(parseExpr(original[0]), { x });
     const b = evaluateExpr(parseExpr(original[1]), { x });
-    return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+    return (
+      Number.isFinite(a) &&
+      Number.isFinite(b) &&
+      Math.abs(a - b) < 1e-6 * Math.max(1, Math.abs(a), Math.abs(b))
+    );
   } catch {
     return false;
   }
@@ -84,7 +89,9 @@ function verifyAgainst(original: [string, string], x: number): boolean {
 /* ------------------------------------------------------------------ sqrt */
 
 /** `sqrt(A) = sqrt(B)` or `sqrt(A) = (anything)`: square once. */
-function trySqrt(sides: [string, string]): { text: string; note: string; before: string } | null {
+function trySqrt(
+  sides: [string, string],
+): { text: string; note: string; before: string } | null {
   for (const [sq, other] of [sides, [sides[1], sides[0]] as [string, string]]) {
     const inner = wholeCall(sq, 'sqrt') ?? wholeCall(sq, '√');
     if (inner === null) continue;
@@ -110,12 +117,20 @@ function trySqrt(sides: [string, string]): { text: string; note: string; before:
  * it breaks: that pipeline tries to represent the constant as an exact
  * fraction and the denominator it needs is astronomical.
  */
-function tryLog(sides: [string, string]): { coeffs: number[]; domain: string[]; before: string } | null {
+function tryLog(
+  sides: [string, string],
+): { coeffs: number[]; domain: string[]; before: string } | null {
   const one = new Poly(new Map([[0, Rational.int(1)]]), 'x');
 
-  for (const [lnSide, kSide] of [sides, [sides[1], sides[0]] as [string, string]]) {
+  for (const [lnSide, kSide] of [
+    sides,
+    [sides[1], sides[0]] as [string, string],
+  ]) {
     const terms = splitTopLevel(lnSide);
-    const parsed = terms.map((t) => ({ inner: wholeCall(t.text, 'ln'), sign: t.sign }));
+    const parsed = terms.map((t) => ({
+      inner: wholeCall(t.text, 'ln'),
+      sign: t.sign,
+    }));
     if (parsed.length === 0 || parsed.some((t) => t.inner === null)) continue;
 
     let k: number;
@@ -129,10 +144,17 @@ function tryLog(sides: [string, string]): { coeffs: number[]; domain: string[]; 
     let numerator: Poly;
     let denominator: Poly;
     try {
-      const factors = parsed.map((t) => ({ poly: exprToPolyFrac(parseExpr(t.inner as string), 'x'), sign: t.sign }));
+      const factors = parsed.map((t) => ({
+        poly: exprToPolyFrac(parseExpr(t.inner as string), 'x'),
+        sign: t.sign,
+      }));
       if (factors.some((f) => f.poly.den.degree() > 0)) continue; // a log argument with x underneath — not attempted
-      numerator = factors.filter((f) => f.sign === 1).reduce((acc, f) => acc.mul(f.poly.num), one);
-      denominator = factors.filter((f) => f.sign === -1).reduce((acc, f) => acc.mul(f.poly.num), one);
+      numerator = factors
+        .filter((f) => f.sign === 1)
+        .reduce((acc, f) => acc.mul(f.poly.num), one);
+      denominator = factors
+        .filter((f) => f.sign === -1)
+        .reduce((acc, f) => acc.mul(f.poly.num), one);
     } catch {
       continue;
     }
@@ -143,7 +165,9 @@ function tryLog(sides: [string, string]): { coeffs: number[]; domain: string[]; 
     const eK = Math.exp(k);
     const deg = Math.max(numerator.degree(), denominator.degree());
     const coeffs: number[] = [];
-    for (let p = 0; p <= deg; p++) coeffs[p] = numerator.get(p).toNumber() - eK * denominator.get(p).toNumber();
+    for (let p = 0; p <= deg; p++)
+      coeffs[p] =
+        numerator.get(p).toNumber() - eK * denominator.get(p).toNumber();
 
     const beforeTerms = parsed
       .map(
@@ -151,7 +175,11 @@ function tryLog(sides: [string, string]): { coeffs: number[]; domain: string[]; 
           `${i === 0 ? (t.sign < 0 ? '-' : '') : t.sign < 0 ? ' - ' : ' + '}\\ln\\left(${toLatex(parseExpr(t.inner as string))}\\right)`,
       )
       .join('');
-    return { coeffs, domain: parsed.map((t) => t.inner as string), before: `${beforeTerms} = ${fmt(k)}` };
+    return {
+      coeffs,
+      domain: parsed.map((t) => t.inner as string),
+      before: `${beforeTerms} = ${fmt(k)}`,
+    };
   }
   return null;
 }
@@ -166,7 +194,9 @@ function solveNumeric(coeffs: number[]): number[] {
   const disc = b * b - 4 * a * c;
   if (disc < -1e-9) return [];
   const s = Math.sqrt(Math.max(disc, 0));
-  return disc < 1e-9 ? [-b / (2 * a)] : [(-b + s) / (2 * a), (-b - s) / (2 * a)];
+  return disc < 1e-9
+    ? [-b / (2 * a)]
+    : [(-b + s) / (2 * a), (-b - s) / (2 * a)];
 }
 
 /* ------------------------------------------------------- a^(px+q)=b^(rx+s) */
@@ -179,9 +209,17 @@ function linTex(p: number, q: number): string {
   return xTerm ? `${xTerm} ${sign} ${fmt(Math.abs(q))}` : fmt(q);
 }
 
-function tryExponential(
-  sides: [string, string],
-): { a: number; b: number; pL: number; qL: number; pR: number; qR: number; p: number; qa: number; qb: number } | null {
+function tryExponential(sides: [string, string]): {
+  a: number;
+  b: number;
+  pL: number;
+  qL: number;
+  pR: number;
+  qR: number;
+  p: number;
+  qa: number;
+  qb: number;
+} | null {
   let left, right;
   try {
     left = parseExpr(sides[0]);
@@ -200,7 +238,13 @@ function tryExponential(
   const pL = atL(1) - qL;
   const qR = atR(0);
   const pR = atR(1) - qR;
-  if (![atL(2), atR(2)].every((v, i) => Math.abs(v - (2 * (i === 0 ? pL : pR) + (i === 0 ? qL : qR))) < 1e-9)) return null;
+  if (
+    ![atL(2), atR(2)].every(
+      (v, i) =>
+        Math.abs(v - (2 * (i === 0 ? pL : pR) + (i === 0 ? qL : qR))) < 1e-9,
+    )
+  )
+    return null;
 
   const p = pL * Math.log(a) - pR * Math.log(b);
   const qa = qL * Math.log(a);
@@ -212,7 +256,12 @@ function tryExponential(
 
 function solveImpl(input: string): SolveResult {
   const sides = splitEquation(input);
-  if (!sides) return { ok: false, error: 'Write an equation with one unknown, e.g.  sqrt(x + 1) = x  or  ln(x) + ln(x + 1) = 2.' };
+  if (!sides)
+    return {
+      ok: false,
+      error:
+        'Write an equation with one unknown, e.g.  sqrt(x + 1) = x  or  ln(x) + ln(x + 1) = 2.',
+    };
 
   let headlineLatex: string;
   try {
@@ -221,11 +270,17 @@ function solveImpl(input: string): SolveResult {
     return { ok: false, error: 'Could not read that equation.' };
   }
   const headline = `Solve $${headlineLatex}$`;
-  const steps: Step[] = [{ note: 'Write down the equation.', latex: headlineLatex }];
+  const steps: Step[] = [
+    { note: 'Write down the equation.', latex: headlineLatex },
+  ];
 
   const sqrt = trySqrt(sides);
   if (sqrt) {
-    steps.push({ note: sqrt.note, latex: sqrt.before, annotation: 'same to both sides' });
+    steps.push({
+      note: sqrt.note,
+      latex: sqrt.before,
+      annotation: 'same to both sides',
+    });
     // 'formula' always produces a full answer (unlike 'factorise', which can
     // legitimately stop at "doesn't factor" and expect a student to pick a
     // different tab) — there is no tab picker here, so the method used has to
@@ -241,12 +296,17 @@ function solveImpl(input: string): SolveResult {
     if (rejected.length) {
       steps.push({
         note: `Squaring can invent solutions that don't satisfy the original equation. Checking each: $x = ${rejected.map((r) => fmt(r, 6)).join(', ')}$ ${rejected.length > 1 ? "don't" : "doesn't"} satisfy it, so ${rejected.length > 1 ? 'those are' : 'that is'} rejected.`,
-        latex: valid.length ? `x = ${valid.map((v) => fmt(v, 6)).join(', \\quad x = ')}` : '\\text{No solution}',
+        latex: valid.length
+          ? `x = ${valid.map((v) => fmt(v, 6)).join(', \\quad x = ')}`
+          : '\\text{No solution}',
         annotation: 'extraneous check',
       });
     }
     if (!valid.length && candidates.length) {
-      return { ok: true, solution: { headline, methodName: 'Squaring both sides', steps } };
+      return {
+        ok: true,
+        solution: { headline, methodName: 'Squaring both sides', steps },
+      };
     }
     return {
       ok: true,
@@ -254,7 +314,9 @@ function solveImpl(input: string): SolveResult {
         headline,
         methodName: 'Squaring both sides',
         steps,
-        answerLatex: valid.length ? valid.map((v) => `x = ${fmt(v, 6)}`).join(', \\quad ') : inner.solution.answerLatex,
+        answerLatex: valid.length
+          ? valid.map((v) => `x = ${fmt(v, 6)}`).join(', \\quad ')
+          : inner.solution.answerLatex,
       },
     };
   }
@@ -275,7 +337,10 @@ function solveImpl(input: string): SolveResult {
       return `${fmt(c, 6)}${varPart}`;
     };
     steps.push({
-      note: degree <= 1 ? 'What is left is linear.' : 'What is left is a quadratic — solve it with the formula.',
+      note:
+        degree <= 1
+          ? 'What is left is linear.'
+          : 'What is left is a quadratic — solve it with the formula.',
       latex: `${log.coeffs
         .map(term)
         .reverse()
@@ -285,18 +350,32 @@ function solveImpl(input: string): SolveResult {
 
     const candidates = solveNumeric(log.coeffs);
     if (!candidates.length) {
-      steps.push({ note: 'That equation has no real solution.', latex: '\\text{No solution}' });
-      return { ok: true, solution: { headline, methodName: 'Combining logarithms', steps } };
+      steps.push({
+        note: 'That equation has no real solution.',
+        latex: '\\text{No solution}',
+      });
+      return {
+        ok: true,
+        solution: { headline, methodName: 'Combining logarithms', steps },
+      };
     }
-    steps.push({ note: 'Work it out.', latex: candidates.map((c) => `x = ${fmt(c, 6)}`).join(', \\quad ') });
+    steps.push({
+      note: 'Work it out.',
+      latex: candidates.map((c) => `x = ${fmt(c, 6)}`).join(', \\quad '),
+    });
 
-    const inDomain = (x: number) => log.domain.every((d) => evaluateExpr(parseExpr(d), { x }) > 0);
-    const valid = candidates.filter((x) => inDomain(x) && verifyAgainst(sides, x));
+    const inDomain = (x: number) =>
+      log.domain.every((d) => evaluateExpr(parseExpr(d), { x }) > 0);
+    const valid = candidates.filter(
+      (x) => inDomain(x) && verifyAgainst(sides, x),
+    );
     const rejected = candidates.filter((x) => !valid.includes(x));
     if (rejected.length) {
       steps.push({
         note: `A logarithm needs a positive argument. $x = ${rejected.map((r) => fmt(r, 6)).join(', ')}$ ${rejected.length > 1 ? "don't" : "doesn't"} keep every logarithm's argument positive, so ${rejected.length > 1 ? 'those are' : 'that is'} rejected.`,
-        latex: valid.length ? `x = ${valid.map((v) => fmt(v, 6)).join(', \\quad x = ')}` : '\\text{No solution}',
+        latex: valid.length
+          ? `x = ${valid.map((v) => fmt(v, 6)).join(', \\quad x = ')}`
+          : '\\text{No solution}',
         annotation: 'domain check',
       });
     }
@@ -306,7 +385,9 @@ function solveImpl(input: string): SolveResult {
         headline,
         methodName: 'Combining logarithms',
         steps,
-        answerLatex: valid.length ? valid.map((v) => `x = ${fmt(v, 6)}`).join(', \\quad ') : undefined,
+        answerLatex: valid.length
+          ? valid.map((v) => `x = ${fmt(v, 6)}`).join(', \\quad ')
+          : undefined,
       },
     };
   }
@@ -322,10 +403,17 @@ function solveImpl(input: string): SolveResult {
         annotation: 'same to both sides',
       });
       steps.push({
-        note: consistent ? 'Both sides reduce to the same constant, whatever x is.' : 'The two sides can never be equal, whatever x is.',
-        latex: consistent ? '\\text{Infinitely many solutions}' : '\\text{No solution}',
+        note: consistent
+          ? 'Both sides reduce to the same constant, whatever x is.'
+          : 'The two sides can never be equal, whatever x is.',
+        latex: consistent
+          ? '\\text{Infinitely many solutions}'
+          : '\\text{No solution}',
       });
-      return { ok: true, solution: { headline, methodName: 'Taking logarithms', steps } };
+      return {
+        ok: true,
+        solution: { headline, methodName: 'Taking logarithms', steps },
+      };
     }
     const x = (qb - qa) / p;
     steps.push({
@@ -342,19 +430,39 @@ function solveImpl(input: string): SolveResult {
       latex: `x = \\dfrac{${fmt(qb - qa, 6)}}{${fmt(p, 6)}} = ${fmt(x, 6)}`,
       annotation: 'solved',
     });
-    return { ok: true, solution: { headline, methodName: 'Taking logarithms', steps, answerLatex: `x = ${fmt(x, 6)}` } };
+    return {
+      ok: true,
+      solution: {
+        headline,
+        methodName: 'Taking logarithms',
+        steps,
+        answerLatex: `x = ${fmt(x, 6)}`,
+      },
+    };
   }
 
-  return { ok: false, error: 'Write an equation like  sqrt(x + 1) = x,  ln(x) + ln(x + 1) = 2,  or  2^x = 3^x.' };
+  return {
+    ok: false,
+    error:
+      'Write an equation like  sqrt(x + 1) = x,  ln(x) + ln(x + 1) = 2,  or  2^x = 3^x.',
+  };
 }
 
 export const reduceSolver: Solver = {
   id: 'reduce',
   title: 'Reducing before solving',
   subjects: ['Methods', 'Specialist'],
-  blurb: 'Square out a root, combine logarithms, or take logs of an exponential — then solve what is left.',
+  blurb:
+    'Square out a root, combine logarithms, or take logs of an exponential — then solve what is left.',
   placeholder: 'e.g.  sqrt(x + 1) = x   or   ln(x) + ln(x + 1) = 2',
-  methods: [{ id: 'reduce', name: 'Reduce, then solve', blurb: 'Apply one valid operation to both sides to remove the repeated function, then collect terms.' }],
+  methods: [
+    {
+      id: 'reduce',
+      name: 'Reduce, then solve',
+      blurb:
+        'Apply one valid operation to both sides to remove the repeated function, then collect terms.',
+    },
+  ],
   defaultMethodId: 'reduce',
   detect(input) {
     try {

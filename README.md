@@ -13,11 +13,11 @@ browser, and it reads like real maths rather than generated prose.
 
 You don't have to learn a syntax. Type the question the way you'd say it:
 
-> *"what is the volume of a cylinder with radius 3 and height 10"*
-> *"a triangle with sides 7 and 9 and an included angle of 40 degrees"*
-> *"solve x squared plus 5x plus 6 equals 0"*
-> *"if I invest $5000 at 4% for 3 years compounded monthly"*
-> *"probability of exactly 3 heads in 10 coin flips"*
+> _"what is the volume of a cylinder with radius 3 and height 10"_
+> _"a triangle with sides 7 and 9 and an included angle of 40 degrees"_
+> _"solve x squared plus 5x plus 6 equals 0"_
+> _"if I invest $5000 at 4% for 3 years compounded monthly"_
+> _"probability of exactly 3 heads in 10 coin flips"_
 
 Longhand rewrites that into maths, shows you **exactly how it read your question**,
 works out **which topic it belongs to**, and solves it — there is nothing to select.
@@ -28,14 +28,14 @@ If the reading is wrong you can see why straight away. Structured input
 
 School questions don't respect topic boundaries, so neither does Longhand. Ask
 
-> *"solve x² + 5x + 6 = 0 then differentiate it"*
+> _"solve x² + 5x + 6 = 0 then differentiate it"_
 
 and it works part **(a)** in quadratics and part **(b)** in calculus, telling you it read
 "it" as `x² + 5x + 6` so you can check that's what you meant. Later parts can use earlier
-answers — *"…and then find 20% of the answer"*, *"…15% of the larger root"*.
+answers — _"…and then find 20% of the answer"_, _"…15% of the larger root"_.
 
 A split has to prove itself: every piece must independently detect a topic **and** solve.
-That's what stops *"a triangle with sides 5, 6 and 7"* being torn in half at the "and".
+That's what stops _"a triangle with sides 5, 6 and 7"_ being torn in half at the "and".
 Picking a method, or reopening a past problem, settles the question on one topic and
 turns splitting off until the question changes.
 
@@ -67,39 +67,39 @@ own, so the working shows the join: differentiate, solve what you differentiated
 
 Covering SACE Stage 1 and Stage 2 (Years 11–12).
 
-| Subject | Topic | Methods you can choose |
-|---|---|---|
-| **Foundations** | Multiplication | Grid / box · Column (long) |
-| | Division | Short (bus-stop) · Long division · Chunking |
-| | Fractions | Common denominator (+ − × ÷) |
-| | Percentages | Decimal multiplier · Unitary · Reverse |
-| **General** | Linear equations | Balancing · Backtracking |
-| | Simultaneous equations | Elimination · Substitution |
-| | Networks | Shortest path (Dijkstra) · Minimum spanning tree (Kruskal) |
-| | Investing & borrowing | Compound · Simple · Depreciation · Loan repayments |
-| | Measurement | Area · Perimeter · Volume · Surface area |
-| | Right-angled triangles | Pythagoras · SOH CAH TOA |
-| | Sine & cosine rules | Sine rule · Cosine rule · Area (½ab sin C, Heron) |
-| | Statistics | Full summary · Centre · Spread · Five-number summary |
-| | Matrices | Add · Multiply · Determinant · Inverse |
-| **Methods** | Gradients, tangents & turning points | Stationary points · Gradient at a point · Tangent · Normal |
-| | Inequalities | Balancing (with sign flip) · Sign diagram |
-| | Quadratic equations | Factorising · Completing the square · Quadratic formula |
-| | Polynomials | Factor theorem · Division · Remainder theorem |
-| | Logs & exponentials | Equating indices · Taking logs |
-| | Sketching curves | Key features · Using calculus |
-| | Trigonometric equations | Unit circle |
-| | Differentiation | Power rule · Product/quotient/chain · First principles |
-| | Integration | Reverse power rule · Definite integral |
-| | Probability | Single event · Union · Intersection · Conditional |
-| | Counting & combinations | Combination (nCr) · Permutation (nPr) · Factorial |
-| | Random variables | Binomial · Normal · Confidence interval |
-| **Specialist** | Indices & surds | Simplify surd · Rationalise · Index laws |
-| | Sequences & series | Arithmetic · Geometric (incl. limiting sum) |
-| | Growth, decay & rates | Exponential model · Half-life / doubling |
-| | Vectors | Component form (dot, cross, magnitude, angle) |
-| | Complex numbers | Rectangular form · Polar form |
-| | Mathematical induction | Base case → assumption → inductive step |
+| Subject         | Topic                                | Methods you can choose                                     |
+| --------------- | ------------------------------------ | ---------------------------------------------------------- |
+| **Foundations** | Multiplication                       | Grid / box · Column (long)                                 |
+|                 | Division                             | Short (bus-stop) · Long division · Chunking                |
+|                 | Fractions                            | Common denominator (+ − × ÷)                               |
+|                 | Percentages                          | Decimal multiplier · Unitary · Reverse                     |
+| **General**     | Linear equations                     | Balancing · Backtracking                                   |
+|                 | Simultaneous equations               | Elimination · Substitution                                 |
+|                 | Networks                             | Shortest path (Dijkstra) · Minimum spanning tree (Kruskal) |
+|                 | Investing & borrowing                | Compound · Simple · Depreciation · Loan repayments         |
+|                 | Measurement                          | Area · Perimeter · Volume · Surface area                   |
+|                 | Right-angled triangles               | Pythagoras · SOH CAH TOA                                   |
+|                 | Sine & cosine rules                  | Sine rule · Cosine rule · Area (½ab sin C, Heron)          |
+|                 | Statistics                           | Full summary · Centre · Spread · Five-number summary       |
+|                 | Matrices                             | Add · Multiply · Determinant · Inverse                     |
+| **Methods**     | Gradients, tangents & turning points | Stationary points · Gradient at a point · Tangent · Normal |
+|                 | Inequalities                         | Balancing (with sign flip) · Sign diagram                  |
+|                 | Quadratic equations                  | Factorising · Completing the square · Quadratic formula    |
+|                 | Polynomials                          | Factor theorem · Division · Remainder theorem              |
+|                 | Logs & exponentials                  | Equating indices · Taking logs                             |
+|                 | Sketching curves                     | Key features · Using calculus                              |
+|                 | Trigonometric equations              | Unit circle                                                |
+|                 | Differentiation                      | Power rule · Product/quotient/chain · First principles     |
+|                 | Integration                          | Reverse power rule · Definite integral                     |
+|                 | Probability                          | Single event · Union · Intersection · Conditional          |
+|                 | Counting & combinations              | Combination (nCr) · Permutation (nPr) · Factorial          |
+|                 | Random variables                     | Binomial · Normal · Confidence interval                    |
+| **Specialist**  | Indices & surds                      | Simplify surd · Rationalise · Index laws                   |
+|                 | Sequences & series                   | Arithmetic · Geometric (incl. limiting sum)                |
+|                 | Growth, decay & rates                | Exponential model · Half-life / doubling                   |
+|                 | Vectors                              | Component form (dot, cross, magnitude, angle)              |
+|                 | Complex numbers                      | Rectangular form · Polar form                              |
+|                 | Mathematical induction               | Base case → assumption → inductive step                    |
 
 Terminology and methods follow **SACE** (Foundations / General / Methods / Specialist).
 Induction derives the closed form itself, so the proof is always of a true statement.
@@ -128,6 +128,13 @@ npm run deploy     # build + publish to GitHub Pages
 
 It builds to a static bundle in `dist/`, so it can be hosted anywhere (Vercel, Netlify, GitHub
 Pages, any static host). No backend, no API keys, works offline.
+
+## Privacy, security and contributing
+
+- [Privacy](PRIVACY.md): problems stay in browser storage; shared links contain the question.
+- [Security policy](SECURITY.md): how to report a suspected issue responsibly.
+- [Contributing](CONTRIBUTING.md): solver and validation conventions.
+- [MIT licence](LICENSE): applies to the original code and worked solutions. Imported textbook questions remain subject to [their separate content licence](CONTENT-LICENSE.md).
 
 Asset paths are relative (`base: './'` in `vite.config.ts`), so the same build runs at a domain
 root or under a subpath — state lives in the URL hash, never the path. `npm run deploy` pushes
@@ -159,27 +166,27 @@ Hand-written test cases only prove the answers someone thought to check, so
 `src/validation/` generates hundreds of problems from a seeded RNG and verifies each
 against an **independent** source of truth — never against the engine itself:
 
-| Topic | Checked against |
-|---|---|
-| Quadratics, polynomials | Substituting each root back into the equation |
-| Differentiation | A central finite difference |
-| Integration | Simpson's rule, and differentiating the result back |
-| Linear, simultaneous | Substituting the solution into every original equation |
-| Inequalities | Testing points inside and outside the claimed region |
-| Right triangles | Pythagoras |
-| Sine & cosine rules | The law of cosines, and Heron's formula |
-| Compound interest | Year-by-year iterative accumulation |
-| Combinations | Pascal's triangle recurrence |
-| Fractions, surds, percentages | Floating-point value, and forward/reverse round-trips |
+| Topic                         | Checked against                                        |
+| ----------------------------- | ------------------------------------------------------ |
+| Quadratics, polynomials       | Substituting each root back into the equation          |
+| Differentiation               | A central finite difference                            |
+| Integration                   | Simpson's rule, and differentiating the result back    |
+| Linear, simultaneous          | Substituting the solution into every original equation |
+| Inequalities                  | Testing points inside and outside the claimed region   |
+| Right triangles               | Pythagoras                                             |
+| Sine & cosine rules           | The law of cosines, and Heron's formula                |
+| Compound interest             | Year-by-year iterative accumulation                    |
+| Combinations                  | Pascal's triangle recurrence                           |
+| Fractions, surds, percentages | Floating-point value, and forward/reverse round-trips  |
 
 Because the seed is fixed, any failure reproduces exactly.
 
-The *shape* of the working is checked too, across every example in the library: no step may
+The _shape_ of the working is checked too, across every example in the library: no step may
 be blank, repeat the line above it, or go unexplained. And any arithmetic written into a
 step ("126 × 0.766044 = 96.5216") must actually hold to the figures shown — a line a student
 can't reproduce on a calculator is worse than no line at all.
 
-Steps that *justify* the next line are tested by name, because they are the ones easiest to
+Steps that _justify_ the next line are tested by name, because they are the ones easiest to
 leave out: `ln x = 5` must show `e^{ln x} = e^5` before `x = e^5`, balancing must write the
 operation on both sides before the tidy-up, and Pythagoras must square, add and root on
 separate lines.
@@ -196,7 +203,7 @@ solve, and its answer is re-derived independently before it ships.
 
 ## Scope notes
 
-Deliberately out of scope for now: photo/handwriting input; statistical *investigations* and the
+Deliberately out of scope for now: photo/handwriting input; statistical _investigations_ and the
 open-ended modelling topics (which are written up, not computed); integration by parts and by
 substitution; geometric proof. All fit the same solver interface when wanted.
 

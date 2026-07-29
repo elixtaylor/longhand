@@ -19,23 +19,28 @@
      that font or --rule changes. */
   --rule-baseline: 14.2656px;
   /* Typography — system stacks chosen for character, not the Inter/Google default */
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
-    Georgia, "Times New Roman", serif;
-  --font-ui: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system,
-    BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, "Roboto Mono", monospace;
+  --font-display:
+    'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia,
+    'Times New Roman', serif;
+  --font-ui:
+    'Avenir Next', Avenir, 'Segoe UI', system-ui, -apple-system,
+    BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  --font-mono:
+    'SF Mono', ui-monospace, Menlo, Consolas, 'Roboto Mono', monospace;
   /* Handwriting, from faces that ship with macOS and Windows — nothing is
      fetched, so the app still works offline. It ends at `cursive` so a Linux
      browser substitutes something in the right spirit rather than falling
      back to a sans-serif and losing the effect entirely. */
-  --font-hand: "Bradley Hand", "Segoe Print", "Chalkboard SE", Noteworthy,
-    "Comic Sans MS", "Comic Neue", cursive;
+  --font-hand:
+    'Bradley Hand', 'Segoe Print', 'Chalkboard SE', Noteworthy, 'Comic Sans MS',
+    'Comic Neue', cursive;
   --font-annotation: var(--font-hand);
 
   /* Shape & depth — restrained, no neon glows */
   --radius: 6px;
   --radius-lg: 12px;
-  --shadow-1: 0 1px 2px rgba(30, 27, 22, 0.06), 0 1px 1px rgba(30, 27, 22, 0.04);
+  --shadow-1:
+    0 1px 2px rgba(30, 27, 22, 0.06), 0 1px 1px rgba(30, 27, 22, 0.04);
   --shadow-2: 0 6px 20px -8px rgba(30, 27, 22, 0.18);
 
   /* Spacing scale */
@@ -55,16 +60,16 @@
 }
 
 /* ------------------------------------------------------------- Text size */
-:root[data-text-size="sm"] {
+:root[data-text-size='sm'] {
   --text-scale: 0.87;
 }
-:root[data-text-size="lg"] {
+:root[data-text-size='lg'] {
   --text-scale: 1.18;
 }
 
 /* ---------------------------------------------------------------- Editorial */
 /* Clean scientific / textbook. Warm paper, near-black ink, deep teal accent. */
-:root[data-theme="editorial"] {
+:root[data-theme='editorial'] {
   --bg: #f7f5ef;
   --bg-tint: #f0ede3;
   --surface: #fefdf9;
@@ -98,7 +103,7 @@
    The default theme (also index.html's pre-hydration data-theme, so a
    first-time visitor never flashes editorial before this applies). */
 :root,
-:root[data-theme="notebook"] {
+:root[data-theme='notebook'] {
   /* The Settings text-size control is deliberately inert here. --rule-baseline
      is a pixel constant measured against one specific rendered font size —
      everything from the ruled squares to the badge column is quantised
@@ -127,7 +132,8 @@
   --marker: #c0392b;
 
   /* real squared-paper texture (5mm grid) drawn behind the worksheet */
-  --paper-grid: linear-gradient(var(--grid) 1px, transparent 1px),
+  --paper-grid:
+    linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
 
   --focus-ring: #26467e;
@@ -146,7 +152,7 @@
 /* Approachable study app. Soft cream, forest-green accent, rounded humanist */
 /* sans display. Deliberately NOT the beige + rusty-orange + italic-serif look */
 /* that has itself become an AI tell. */
-:root[data-theme="warm"] {
+:root[data-theme='warm'] {
   --bg: #fbf4ea;
   --bg-tint: #f5ebdc;
   --surface: #fffdf9;
@@ -170,7 +176,7 @@
   --focus-ring: #2f7d63;
 
   /* rounded, friendly display uses the humanist sans (bold), not an italic serif */
-  --font-display: "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif;
+  --font-display: 'Avenir Next', Avenir, 'Segoe UI', system-ui, sans-serif;
   --display-weight: 700;
   --display-style: normal;
   --display-tracking: -0.005em;
@@ -185,8 +191,8 @@
  * one generic dark grey: editorial stays warm, notebook stays ink-blue, warm
  * stays green. Accents are lifted so they still carry on a dark ground.
  */
-:root[data-dark="on"][data-theme="editorial"],
-:root[data-dark="on"]:not([data-theme]) {
+:root[data-dark='on'][data-theme='editorial'],
+:root[data-dark='on']:not([data-theme]) {
   --bg: #16150f;
   --bg-tint: #1e1c15;
   --surface: #1b1913;
@@ -209,7 +215,7 @@
   --shadow-2: 0 6px 20px -8px rgba(0, 0, 0, 0.7);
 }
 
-:root[data-dark="on"][data-theme="notebook"] {
+:root[data-dark='on'][data-theme='notebook'] {
   --bg: #0f1626;
   --bg-tint: #151d31;
   --surface: #131b2c;
@@ -233,7 +239,7 @@
   --shadow-2: 0 6px 20px -8px rgba(0, 0, 0, 0.7);
 }
 
-:root[data-dark="on"][data-theme="warm"] {
+:root[data-dark='on'][data-theme='warm'] {
   --bg: #191510;
   --bg-tint: #221c15;
   --surface: #1e1913;

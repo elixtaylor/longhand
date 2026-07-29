@@ -16,12 +16,20 @@ import type { Method, Solver } from './types';
  */
 
 /** Everything that makes one method's working visibly different from another. */
-function fingerprint(solver: Solver, input: string, methodId: string): string | null {
+function fingerprint(
+  solver: Solver,
+  input: string,
+  methodId: string,
+): string | null {
   const r = runSolve(solver, input, methodId);
   if (!r.ok) return null;
   return JSON.stringify([
     r.solution.answerLatex ?? '',
-    r.solution.steps.map((s) => [s.latex ?? '', s.note ?? '', s.annotation ?? '']),
+    r.solution.steps.map((s) => [
+      s.latex ?? '',
+      s.note ?? '',
+      s.annotation ?? '',
+    ]),
   ]);
 }
 

@@ -31,7 +31,10 @@ function cleanFunction(input: string): string {
 
 function parseFunction(input: string): Poly {
   const poly = parsePoly(cleanFunction(input), 'x');
-  if (poly.isZeroPoly()) throw new ParseError('Enter a function of x to differentiate, e.g.  x^3 - 4x + 1');
+  if (poly.isZeroPoly())
+    throw new ParseError(
+      'Enter a function of x to differentiate, e.g.  x^3 - 4x + 1',
+    );
   return poly;
 }
 
@@ -48,7 +51,11 @@ export function differentiate(poly: Poly): Poly {
 /** A standalone monomial with its sign, e.g. "3x^{2}", "-x", "5". */
 function mono(coeff: Rational, power: number): string {
   if (power === 0) return coeffStr(coeff, true);
-  const c = coeff.eq(Rational.int(1)) ? '' : coeff.eq(Rational.int(-1)) ? '-' : coeffStr(coeff, true);
+  const c = coeff.eq(Rational.int(1))
+    ? ''
+    : coeff.eq(Rational.int(-1))
+      ? '-'
+      : coeffStr(coeff, true);
   return `${c}${power === 1 ? 'x' : `x^{${power}}`}`;
 }
 function coeffStr(coeff: Rational, withSign: boolean): string {
@@ -83,7 +90,11 @@ function byPowerRule(poly: Poly): SolveResult {
   }
 
   const answer = deriv.isZeroPoly() ? '0' : polyLatex(deriv);
-  steps.push({ note: 'Collect the terms.', latex: `f'(x) = ${answer}`, annotation: 'derivative' });
+  steps.push({
+    note: 'Collect the terms.',
+    latex: `f'(x) = ${answer}`,
+    annotation: 'derivative',
+  });
 
   return {
     ok: true,
@@ -122,7 +133,10 @@ function bivarLatex(m: Bivar): string {
     const neg = t.c.isNeg();
     const mag = t.c.abs();
     out += i === 0 ? (neg ? '-' : '') : neg ? ' - ' : ' + ';
-    const coeff = mag.eq(Rational.int(1)) && (t.xp > 0 || t.hp > 0) ? '' : coeffStr(mag, false);
+    const coeff =
+      mag.eq(Rational.int(1)) && (t.xp > 0 || t.hp > 0)
+        ? ''
+        : coeffStr(mag, false);
     const xPart = t.xp === 0 ? '' : t.xp === 1 ? 'x' : `x^{${t.xp}}`;
     const hPart = t.hp === 0 ? '' : t.hp === 1 ? 'h' : `h^{${t.hp}}`;
     out += `${coeff}${xPart}${hPart}` || '1';
@@ -194,18 +208,28 @@ function byRules(src: string): SolveResult {
   try {
     e = parseExpr(cleanFunction(src));
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Could not read that function.' };
+    return {
+      ok: false,
+      error:
+        err instanceof Error ? err.message : 'Could not read that function.',
+    };
   }
 
   let derivative: Expr;
   try {
     derivative = simplify(diffExpr(e));
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Could not differentiate that.' };
+    return {
+      ok: false,
+      error:
+        err instanceof Error ? err.message : 'Could not differentiate that.',
+    };
   }
 
   const rule = topRule(e);
-  const steps: Step[] = [{ note: 'Write the function.', latex: `f(x) = ${toLatex(e)}` }];
+  const steps: Step[] = [
+    { note: 'Write the function.', latex: `f(x) = ${toLatex(e)}` },
+  ];
 
   // Name the rule, then show its parts before substituting.
   if (rule === 'product' && e.t === 'mul') {
@@ -271,7 +295,11 @@ function byRules(src: string): SolveResult {
     });
   }
 
-  steps.push({ note: 'Simplify.', latex: `f'(x) = ${toLatex(derivative)}`, annotation: 'derivative' });
+  steps.push({
+    note: 'Simplify.',
+    latex: `f'(x) = ${toLatex(derivative)}`,
+    annotation: 'derivative',
+  });
 
   return {
     ok: true,
@@ -308,25 +336,48 @@ export const differentiationSolver: Solver = {
   blurb: 'Differentiate a polynomial in x.',
   placeholder: 'e.g.  x^3 - 4x^2 + 2x - 7',
   methods: [
-    { id: 'power', name: 'Power rule', blurb: 'Bring the power down and subtract one, term by term. The everyday method.' },
-    { id: 'rules', name: 'Product / quotient / chain', blurb: 'For products, quotients and compositions, including trig, e^x and ln x.' },
-    { id: 'first-principles', name: 'First principles', blurb: 'Straight from the limit definition — what the power rule is built on.' },
+    {
+      id: 'power',
+      name: 'Power rule',
+      blurb:
+        'Bring the power down and subtract one, term by term. The everyday method.',
+    },
+    {
+      id: 'rules',
+      name: 'Product / quotient / chain',
+      blurb:
+        'For products, quotients and compositions, including trig, e^x and ln x.',
+    },
+    {
+      id: 'first-principles',
+      name: 'First principles',
+      blurb:
+        'Straight from the limit definition — what the power rule is built on.',
+    },
   ],
   defaultMethodId: 'power',
   detect(input) {
     // Needs an explicit cue: a bare polynomial is ambiguous (solve? integrate?).
-    return /d\/dx|dy\/dx|differentiate|f'\(x\)|derivative/i.test(input) ? 0.97 : 0;
+    return /d\/dx|dy\/dx|differentiate|f'\(x\)|derivative/i.test(input)
+      ? 0.97
+      : 0;
   },
   solve(input, methodId): SolveResult {
     // Anything that isn't a plain polynomial needs the full expression engine.
-    if (methodId === 'rules' || !isPlainPolynomial(input)) return byRules(input);
+    if (methodId === 'rules' || !isPlainPolynomial(input))
+      return byRules(input);
 
     let poly: Poly;
     try {
       poly = parseFunction(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that function.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that function.',
+      };
     }
-    return methodId === 'first-principles' ? byFirstPrinciples(poly) : byPowerRule(poly);
+    return methodId === 'first-principles'
+      ? byFirstPrinciples(poly)
+      : byPowerRule(poly);
   },
 };

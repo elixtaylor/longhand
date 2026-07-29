@@ -35,31 +35,59 @@ const SHAPES: Shape[] = [
     names: ['circle'],
     dim: '2d',
     needs: ['r'],
-    area: ({ r }) => ({ formula: 'A = \\pi r^{2}', substituted: `A = \\pi \\times ${fmt(r)}^{2}`, value: PI * r * r }),
-    perimeter: ({ r }) => ({ formula: 'C = 2\\pi r', substituted: `C = 2 \\times \\pi \\times ${fmt(r)}`, value: 2 * PI * r }),
+    area: ({ r }) => ({
+      formula: 'A = \\pi r^{2}',
+      substituted: `A = \\pi \\times ${fmt(r)}^{2}`,
+      value: PI * r * r,
+    }),
+    perimeter: ({ r }) => ({
+      formula: 'C = 2\\pi r',
+      substituted: `C = 2 \\times \\pi \\times ${fmt(r)}`,
+      value: 2 * PI * r,
+    }),
   },
   {
     id: 'rectangle',
     names: ['rectangle', 'rect'],
     dim: '2d',
     needs: ['l', 'w'],
-    area: ({ l, w }) => ({ formula: 'A = l \\times w', substituted: `A = ${fmt(l)} \\times ${fmt(w)}`, value: l * w }),
-    perimeter: ({ l, w }) => ({ formula: 'P = 2(l + w)', substituted: `P = 2(${fmt(l)} + ${fmt(w)})`, value: 2 * (l + w) }),
+    area: ({ l, w }) => ({
+      formula: 'A = l \\times w',
+      substituted: `A = ${fmt(l)} \\times ${fmt(w)}`,
+      value: l * w,
+    }),
+    perimeter: ({ l, w }) => ({
+      formula: 'P = 2(l + w)',
+      substituted: `P = 2(${fmt(l)} + ${fmt(w)})`,
+      value: 2 * (l + w),
+    }),
   },
   {
     id: 'square',
     names: ['square'],
     dim: '2d',
     needs: ['s'],
-    area: ({ s }) => ({ formula: 'A = s^{2}', substituted: `A = ${fmt(s)}^{2}`, value: s * s }),
-    perimeter: ({ s }) => ({ formula: 'P = 4s', substituted: `P = 4 \\times ${fmt(s)}`, value: 4 * s }),
+    area: ({ s }) => ({
+      formula: 'A = s^{2}',
+      substituted: `A = ${fmt(s)}^{2}`,
+      value: s * s,
+    }),
+    perimeter: ({ s }) => ({
+      formula: 'P = 4s',
+      substituted: `P = 4 \\times ${fmt(s)}`,
+      value: 4 * s,
+    }),
   },
   {
     id: 'triangle',
     names: ['triangle'],
     dim: '2d',
     needs: ['b', 'h'],
-    area: ({ b, h }) => ({ formula: 'A = \\tfrac{1}{2}bh', substituted: `A = \\tfrac{1}{2} \\times ${fmt(b)} \\times ${fmt(h)}`, value: 0.5 * b * h }),
+    area: ({ b, h }) => ({
+      formula: 'A = \\tfrac{1}{2}bh',
+      substituted: `A = \\tfrac{1}{2} \\times ${fmt(b)} \\times ${fmt(h)}`,
+      value: 0.5 * b * h,
+    }),
   },
   {
     id: 'trapezium',
@@ -77,14 +105,22 @@ const SHAPES: Shape[] = [
     names: ['parallelogram'],
     dim: '2d',
     needs: ['b', 'h'],
-    area: ({ b, h }) => ({ formula: 'A = bh', substituted: `A = ${fmt(b)} \\times ${fmt(h)}`, value: b * h }),
+    area: ({ b, h }) => ({
+      formula: 'A = bh',
+      substituted: `A = ${fmt(b)} \\times ${fmt(h)}`,
+      value: b * h,
+    }),
   },
   {
     id: 'cylinder',
     names: ['cylinder'],
     dim: '3d',
     needs: ['r', 'h'],
-    volume: ({ r, h }) => ({ formula: 'V = \\pi r^{2} h', substituted: `V = \\pi \\times ${fmt(r)}^{2} \\times ${fmt(h)}`, value: PI * r * r * h }),
+    volume: ({ r, h }) => ({
+      formula: 'V = \\pi r^{2} h',
+      substituted: `V = \\pi \\times ${fmt(r)}^{2} \\times ${fmt(h)}`,
+      value: PI * r * r * h,
+    }),
     surface: ({ r, h }) => ({
       formula: 'SA = 2\\pi r^{2} + 2\\pi r h',
       substituted: `SA = 2\\pi(${fmt(r)})^{2} + 2\\pi(${fmt(r)})(${fmt(h)})`,
@@ -96,15 +132,27 @@ const SHAPES: Shape[] = [
     names: ['sphere', 'ball'],
     dim: '3d',
     needs: ['r'],
-    volume: ({ r }) => ({ formula: 'V = \\tfrac{4}{3}\\pi r^{3}', substituted: `V = \\tfrac{4}{3} \\times \\pi \\times ${fmt(r)}^{3}`, value: (4 / 3) * PI * r ** 3 }),
-    surface: ({ r }) => ({ formula: 'SA = 4\\pi r^{2}', substituted: `SA = 4 \\times \\pi \\times ${fmt(r)}^{2}`, value: 4 * PI * r * r }),
+    volume: ({ r }) => ({
+      formula: 'V = \\tfrac{4}{3}\\pi r^{3}',
+      substituted: `V = \\tfrac{4}{3} \\times \\pi \\times ${fmt(r)}^{3}`,
+      value: (4 / 3) * PI * r ** 3,
+    }),
+    surface: ({ r }) => ({
+      formula: 'SA = 4\\pi r^{2}',
+      substituted: `SA = 4 \\times \\pi \\times ${fmt(r)}^{2}`,
+      value: 4 * PI * r * r,
+    }),
   },
   {
     id: 'cone',
     names: ['cone'],
     dim: '3d',
     needs: ['r', 'h'],
-    volume: ({ r, h }) => ({ formula: 'V = \\tfrac{1}{3}\\pi r^{2} h', substituted: `V = \\tfrac{1}{3} \\times \\pi \\times ${fmt(r)}^{2} \\times ${fmt(h)}`, value: (1 / 3) * PI * r * r * h }),
+    volume: ({ r, h }) => ({
+      formula: 'V = \\tfrac{1}{3}\\pi r^{2} h',
+      substituted: `V = \\tfrac{1}{3} \\times \\pi \\times ${fmt(r)}^{2} \\times ${fmt(h)}`,
+      value: (1 / 3) * PI * r * r * h,
+    }),
     surface: ({ r, h }) => {
       const l = Math.sqrt(r * r + h * h);
       return {
@@ -125,7 +173,11 @@ const SHAPES: Shape[] = [
     names: ['prism', 'cuboid', 'box', 'rectangular prism'],
     dim: '3d',
     needs: ['l', 'w', 'h'],
-    volume: ({ l, w, h }) => ({ formula: 'V = l \\times w \\times h', substituted: `V = ${fmt(l)} \\times ${fmt(w)} \\times ${fmt(h)}`, value: l * w * h }),
+    volume: ({ l, w, h }) => ({
+      formula: 'V = l \\times w \\times h',
+      substituted: `V = ${fmt(l)} \\times ${fmt(w)} \\times ${fmt(h)}`,
+      value: l * w * h,
+    }),
     surface: ({ l, w, h }) => ({
       formula: 'SA = 2(lw + lh + wh)',
       substituted: `SA = 2(${fmt(l)}\\times${fmt(w)} + ${fmt(l)}\\times${fmt(h)} + ${fmt(w)}\\times${fmt(h)})`,
@@ -137,18 +189,26 @@ const SHAPES: Shape[] = [
     names: ['pyramid'],
     dim: '3d',
     needs: ['l', 'w', 'h'],
-    volume: ({ l, w, h }) => ({ formula: 'V = \\tfrac{1}{3} l w h', substituted: `V = \\tfrac{1}{3} \\times ${fmt(l)} \\times ${fmt(w)} \\times ${fmt(h)}`, value: (1 / 3) * l * w * h }),
+    volume: ({ l, w, h }) => ({
+      formula: 'V = \\tfrac{1}{3} l w h',
+      substituted: `V = \\tfrac{1}{3} \\times ${fmt(l)} \\times ${fmt(w)} \\times ${fmt(h)}`,
+      value: (1 / 3) * l * w * h,
+    }),
   },
 ];
 
 function findShape(input: string): Shape | undefined {
   // Longest name first so "rectangular prism" beats "rect".
   const byLength = [...SHAPES].sort(
-    (a, b) => Math.max(...b.names.map((n) => n.length)) - Math.max(...a.names.map((n) => n.length)),
+    (a, b) =>
+      Math.max(...b.names.map((n) => n.length)) -
+      Math.max(...a.names.map((n) => n.length)),
   );
   // Whole words only — otherwise "x squared" looks like a square, and
   // "coney island" like a cone.
-  return byLength.find((s) => s.names.some((n) => new RegExp(`\\b${n}\\b`, 'i').test(input)));
+  return byLength.find((s) =>
+    s.names.some((n) => new RegExp(`\\b${n}\\b`, 'i').test(input)),
+  );
 }
 
 /** Which quantity the student asked for, if they said. */
@@ -181,9 +241,22 @@ export const measurementSolver: Solver = {
   blurb: 'Area, perimeter, volume and surface area of standard shapes.',
   placeholder: 'e.g.  cylinder r=3, h=10',
   methods: [
-    { id: 'auto', name: 'What applies', blurb: 'Works out every measurement the shape supports from what you give it.' },
-    { id: 'area', name: 'Area', blurb: 'Just the area (or surface area for a solid).' },
-    { id: 'perimeter', name: 'Perimeter', blurb: 'Just the perimeter or circumference.' },
+    {
+      id: 'auto',
+      name: 'What applies',
+      blurb:
+        'Works out every measurement the shape supports from what you give it.',
+    },
+    {
+      id: 'area',
+      name: 'Area',
+      blurb: 'Just the area (or surface area for a solid).',
+    },
+    {
+      id: 'perimeter',
+      name: 'Perimeter',
+      blurb: 'Just the perimeter or circumference.',
+    },
     { id: 'volume', name: 'Volume', blurb: 'Just the volume of a solid.' },
   ],
   defaultMethodId: 'auto',
@@ -200,7 +273,8 @@ export const measurementSolver: Solver = {
     if (!shape) {
       return {
         ok: false,
-        error: 'Start with the shape name, e.g.  circle r=5,  cylinder r=3 h=10,  trapezium a=5 b=7 h=4.',
+        error:
+          'Start with the shape name, e.g.  circle r=5,  cylinder r=3 h=10,  trapezium a=5 b=7 h=4.',
       };
     }
     const p = parseParams(input);
@@ -213,17 +287,21 @@ export const measurementSolver: Solver = {
     }
 
     // Decide which quantities to work out.
-    const requested = askedFor(input) ?? (methodId !== 'auto' ? methodId : null);
+    const requested =
+      askedFor(input) ?? (methodId !== 'auto' ? methodId : null);
     const available: Array<[string, Calc | undefined]> = [
       ['area', shape.area?.(p)],
       ['perimeter', shape.perimeter?.(p)],
       ['volume', shape.volume?.(p)],
       ['surface', shape.surface?.(p)],
     ];
-    let wanted = available.filter(([, c]) => c !== undefined) as Array<[string, Calc]>;
+    let wanted = available.filter(([, c]) => c !== undefined) as Array<
+      [string, Calc]
+    >;
     if (requested) {
       // "Area" on a solid sensibly means surface area.
-      const key = requested === 'area' && shape.dim === '3d' ? 'surface' : requested;
+      const key =
+        requested === 'area' && shape.dim === '3d' ? 'surface' : requested;
       const picked = wanted.filter(([k]) => k === key);
       if (picked.length > 0) wanted = picked;
     }
@@ -237,21 +315,37 @@ export const measurementSolver: Solver = {
 
     for (const [key, calc] of wanted) {
       if (calc.extra) steps.push(...calc.extra);
-      steps.push({ note: `Write the formula for ${LABELS[key].toLowerCase()}.`, latex: calc.formula });
-      steps.push({ note: 'Substitute the measurements.', latex: calc.substituted });
+      steps.push({
+        note: `Write the formula for ${LABELS[key].toLowerCase()}.`,
+        latex: calc.formula,
+      });
+      steps.push({
+        note: 'Substitute the measurements.',
+        latex: calc.substituted,
+      });
       steps.push({
         note: 'Work it out.',
-        latex: `${LABELS[key] === 'Perimeter' && shape.id === 'circle' ? 'C' : LABELS[key].split(' ').map((w) => w[0]).join('')} = ${fmt(calc.value)}`,
+        latex: `${
+          LABELS[key] === 'Perimeter' && shape.id === 'circle'
+            ? 'C'
+            : LABELS[key]
+                .split(' ')
+                .map((w) => w[0])
+                .join('')
+        } = ${fmt(calc.value)}`,
         annotation: UNITS[key],
       });
     }
 
-    const answer = wanted.map(([k, c]) => `\\text{${LABELS[k]}} = ${fmt(c.value)}`).join(', \\quad ');
+    const answer = wanted
+      .map(([k, c]) => `\\text{${LABELS[k]}} = ${fmt(c.value)}`)
+      .join(', \\quad ');
     return {
       ok: true,
       solution: {
         headline: `Measure the ${shape.id} (${shape.needs.map((k) => `$${k} = ${fmt(p[k])}$`).join(', ')})`,
-        methodName: wanted.length === 1 ? LABELS[wanted[0][0]] : 'Standard formulae',
+        methodName:
+          wanted.length === 1 ? LABELS[wanted[0][0]] : 'Standard formulae',
         steps,
         answerLatex: answer,
       },

@@ -29,7 +29,9 @@ function read(input: string): Growth {
 
   const half = input.match(/half[\s-]?life\s*(?:of|is|=)?\s*(-?\d*\.?\d+)/i);
   if (half) g.halfLife = Number(half[1]);
-  const dbl = input.match(/doubling\s*(?:time)?\s*(?:of|is|=)?\s*(-?\d*\.?\d+)/i);
+  const dbl = input.match(
+    /doubling\s*(?:time)?\s*(?:of|is|=)?\s*(-?\d*\.?\d+)/i,
+  );
   if (dbl) g.doubling = Number(dbl[1]);
 
   // Natural phrasings that carry a value without an equals sign.
@@ -50,10 +52,14 @@ function read(input: string): Growth {
    * in the sentence that none of them claimed.
    */
   if (g.initial === undefined) {
-    const CLAIMED = /(?:%|per|after|for|t\s*=|k\s*=|half[\s-]?life|doubling|target|reaches?|drops?|falls?|grows?\s+to|down\s+to)/i;
+    const CLAIMED =
+      /(?:%|per|after|for|t\s*=|k\s*=|half[\s-]?life|doubling|target|reaches?|drops?|falls?|grows?\s+to|down\s+to)/i;
     for (const m of input.matchAll(/(-?\d*\.?\d+)/g)) {
       const before = input.slice(Math.max(0, m.index - 14), m.index);
-      const after = input.slice(m.index + m[0].length, m.index + m[0].length + 2);
+      const after = input.slice(
+        m.index + m[0].length,
+        m.index + m[0].length + 2,
+      );
       if (CLAIMED.test(before) || after.trimStart().startsWith('%')) continue;
       g.initial = Number(m[1]);
       break;
@@ -63,14 +69,18 @@ function read(input: string): Growth {
   const after = input.match(/after\s*(-?\d*\.?\d+)/i);
   if (after && g.t === undefined) g.t = Number(after[1]);
 
-  const tgt = input.match(/(?:target|reaches?|drops?\s+to|falls?\s+to|grows?\s+to|down\s+to)\s*(?:of|is|=)?\s*(-?\d*\.?\d+)/i);
+  const tgt = input.match(
+    /(?:target|reaches?|drops?\s+to|falls?\s+to|grows?\s+to|down\s+to)\s*(?:of|is|=)?\s*(-?\d*\.?\d+)/i,
+  );
   if (tgt && g.target === undefined) g.target = Number(tgt[1]);
 
   // "grows at 5% per year" / "decays at 3% per hour"
   const pct = input.match(/(-?\d*\.?\d+)\s*%\s*(?:per|a|each)?/i);
   if (pct && g.k === undefined) {
     const rate = Number(pct[1]) / 100;
-    g.k = /decay|decreas|depreciat|cool|shrink|fall/i.test(input) ? -rate : rate;
+    g.k = /decay|decreas|depreciat|cool|shrink|fall/i.test(input)
+      ? -rate
+      : rate;
   }
   return g;
 }
@@ -82,13 +92,24 @@ export const ratesSolver: Solver = {
   blurb: 'Exponential growth and decay, half-life, and dy/dt = ky.',
   placeholder: 'e.g.  half-life 5730, initial 100, t=10000',
   methods: [
-    { id: 'exponential', name: 'Exponential model', blurb: 'Solve dy/dt = ky to get y = y₀e^{kt}, then substitute.' },
-    { id: 'half-life', name: 'Half-life / doubling', blurb: 'Find the constant k from a half-life or doubling time first.' },
+    {
+      id: 'exponential',
+      name: 'Exponential model',
+      blurb: 'Solve dy/dt = ky to get y = y₀e^{kt}, then substitute.',
+    },
+    {
+      id: 'half-life',
+      name: 'Half-life / doubling',
+      blurb: 'Find the constant k from a half-life or doubling time first.',
+    },
   ],
   defaultMethodId: 'exponential',
   detect(input) {
     const l = input.toLowerCase();
-    const strong = /half[\s-]?life|doubling|exponential (growth|decay)|dy\/dt|dy\/dx\s*=\s*k|radioactive|carbon[\s-]?dating/.test(l);
+    const strong =
+      /half[\s-]?life|doubling|exponential (growth|decay)|dy\/dt|dy\/dx\s*=\s*k|radioactive|carbon[\s-]?dating/.test(
+        l,
+      );
     if (strong) return 0.95;
     if (/(growth|decay|grows|decays)/.test(l) && /%|k\s*=/.test(l)) return 0.85;
     return 0;
@@ -132,7 +153,8 @@ export const ratesSolver: Solver = {
     if (k === undefined) {
       return {
         ok: false,
-        error: 'Give a rate (k=0.05 or 5%), a half-life, or a doubling time — e.g.  half-life 5730, initial 100, t=10000.',
+        error:
+          'Give a rate (k=0.05 or 5%), a half-life, or a doubling time — e.g.  half-life 5730, initial 100, t=10000.',
       };
     }
 
@@ -171,7 +193,11 @@ export const ratesSolver: Solver = {
         note: `Set $y = ${fmt(g.target)}$ and solve for $t$ by taking natural logs.`,
         latex: `${fmt(g.target)} = ${fmt(y0)}e^{${fmt(k, 8)}t} \\;\\Rightarrow\\; t = \\dfrac{\\ln\\left(${fmt(g.target / y0, 6)}\\right)}{${fmt(k, 8)}}`,
       });
-      steps.push({ note: 'Work it out.', latex: `t = ${fmt(t, 4)}`, annotation: 'time taken' });
+      steps.push({
+        note: 'Work it out.',
+        latex: `t = ${fmt(t, 4)}`,
+        annotation: 'time taken',
+      });
       answer = `t = ${fmt(t, 4)}`;
     } else {
       steps.push({
@@ -185,7 +211,10 @@ export const ratesSolver: Solver = {
       ok: true,
       solution: {
         headline: 'Solve the growth/decay model',
-        methodName: g.halfLife !== undefined || g.doubling !== undefined ? 'Half-life / doubling' : 'Exponential model',
+        methodName:
+          g.halfLife !== undefined || g.doubling !== undefined
+            ? 'Half-life / doubling'
+            : 'Exponential model',
         steps,
         answerLatex: answer,
       },

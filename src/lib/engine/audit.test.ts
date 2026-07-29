@@ -19,9 +19,12 @@ const answer = (raw: string): string => {
 };
 const byMethod = (id: string, method: string, raw: string): string => {
   const r = getSolver(id)!.solve(raw, method);
-  return r.ok ? (r.solution.answerLatex ?? '(reasoned)') : `refused: ${r.error}`;
+  return r.ok
+    ? (r.solution.answerLatex ?? '(reasoned)')
+    : `refused: ${r.error}`;
 };
-const refused = (raw: string) => expect(answer(raw)).toMatch(/^(refused|NO DETECTION)/);
+const refused = (raw: string) =>
+  expect(answer(raw)).toMatch(/^(refused|NO DETECTION)/);
 
 describe('arithmetic is not folded across a term boundary', () => {
   /**
@@ -89,7 +92,9 @@ describe('a formula is not applied unless its preconditions hold', () => {
 
   it('still solves the triangles that do exist', () => {
     expect(answer('a=7, b=9, C=40')).toBe('c = 5.79');
-    expect(byMethod('triangle-rules', 'area', 'a=13, b=14, c=15 area')).toBe('\\text{Area} = 84');
+    expect(byMethod('triangle-rules', 'area', 'a=13, b=14, c=15 area')).toBe(
+      '\\text{Area} = 84',
+    );
   });
 });
 
@@ -103,9 +108,9 @@ describe('a conclusion without a value is still an answer', () => {
     const p = runWorked('B=67, a=49, b=38').parts[0];
     expect(p.result.ok).toBe(true);
     if (!p.result.ok) return;
-    expect(p.result.solution.steps.map((s) => s.latex ?? '').join(' ')).toContain(
-      'no triangle exists',
-    );
+    expect(
+      p.result.solution.steps.map((s) => s.latex ?? '').join(' '),
+    ).toContain('no triangle exists');
   });
 });
 
@@ -138,7 +143,9 @@ describe('the printed answer means what it says', () => {
    * answer to `d/dx tan x` was wrong as printed.
    */
   it('puts a power on the function name, not its argument', () => {
-    expect(byMethod('differentiate', 'rules', 'differentiate tan x')).toBe("f'(x) = \\sec^{2} x");
+    expect(byMethod('differentiate', 'rules', 'differentiate tan x')).toBe(
+      "f'(x) = \\sec^{2} x",
+    );
     expect(byMethod('differentiate', 'rules', 'differentiate sin(x)^3')).toBe(
       "f'(x) = 3\\sin^{2} x\\cos x",
     );
@@ -152,7 +159,9 @@ describe('the printed answer means what it says', () => {
   });
 
   it('writes a negative term as a subtraction', () => {
-    expect(byMethod('differentiate', 'rules', 'd/dx x^2 + 2cos(x)')).toBe("f'(x) = 2x - 2\\sin x");
+    expect(byMethod('differentiate', 'rules', 'd/dx x^2 + 2cos(x)')).toBe(
+      "f'(x) = 2x - 2\\sin x",
+    );
   });
 
   it('writes a horizontal tangent without an x term', () => {
@@ -181,16 +190,18 @@ describe('a reader takes the whole expression or refuses it', () => {
 describe('a stated quantity is not replaced by an assumption', () => {
   it('uses the starting amount the sentence gives', () => {
     // Continuous growth: 500e^0.5 = 824.3606. Was 164.87, from y₀ = 100.
-    expect(answer('a population of 500 grows at 5% per year, after 10 years')).toBe('y = 824.3606');
+    expect(
+      answer('a population of 500 grows at 5% per year, after 10 years'),
+    ).toBe('y = 824.3606');
   });
 
   it('reads money as compounding annually, not continuously', () => {
     // A sum of money goes to the financial solver, which compounds once a
     // year: 2000 × 1.06⁵ = $2676.45. That is the SACE reading for an
     // investment; continuous growth (2000e^0.3 = 2699.72) is for populations.
-    expect(answer('an investment of 2000 grows at 6% per year, after 5 years')).toBe(
-      'A = \\$2,676.45, \\quad I = \\$676.45',
-    );
+    expect(
+      answer('an investment of 2000 grows at 6% per year, after 5 years'),
+    ).toBe('A = \\$2,676.45, \\quad I = \\$676.45');
   });
 
   it('still assumes 100 when nothing is given', () => {
@@ -213,10 +224,16 @@ describe('worked answers stay worked', () => {
     // Quadratic — every root substitutes back to zero
     ['2x^2 + 7x - 4 = 0', 'x = \\frac{1}{2} \\quad\\text{or}\\quad x = -4'],
     ['x^2 - 5x + 6 = 0', 'x = 3 \\quad\\text{or}\\quad x = 2'],
-    ['6x^2 - 5x - 6 = 0', 'x = \\frac{3}{2} \\quad\\text{or}\\quad x = -\\frac{2}{3}'],
+    [
+      '6x^2 - 5x - 6 = 0',
+      'x = \\frac{3}{2} \\quad\\text{or}\\quad x = -\\frac{2}{3}',
+    ],
     ['4x^2 - 12x + 9 = 0', 'x = \\frac{3}{2}'],
     ['x^2 + 1 = 2x', 'x = 1'],
-    ['9x^2 - 4 = 0', 'x = \\frac{2}{3} \\quad\\text{or}\\quad x = -\\frac{2}{3}'],
+    [
+      '9x^2 - 4 = 0',
+      'x = \\frac{2}{3} \\quad\\text{or}\\quad x = -\\frac{2}{3}',
+    ],
     // Simultaneous — both equations satisfied
     ['2x + y = 7; x - y = 2', 'x = 3, \\quad y = 1'],
     ['3x + 2y = 16; 5x - 4y = 1', 'x = 3, \\quad y = \\frac{7}{2}'],
@@ -242,8 +259,10 @@ describe('worked answers stay worked', () => {
     ['gradient of y = x^3 - 2x at x = -1', '\\text{gradient} = 1'],
     ['tangent to y = x^2 at x = 2', 'y = 4x - 4'],
     ['normal to y = x^2 at x = 2', 'y = -0.25x + 4.5'],
-    ['stationary points of 2x^3 - 9x^2 + 12x - 3',
-      '\\left(1,\\; 2\\right)\\text{ maximum}, \\quad \\left(2,\\; 1\\right)\\text{ minimum}'],
+    [
+      'stationary points of 2x^3 - 9x^2 + 12x - 3',
+      '\\left(1,\\; 2\\right)\\text{ maximum}, \\quad \\left(2,\\; 1\\right)\\text{ minimum}',
+    ],
     ['stationary points of x^3 + x', '\\text{no stationary points}'],
     // Logs — e^25, and 2^5 = 32
     ['2^x = 32', 'x = 5'],
@@ -276,7 +295,10 @@ describe('worked answers stay worked', () => {
 describe('statistics, specialist and finance', () => {
   const CASES: Array<[input: string, expected: string]> = [
     // Descriptive — mean, median and the five-number summary computed directly
-    ['4, 8, 15, 16, 23, 42', '\\bar{x} = 18, \\quad \\text{median} = 15.5, \\quad s = 13.4907'],
+    [
+      '4, 8, 15, 16, 23, 42',
+      '\\bar{x} = 18, \\quad \\text{median} = 15.5, \\quad s = 13.4907',
+    ],
     // Counting — against Pascal's triangle and n!/(n−r)!
     ['10C3', '120'],
     ['20C10', '184756'],
@@ -300,8 +322,14 @@ describe('statistics, specialist and finance', () => {
     ['(3+4i)*(1-2i)', '11 - 2i'],
     ['(1+2i)/(3-4i)', '-0.2 + 0.4i'],
     // Financial — iterated year by year; the loan amortises to zero
-    ['$5000 at 4% for 3 years compound', 'A = \\$5,624.32, \\quad I = \\$624.32'],
-    ['$20000 at 7.5% for 10 years compound', 'A = \\$41,220.63, \\quad I = \\$21,220.63'],
+    [
+      '$5000 at 4% for 3 years compound',
+      'A = \\$5,624.32, \\quad I = \\$624.32',
+    ],
+    [
+      '$20000 at 7.5% for 10 years compound',
+      'A = \\$41,220.63, \\quad I = \\$21,220.63',
+    ],
     ['$5000 at 4% for 3 years simple', 'I = \\$600.00, \\quad A = \\$5,600.00'],
     ['$20000 at 15% for 4 years depreciation', 'A = \\$10,440.13'],
     ['loan $300000 at 6% for 30 years repaid monthly', 'R = \\$1,798.65'],

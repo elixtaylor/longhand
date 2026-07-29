@@ -57,7 +57,10 @@ function solveShort(n: number, d: number): SolveResult {
     steps.push({
       note: `Divide ${cur} by ${d}.`,
       latex: `${cur} \\div ${d} = ${q}${carry > 0 ? ` \\text{ r } ${carry}` : ''}`,
-      annotation: i < data.dividendDigits.length - 1 && carry > 0 ? `carry the ${carry}` : undefined,
+      annotation:
+        i < data.dividendDigits.length - 1 && carry > 0
+          ? `carry the ${carry}`
+          : undefined,
     });
   });
 
@@ -95,7 +98,8 @@ function solveLong(n: number, d: number): SolveResult {
     const q = Math.floor(cur / d);
     const prod = q * d;
     carry = cur - prod;
-    const broughtDown = i < digits.length - 1 ? `\\text{ bring down } ${digits[i + 1]}` : '';
+    const broughtDown =
+      i < digits.length - 1 ? `\\text{ bring down } ${digits[i + 1]}` : '';
     steps.push({
       note: `How many ${d}s in ${cur}? ${q}. Multiply and subtract.`,
       latex: `${d} \\times ${q} = ${prod}, \\quad ${cur} - ${prod} = ${carry}${broughtDown ? `,\\;` + broughtDown : ''}`,
@@ -171,9 +175,23 @@ export const divisionSolver: Solver = {
   blurb: 'Divide whole numbers, with the method you know.',
   placeholder: 'e.g.  864 ÷ 24',
   methods: [
-    { id: 'short', name: 'Short (bus-stop)', blurb: 'Compact working, carrying each remainder along the top. Best for smaller divisors.' },
-    { id: 'long', name: 'Long division', blurb: 'Divide, multiply, subtract, bring down — shown in full.' },
-    { id: 'chunking', name: 'Chunking', blurb: 'Subtract big multiples of the divisor and add up how many you took.' },
+    {
+      id: 'short',
+      name: 'Short (bus-stop)',
+      blurb:
+        'Compact working, carrying each remainder along the top. Best for smaller divisors.',
+    },
+    {
+      id: 'long',
+      name: 'Long division',
+      blurb: 'Divide, multiply, subtract, bring down — shown in full.',
+    },
+    {
+      id: 'chunking',
+      name: 'Chunking',
+      blurb:
+        'Subtract big multiples of the divisor and add up how many you took.',
+    },
   ],
   defaultMethodId: 'short',
   detect(input) {
@@ -186,7 +204,10 @@ export const divisionSolver: Solver = {
     try {
       pair = parseDivision(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that.',
+      };
     }
     if (methodId === 'long') return solveLong(pair.n, pair.d);
     if (methodId === 'chunking') return solveChunking(pair.n, pair.d);

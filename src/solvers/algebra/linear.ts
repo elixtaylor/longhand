@@ -21,10 +21,14 @@ interface Linear {
 function parseLinear(input: string): Linear {
   const eq = parseEquation(input, 'x');
   if (eq.lhs.degree() > 1 || eq.rhs.degree() > 1) {
-    throw new ParseError('That has an x² term — try the "Quadratic equations" topic.');
+    throw new ParseError(
+      'That has an x² term — try the "Quadratic equations" topic.',
+    );
   }
   if (input.indexOf('=') === -1) {
-    throw new ParseError('A linear equation needs an "=" sign, e.g. 3x + 4 = 10.');
+    throw new ParseError(
+      'A linear equation needs an "=" sign, e.g. 3x + 4 = 10.',
+    );
   }
   return {
     a: eq.lhs.get(1),
@@ -35,7 +39,9 @@ function parseLinear(input: string): Linear {
 }
 
 /** Solve exactly; returns the value of x, or a special outcome. */
-function solveValue(lin: Linear): { kind: 'unique'; x: Rational } | { kind: 'none' | 'infinite' } {
+function solveValue(
+  lin: Linear,
+): { kind: 'unique'; x: Rational } | { kind: 'none' | 'infinite' } {
   const A = lin.a.sub(lin.c);
   const D = lin.d.sub(lin.b);
   if (A.isZero()) return D.isZero() ? { kind: 'infinite' } : { kind: 'none' };
@@ -56,7 +62,8 @@ function solveByBalance(lin: Linear): SolveResult {
     },
   ];
 
-  if (outcome.kind !== 'unique') return terminal(lin, 'Balance method', steps, outcome.kind);
+  if (outcome.kind !== 'unique')
+    return terminal(lin, 'Balance method', steps, outcome.kind);
 
   const A = lin.a.sub(lin.c);
   let leftConst = lin.b;
@@ -106,7 +113,11 @@ function solveByBalance(lin: Linear): SolveResult {
       note: 'The left-hand side cancels down to $x$.',
       latex: `x = \\dfrac{${rl(rightConst)}}{${rl(A)}}`,
     });
-    steps.push({ note: 'Work out the division.', latex: `x = ${rl(outcome.x)}`, annotation: 'solved' });
+    steps.push({
+      note: 'Work out the division.',
+      latex: `x = ${rl(outcome.x)}`,
+      annotation: 'solved',
+    });
   } else {
     // The last line already reads x = …; repeating it would be padding.
     steps[steps.length - 1].annotation = 'solved';
@@ -114,7 +125,12 @@ function solveByBalance(lin: Linear): SolveResult {
 
   return {
     ok: true,
-    solution: { headline: headline(lin), methodName: 'Balance method', steps, answerLatex: `x = ${rl(outcome.x)}` },
+    solution: {
+      headline: headline(lin),
+      methodName: 'Balance method',
+      steps,
+      answerLatex: `x = ${rl(outcome.x)}`,
+    },
   };
 }
 
@@ -127,7 +143,8 @@ function solveByBacktracking(lin: Linear): SolveResult {
       latex: `${polyLatex(linearPoly(lin.a, lin.b))} = ${polyLatex(linearPoly(lin.c, lin.d))}`,
     },
   ];
-  if (outcome.kind !== 'unique') return terminal(lin, 'Backtracking', steps, outcome.kind);
+  if (outcome.kind !== 'unique')
+    return terminal(lin, 'Backtracking', steps, outcome.kind);
 
   const A = lin.a.sub(lin.c);
   const B = lin.b;
@@ -157,11 +174,20 @@ function solveByBacktracking(lin: Linear): SolveResult {
     latex: reverse,
     annotation: 'backwards',
   });
-  steps.push({ note: 'Simplify.', latex: `x = ${rl(outcome.x)}`, annotation: 'solved' });
+  steps.push({
+    note: 'Simplify.',
+    latex: `x = ${rl(outcome.x)}`,
+    annotation: 'solved',
+  });
 
   return {
     ok: true,
-    solution: { headline: headline(lin), methodName: 'Backtracking', steps, answerLatex: `x = ${rl(outcome.x)}` },
+    solution: {
+      headline: headline(lin),
+      methodName: 'Backtracking',
+      steps,
+      answerLatex: `x = ${rl(outcome.x)}`,
+    },
   };
 }
 
@@ -172,13 +198,21 @@ function termX(coeff: Rational): string {
   return `${rl(coeff)}x`;
 }
 
-function terminal(lin: Linear, methodName: string, steps: Step[], kind: 'none' | 'infinite'): SolveResult {
+function terminal(
+  lin: Linear,
+  methodName: string,
+  steps: Step[],
+  kind: 'none' | 'infinite',
+): SolveResult {
   steps.push({
     note:
       kind === 'none'
         ? 'The $x$-terms cancel but the constants don’t match, so there is no solution.'
         : 'Both sides are identical, so every value of $x$ works — infinitely many solutions.',
-    latex: kind === 'none' ? '\\text{No solution}' : '\\text{Infinitely many solutions}',
+    latex:
+      kind === 'none'
+        ? '\\text{No solution}'
+        : '\\text{Infinitely many solutions}',
   });
   return { ok: true, solution: { headline: headline(lin), methodName, steps } };
 }
@@ -190,8 +224,17 @@ export const linearSolver: Solver = {
   blurb: 'Solve for x in a straight-line equation.',
   placeholder: 'e.g.  3x + 4 = 2x - 5',
   methods: [
-    { id: 'balance', name: 'Balancing', blurb: 'Do the same to both sides until x is on its own. The standard method.' },
-    { id: 'backtracking', name: 'Backtracking', blurb: 'Trace how x is built up, then undo each operation in reverse.' },
+    {
+      id: 'balance',
+      name: 'Balancing',
+      blurb:
+        'Do the same to both sides until x is on its own. The standard method.',
+    },
+    {
+      id: 'backtracking',
+      name: 'Backtracking',
+      blurb: 'Trace how x is built up, then undo each operation in reverse.',
+    },
   ],
   defaultMethodId: 'balance',
   detect(input) {
@@ -212,11 +255,16 @@ export const linearSolver: Solver = {
     try {
       lin = parseLinear(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that equation.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that equation.',
+      };
     }
     if (lin.a.isZero() && lin.c.isZero()) {
       return { ok: false, error: 'There is no x to solve for.' };
     }
-    return methodId === 'backtracking' ? solveByBacktracking(lin) : solveByBalance(lin);
+    return methodId === 'backtracking'
+      ? solveByBacktracking(lin)
+      : solveByBalance(lin);
   },
 };

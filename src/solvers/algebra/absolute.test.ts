@@ -9,14 +9,22 @@ function solve(input: string) {
 }
 
 function answers(latex: string | undefined): number[] {
-  return [...(latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g)].map((m) => Number(m[1]));
+  return [...(latex ?? '').matchAll(/x\s*=\s*(-?\d*\.?\d+)/g)].map((m) =>
+    Number(m[1]),
+  );
 }
 
 describe('absolute value equations', () => {
   it('splits |expr| = k into the two cases that give it', () => {
-    expect(answers(solve('|x - 3| = 5').answerLatex).sort((a, b) => a - b)).toEqual([-2, 8]);
-    expect(answers(solve('|2x + 1| = 7').answerLatex).sort((a, b) => a - b)).toEqual([-4, 3]);
-    expect(answers(solve('abs(x) = 4').answerLatex).sort((a, b) => a - b)).toEqual([-4, 4]);
+    expect(
+      answers(solve('|x - 3| = 5').answerLatex).sort((a, b) => a - b),
+    ).toEqual([-2, 8]);
+    expect(
+      answers(solve('|2x + 1| = 7').answerLatex).sort((a, b) => a - b),
+    ).toEqual([-4, 3]);
+    expect(
+      answers(solve('abs(x) = 4').answerLatex).sort((a, b) => a - b),
+    ).toEqual([-4, 4]);
   });
 
   it('has exactly one case when k = 0', () => {
@@ -30,12 +38,16 @@ describe('absolute value equations', () => {
   });
 
   it('splits |A| = |B| into A = B or A = -B', () => {
-    expect(answers(solve('|2x+1| = |x-4|').answerLatex).sort((a, b) => a - b)).toEqual([-5, 1]);
+    expect(
+      answers(solve('|2x+1| = |x-4|').answerLatex).sort((a, b) => a - b),
+    ).toEqual([-5, 1]);
   });
 
   it('reaches brackets inside the bars via term collecting', () => {
     // |2(x-1)| = 6  →  2(x-1) = 6  or  2(x-1) = -6  →  x = 4 or x = -2
-    expect(answers(solve('|2(x-1)| = 6').answerLatex).sort((a, b) => a - b)).toEqual([-2, 4]);
+    expect(
+      answers(solve('|2(x-1)| = 6').answerLatex).sort((a, b) => a - b),
+    ).toEqual([-2, 4]);
   });
 
   it('solves |A| = C(x) and rejects a root where C goes negative', () => {
@@ -47,7 +59,9 @@ describe('absolute value equations', () => {
   });
 
   it('keeps both roots of |A| = C(x) when C stays non-negative at each', () => {
-    expect(answers(solve('|2x-3| = x+3').answerLatex).sort((a, b) => a - b)).toEqual([0, 6]);
+    expect(
+      answers(solve('|2x-3| = x+3').answerLatex).sort((a, b) => a - b),
+    ).toEqual([0, 6]);
   });
 
   it('reports no solution when every case is extraneous against the domain', () => {

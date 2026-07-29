@@ -19,10 +19,12 @@ const EPS = 1e-9;
 function classify(list: number[]): 'arithmetic' | 'geometric' | null {
   if (list.length < 3) return null;
   const d = list[1] - list[0];
-  if (list.every((v, i) => i === 0 || Math.abs(v - list[i - 1] - d) < EPS)) return 'arithmetic';
+  if (list.every((v, i) => i === 0 || Math.abs(v - list[i - 1] - d) < EPS))
+    return 'arithmetic';
   if (list[0] !== 0) {
     const r = list[1] / list[0];
-    if (list.every((v, i) => i === 0 || Math.abs(v - list[i - 1] * r) < EPS)) return 'geometric';
+    if (list.every((v, i) => i === 0 || Math.abs(v - list[i - 1] * r) < EPS))
+      return 'geometric';
   }
   return null;
 }
@@ -52,7 +54,9 @@ function read(input: string, methodId: string): Seq {
   if (terms) {
     const kind = classify(terms);
     if (!kind) {
-      throw new Error('That list is neither arithmetic (constant difference) nor geometric (constant ratio).');
+      throw new Error(
+        'That list is neither arithmetic (constant difference) nor geometric (constant ratio).',
+      );
     }
     return {
       a: terms[0],
@@ -67,10 +71,17 @@ function read(input: string, methodId: string): Seq {
   const d = p.d;
   const r = p.r;
   if (a === undefined || (d === undefined && r === undefined)) {
-    throw new Error('Give a list like  3, 7, 11, 15  or values like  a=3, d=4, n=10.');
+    throw new Error(
+      'Give a list like  3, 7, 11, 15  or values like  a=3, d=4, n=10.',
+    );
   }
   const kind = d !== undefined ? 'arithmetic' : 'geometric';
-  return { a, step: (d ?? r)!, kind: methodId === 'geometric' && r !== undefined ? 'geometric' : kind, n };
+  return {
+    a,
+    step: (d ?? r)!,
+    kind: methodId === 'geometric' && r !== undefined ? 'geometric' : kind,
+    n,
+  };
 }
 
 function arithmetic(s: Seq): SolveResult {
@@ -93,7 +104,10 @@ function arithmetic(s: Seq): SolveResult {
     note: 'Write down the first term and the common difference.',
     latex: `a = ${fmt(a)}, \\quad d = ${fmt(d)}`,
   });
-  steps.push({ note: 'The rule for the nth term of an arithmetic sequence:', latex: `t_n = a + (n-1)d` });
+  steps.push({
+    note: 'The rule for the nth term of an arithmetic sequence:',
+    latex: `t_n = a + (n-1)d`,
+  });
   steps.push({
     note: 'Substitute a and d to get the rule for this sequence.',
     latex: `t_n = ${fmt(a)} + (n-1)(${fmt(d)}) = ${ruleLatex(a, d)}`,
@@ -103,7 +117,10 @@ function arithmetic(s: Seq): SolveResult {
     note: `Find the ${n}th term.`,
     latex: `t_{${n}} = ${fmt(a)} + (${n}-1)(${fmt(d)}) = ${fmt(tn)}`,
   });
-  steps.push({ note: 'The sum of the first n terms:', latex: `S_n = \\dfrac{n}{2}\\left(2a + (n-1)d\\right)` });
+  steps.push({
+    note: 'The sum of the first n terms:',
+    latex: `S_n = \\dfrac{n}{2}\\left(2a + (n-1)d\\right)`,
+  });
   steps.push({
     note: `Substitute to find the sum of the first ${n} terms.`,
     latex: `S_{${n}} = \\dfrac{${n}}{2}\\left(2(${fmt(a)}) + (${n}-1)(${fmt(d)})\\right) = ${fmt(sum)}`,
@@ -139,13 +156,22 @@ function geometric(s: Seq): SolveResult {
       note: 'Check the ratios between consecutive terms.',
       latex: terms
         .slice(1)
-        .map((v, i) => `\\dfrac{${fmt(v)}}{${fmt(terms[i])}} = ${fmt(v / terms[i], 4)}`)
+        .map(
+          (v, i) =>
+            `\\dfrac{${fmt(v)}}{${fmt(terms[i])}} = ${fmt(v / terms[i], 4)}`,
+        )
         .join(', \\quad '),
       annotation: 'constant → geometric',
     });
   }
-  steps.push({ note: 'Write down the first term and the common ratio.', latex: `a = ${fmt(a)}, \\quad r = ${fmt(r)}` });
-  steps.push({ note: 'The rule for the nth term of a geometric sequence:', latex: `t_n = a r^{\\,n-1}` });
+  steps.push({
+    note: 'Write down the first term and the common ratio.',
+    latex: `a = ${fmt(a)}, \\quad r = ${fmt(r)}`,
+  });
+  steps.push({
+    note: 'The rule for the nth term of a geometric sequence:',
+    latex: `t_n = a r^{\\,n-1}`,
+  });
   steps.push({
     note: 'Substitute a and r to get the rule for this sequence.',
     latex: `t_n = ${fmt(a)} \\times (${fmt(r)})^{\\,n-1}`,
@@ -158,11 +184,17 @@ function geometric(s: Seq): SolveResult {
 
   let answer = `t_{${n}} = ${fmt(tn, 4)}`;
   if (Math.abs(r - 1) < EPS) {
-    steps.push({ note: 'With r = 1 every term is the same, so the sum is just n × a.', latex: `S_{${n}} = ${n} \\times ${fmt(a)} = ${fmt(n * a)}` });
+    steps.push({
+      note: 'With r = 1 every term is the same, so the sum is just n × a.',
+      latex: `S_{${n}} = ${n} \\times ${fmt(a)} = ${fmt(n * a)}`,
+    });
     answer += `, \\quad S_{${n}} = ${fmt(n * a)}`;
   } else {
     const sum = (a * (Math.pow(r, n) - 1)) / (r - 1);
-    steps.push({ note: 'The sum of the first n terms:', latex: `S_n = \\dfrac{a(r^{n} - 1)}{r - 1}` });
+    steps.push({
+      note: 'The sum of the first n terms:',
+      latex: `S_n = \\dfrac{a(r^{n} - 1)}{r - 1}`,
+    });
     steps.push({
       note: `Substitute to find the sum of the first ${n} terms.`,
       latex: `S_{${n}} = \\dfrac{${fmt(a)}\\left((${fmt(r)})^{${n}} - 1\\right)}{${fmt(r)} - 1} = ${fmt(sum, 4)}`,
@@ -199,19 +231,32 @@ export const sequencesSolver: Solver = {
   blurb: 'Arithmetic and geometric sequences: nth term and sums.',
   placeholder: 'e.g.  3, 7, 11, 15   or   a=3, r=2, n=10',
   methods: [
-    { id: 'arithmetic', name: 'Arithmetic', blurb: 'Constant difference: tₙ = a + (n−1)d, Sₙ = n/2(2a + (n−1)d).' },
-    { id: 'geometric', name: 'Geometric', blurb: 'Constant ratio: tₙ = arⁿ⁻¹, Sₙ = a(rⁿ−1)/(r−1), plus the limiting sum.' },
+    {
+      id: 'arithmetic',
+      name: 'Arithmetic',
+      blurb: 'Constant difference: tₙ = a + (n−1)d, Sₙ = n/2(2a + (n−1)d).',
+    },
+    {
+      id: 'geometric',
+      name: 'Geometric',
+      blurb:
+        'Constant ratio: tₙ = arⁿ⁻¹, Sₙ = a(rⁿ−1)/(r−1), plus the limiting sum.',
+    },
   ],
   defaultMethodId: 'arithmetic',
   detect(input) {
-    const explicit = /sequence|series|nth term|arithmetic|geometric|common (difference|ratio)/i.test(input);
+    const explicit =
+      /sequence|series|nth term|arithmetic|geometric|common (difference|ratio)/i.test(
+        input,
+      );
     // A list of three or more numbers that follows a constant pattern. Any
     // key=value pairs are set aside first, so "n=10  3, 7, 11, 15" — asking
     // for the 10th term of a listed sequence — still reads as a list.
     const list = listFrom(input);
     if (list && classify(list)) return explicit ? 0.97 : 0.9;
     const p = parseParams(input);
-    if (p.a !== undefined && (p.d !== undefined || p.r !== undefined)) return explicit ? 0.97 : 0.85;
+    if (p.a !== undefined && (p.d !== undefined || p.r !== undefined))
+      return explicit ? 0.97 : 0.85;
     return 0;
   },
   solve(input, methodId): SolveResult {
@@ -219,10 +264,19 @@ export const sequencesSolver: Solver = {
     try {
       s = read(input, methodId);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that sequence.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that sequence.',
+      };
     }
     // A typed list tells us which kind it is; otherwise trust the chosen tab.
-    const kind = s.terms ? s.kind : methodId === 'geometric' ? 'geometric' : s.kind;
-    return kind === 'geometric' ? geometric({ ...s, kind }) : arithmetic({ ...s, kind });
+    const kind = s.terms
+      ? s.kind
+      : methodId === 'geometric'
+        ? 'geometric'
+        : s.kind;
+    return kind === 'geometric'
+      ? geometric({ ...s, kind })
+      : arithmetic({ ...s, kind });
   },
 };

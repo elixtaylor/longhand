@@ -1,7 +1,11 @@
 import { polynomialsSolver } from './polynomials';
 import { logarithmsSolver } from './logarithms';
 
-const sol = (s: { solve: (i: string, m: string) => any }, input: string, method: string) => {
+const sol = (
+  s: { solve: (i: string, m: string) => any },
+  input: string,
+  method: string,
+) => {
   const r = s.solve(input, method);
   expect(r.ok, `failed to solve "${input}": ${r.ok ? '' : r.error}`).toBe(true);
   return r.ok ? r.solution : null!;
@@ -18,14 +22,22 @@ describe('polynomialsSolver', () => {
   });
 
   it('divides exactly when the divisor is a factor', () => {
-    const s = sol(polynomialsSolver, 'x^3 - 2x^2 - 5x + 6 ÷ (x - 1)', 'division');
+    const s = sol(
+      polynomialsSolver,
+      'x^3 - 2x^2 - 5x + 6 ÷ (x - 1)',
+      'division',
+    );
     // quotient is x² − x − 6
     expect(s.answerLatex).toBe('x^{2} - x - 6');
   });
 
   it('finds a remainder with the remainder theorem', () => {
     // P(x) = x³ + 2x − 3 at x = 2 → 8 + 4 − 3 = 9
-    const s = sol(polynomialsSolver, 'remainder x^3 + 2x - 3 ÷ (x - 2)', 'remainder');
+    const s = sol(
+      polynomialsSolver,
+      'remainder x^3 + 2x - 3 ÷ (x - 2)',
+      'remainder',
+    );
     expect(s.answerLatex).toBe('P(2) = 9');
   });
 
@@ -56,26 +68,36 @@ describe('logarithmsSolver', () => {
 
   it('handles a coefficient in front', () => {
     // 5 × 2^x = 40 → 2^x = 8 → x = 3
-    expect(sol(logarithmsSolver, '5*2^x = 40', 'same-base').answerLatex).toBe('x = 3');
+    expect(sol(logarithmsSolver, '5*2^x = 40', 'same-base').answerLatex).toBe(
+      'x = 3',
+    );
   });
 
   it('handles a multiple of x in the index', () => {
     // 2^(3x) = 64 → 3x = 6 → x = 2
-    expect(sol(logarithmsSolver, '2^(3x) = 64', 'same-base').answerLatex).toBe('x = 2');
+    expect(sol(logarithmsSolver, '2^(3x) = 64', 'same-base').answerLatex).toBe(
+      'x = 2',
+    );
   });
 
   it('evaluates an exact logarithm', () => {
-    expect(sol(logarithmsSolver, 'log2(32)', 'same-base').answerLatex).toContain('= 5');
+    expect(
+      sol(logarithmsSolver, 'log2(32)', 'same-base').answerLatex,
+    ).toContain('= 5');
   });
 
   it('solves a logarithmic equation', () => {
     // log x = 3 → x = 1000
-    expect(sol(logarithmsSolver, 'log(x) = 3', 'same-base').answerLatex).toBe('x = 1000');
+    expect(sol(logarithmsSolver, 'log(x) = 3', 'same-base').answerLatex).toBe(
+      'x = 1000',
+    );
   });
 
   it('solves a natural-log equation', () => {
     // ln x = 2 → e² = 7.389056
-    expect(sol(logarithmsSolver, 'ln x = 2', 'same-base').answerLatex).toBe('x = 7.389056');
+    expect(sol(logarithmsSolver, 'ln x = 2', 'same-base').answerLatex).toBe(
+      'x = 7.389056',
+    );
   });
 
   it('rejects an impossible exponential', () => {
@@ -88,7 +110,9 @@ describe('logarithmsSolver', () => {
     const s = sol(logarithmsSolver, '4^x+2^(x+1)-15=0', 'same-base');
     expect(s.methodName).toBe('Reducible to a quadratic');
     expect(s.answerLatex).toBe('x = 1.584963');
-    expect(s.steps.some((step: { latex?: string }) => step.latex?.includes('u = 3'))).toBe(true);
+    expect(
+      s.steps.some((step: { latex?: string }) => step.latex?.includes('u = 3')),
+    ).toBe(true);
     expect(s.answerLatex).not.toContain('-5');
   });
 
@@ -120,6 +144,8 @@ describe('logarithmsSolver', () => {
   });
 
   it('does not misread a fraction of logs with genuinely different bases', () => {
-    expect(logarithmsSolver.solve('log_2(16)/log_3(8)', 'same-base').ok).toBe(false);
+    expect(logarithmsSolver.solve('log_2(16)/log_3(8)', 'same-base').ok).toBe(
+      false,
+    );
   });
 });

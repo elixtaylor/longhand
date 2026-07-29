@@ -2,7 +2,11 @@ import { multiplicationSolver } from './multiplication';
 import { divisionSolver } from './division';
 import { fractionsSolver } from './fractions';
 
-const ans = (s: { solve: (i: string, m: string) => any }, input: string, method: string) => {
+const ans = (
+  s: { solve: (i: string, m: string) => any },
+  input: string,
+  method: string,
+) => {
   const r = s.solve(input, method);
   return r.ok ? r.solution.answerLatex : undefined;
 };
@@ -28,8 +32,12 @@ describe('divisionSolver', () => {
     expect(ans(divisionSolver, '864 ÷ 24', 'chunking')).toBe('36');
   });
   it('reports a remainder', () => {
-    expect(ans(divisionSolver, '100 / 7', 'short')).toBe('14 \\text{ remainder } 2');
-    expect(ans(divisionSolver, '100 / 7', 'chunking')).toBe('14 \\text{ remainder } 2');
+    expect(ans(divisionSolver, '100 / 7', 'short')).toBe(
+      '14 \\text{ remainder } 2',
+    );
+    expect(ans(divisionSolver, '100 / 7', 'chunking')).toBe(
+      '14 \\text{ remainder } 2',
+    );
   });
   it('rejects division by zero', () => {
     expect(divisionSolver.solve('5 / 0', 'short').ok).toBe(false);
@@ -38,13 +46,17 @@ describe('divisionSolver', () => {
 
 describe('fractionsSolver', () => {
   it('adds with a common denominator', () => {
-    expect(ans(fractionsSolver, '3/4 + 1/6', 'standard')).toBe('\\frac{11}{12}');
+    expect(ans(fractionsSolver, '3/4 + 1/6', 'standard')).toBe(
+      '\\frac{11}{12}',
+    );
   });
   it('subtracts', () => {
     expect(ans(fractionsSolver, '1/2 - 1/3', 'standard')).toBe('\\frac{1}{6}');
   });
   it('multiplies and simplifies', () => {
-    expect(ans(fractionsSolver, '2/3 × 5/7', 'standard')).toBe('\\frac{10}{21}');
+    expect(ans(fractionsSolver, '2/3 × 5/7', 'standard')).toBe(
+      '\\frac{10}{21}',
+    );
     expect(ans(fractionsSolver, '2/4 × 2/1', 'standard')).toBe('1');
   });
   it('divides by the reciprocal', () => {

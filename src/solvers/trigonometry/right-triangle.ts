@@ -1,5 +1,16 @@
-import { fmt, parseParams, formatParams, deg2rad, rad2deg } from '../../lib/math/num';
-import type { Solver, Step, SolveResult, FieldSchema } from '../../lib/engine/types';
+import {
+  fmt,
+  parseParams,
+  formatParams,
+  deg2rad,
+  rad2deg,
+} from '../../lib/math/num';
+import type {
+  Solver,
+  Step,
+  SolveResult,
+  FieldSchema,
+} from '../../lib/engine/types';
 
 /**
  * Right-angled triangles. Sides a and b are the legs, c the hypotenuse;
@@ -35,8 +46,16 @@ function countKnown(rt: RT): number {
 
 const DEG = '^{\\circ}';
 
-function finish(steps: Step[], methodName: string, headline: string, answer: string): SolveResult {
-  return { ok: true, solution: { headline, methodName, steps, answerLatex: answer } };
+function finish(
+  steps: Step[],
+  methodName: string,
+  headline: string,
+  answer: string,
+): SolveResult {
+  return {
+    ok: true,
+    solution: { headline, methodName, steps, answerLatex: answer },
+  };
 }
 
 /** A scale drawing of the finished triangle, once all three sides are known. */
@@ -91,7 +110,12 @@ function byPythagoras(rt: RT): SolveResult {
       annotation: 'hypotenuse',
     });
     steps.push(diagramStep(a, b, cc));
-    return finish(steps, 'Pythagoras’ theorem', `Find the missing side ($a = ${fmt(a)}$, $b = ${fmt(b)}$)`, `c = ${fmt(cc)}`);
+    return finish(
+      steps,
+      'Pythagoras’ theorem',
+      `Find the missing side ($a = ${fmt(a)}$, $b = ${fmt(b)}$)`,
+      `c = ${fmt(cc)}`,
+    );
   }
 
   const known = a !== undefined ? a : b!;
@@ -99,7 +123,11 @@ function byPythagoras(rt: RT): SolveResult {
   const target = a !== undefined ? 'b' : 'a';
   const hyp = c!;
   if (hyp <= known) {
-    return { ok: false, error: 'The hypotenuse (c) must be the longest side of a right-angled triangle.' };
+    return {
+      ok: false,
+      error:
+        'The hypotenuse (c) must be the longest side of a right-angled triangle.',
+    };
   }
   const other = Math.sqrt(hyp * hyp - known * known);
   steps.push({
@@ -124,9 +152,16 @@ function byPythagoras(rt: RT): SolveResult {
     annotation: 'missing side',
   });
   steps.push(
-    target === 'b' ? diagramStep(known, other, hyp) : diagramStep(other, known, hyp),
+    target === 'b'
+      ? diagramStep(known, other, hyp)
+      : diagramStep(other, known, hyp),
   );
-  return finish(steps, 'Pythagoras’ theorem', `Find the missing side ($${label} = ${fmt(known)}$, $c = ${fmt(hyp)}$)`, `${target} = ${fmt(other)}`);
+  return finish(
+    steps,
+    'Pythagoras’ theorem',
+    `Find the missing side ($${label} = ${fmt(known)}$, $c = ${fmt(hyp)}$)`,
+    `${target} = ${fmt(other)}`,
+  );
 }
 
 /* ------------------------------------------------------------ Trig ratios */
@@ -171,7 +206,12 @@ function byTrigRatio(rt: RT): SolveResult {
         latex: `a = ${fmt(side, 4)}`,
         annotation: 'opposite side',
       });
-      return finish(steps, 'Trigonometric ratios', `Find the missing side ($A = ${fmt(A)}${DEG}$, $c = ${fmt(c)}$)`, `a = ${fmt(side)}`);
+      return finish(
+        steps,
+        'Trigonometric ratios',
+        `Find the missing side ($A = ${fmt(A)}${DEG}$, $c = ${fmt(c)}$)`,
+        `a = ${fmt(side)}`,
+      );
     }
     if (a !== undefined) {
       const hyp = a / Math.sin(r);
@@ -184,7 +224,12 @@ function byTrigRatio(rt: RT): SolveResult {
         latex: `c = \\dfrac{${fmt(a)}}{\\sin ${fmt(A)}${DEG}} = ${fmt(hyp)}`,
         annotation: 'hypotenuse',
       });
-      return finish(steps, 'Trigonometric ratios', `Find the missing side ($A = ${fmt(A)}${DEG}$, $a = ${fmt(a)}$)`, `c = ${fmt(hyp)}`);
+      return finish(
+        steps,
+        'Trigonometric ratios',
+        `Find the missing side ($A = ${fmt(A)}${DEG}$, $a = ${fmt(a)}$)`,
+        `c = ${fmt(hyp)}`,
+      );
     }
     if (b !== undefined) {
       const opp = b * Math.tan(r);
@@ -205,31 +250,76 @@ function byTrigRatio(rt: RT): SolveResult {
         latex: `a = ${fmt(opp, 4)}`,
         annotation: 'opposite side',
       });
-      return finish(steps, 'Trigonometric ratios', `Find the missing side ($A = ${fmt(A)}${DEG}$, $b = ${fmt(b)}$)`, `a = ${fmt(opp)}`);
+      return finish(
+        steps,
+        'Trigonometric ratios',
+        `Find the missing side ($A = ${fmt(A)}${DEG}$, $b = ${fmt(b)}$)`,
+        `a = ${fmt(opp)}`,
+      );
     }
   }
 
   // Case 2: two sides known → find the angle with an inverse ratio.
   if (a !== undefined && c !== undefined) {
     const ang = rad2deg(Math.asin(a / c));
-    steps.push({ note: 'We know the opposite side and the hypotenuse, so use sine.', latex: `\\sin A = \\dfrac{${fmt(a)}}{${fmt(c)}} = ${fmt(a / c, 4)}` });
-    steps.push({ note: 'Apply the inverse sine to find the angle.', latex: `A = \\sin^{-1}\\left(${fmt(a / c, 4)}\\right) = ${fmt(ang)}${DEG}`, annotation: 'angle' });
-    return finish(steps, 'Trigonometric ratios', `Find the angle ($a = ${fmt(a)}$, $c = ${fmt(c)}$)`, `A = ${fmt(ang)}${DEG}`);
+    steps.push({
+      note: 'We know the opposite side and the hypotenuse, so use sine.',
+      latex: `\\sin A = \\dfrac{${fmt(a)}}{${fmt(c)}} = ${fmt(a / c, 4)}`,
+    });
+    steps.push({
+      note: 'Apply the inverse sine to find the angle.',
+      latex: `A = \\sin^{-1}\\left(${fmt(a / c, 4)}\\right) = ${fmt(ang)}${DEG}`,
+      annotation: 'angle',
+    });
+    return finish(
+      steps,
+      'Trigonometric ratios',
+      `Find the angle ($a = ${fmt(a)}$, $c = ${fmt(c)}$)`,
+      `A = ${fmt(ang)}${DEG}`,
+    );
   }
   if (b !== undefined && c !== undefined) {
     const ang = rad2deg(Math.acos(b / c));
-    steps.push({ note: 'We know the adjacent side and the hypotenuse, so use cosine.', latex: `\\cos A = \\dfrac{${fmt(b)}}{${fmt(c)}} = ${fmt(b / c, 4)}` });
-    steps.push({ note: 'Apply the inverse cosine to find the angle.', latex: `A = \\cos^{-1}\\left(${fmt(b / c, 4)}\\right) = ${fmt(ang)}${DEG}`, annotation: 'angle' });
-    return finish(steps, 'Trigonometric ratios', `Find the angle ($b = ${fmt(b)}$, $c = ${fmt(c)}$)`, `A = ${fmt(ang)}${DEG}`);
+    steps.push({
+      note: 'We know the adjacent side and the hypotenuse, so use cosine.',
+      latex: `\\cos A = \\dfrac{${fmt(b)}}{${fmt(c)}} = ${fmt(b / c, 4)}`,
+    });
+    steps.push({
+      note: 'Apply the inverse cosine to find the angle.',
+      latex: `A = \\cos^{-1}\\left(${fmt(b / c, 4)}\\right) = ${fmt(ang)}${DEG}`,
+      annotation: 'angle',
+    });
+    return finish(
+      steps,
+      'Trigonometric ratios',
+      `Find the angle ($b = ${fmt(b)}$, $c = ${fmt(c)}$)`,
+      `A = ${fmt(ang)}${DEG}`,
+    );
   }
   if (a !== undefined && b !== undefined) {
     const ang = rad2deg(Math.atan(a / b));
-    steps.push({ note: 'We know the opposite and adjacent sides, so use tangent.', latex: `\\tan A = \\dfrac{${fmt(a)}}{${fmt(b)}} = ${fmt(a / b, 4)}` });
-    steps.push({ note: 'Apply the inverse tangent to find the angle.', latex: `A = \\tan^{-1}\\left(${fmt(a / b, 4)}\\right) = ${fmt(ang)}${DEG}`, annotation: 'angle' });
-    return finish(steps, 'Trigonometric ratios', `Find the angle ($a = ${fmt(a)}$, $b = ${fmt(b)}$)`, `A = ${fmt(ang)}${DEG}`);
+    steps.push({
+      note: 'We know the opposite and adjacent sides, so use tangent.',
+      latex: `\\tan A = \\dfrac{${fmt(a)}}{${fmt(b)}} = ${fmt(a / b, 4)}`,
+    });
+    steps.push({
+      note: 'Apply the inverse tangent to find the angle.',
+      latex: `A = \\tan^{-1}\\left(${fmt(a / b, 4)}\\right) = ${fmt(ang)}${DEG}`,
+      annotation: 'angle',
+    });
+    return finish(
+      steps,
+      'Trigonometric ratios',
+      `Find the angle ($a = ${fmt(a)}$, $b = ${fmt(b)}$)`,
+      `A = ${fmt(ang)}${DEG}`,
+    );
   }
 
-  return { ok: false, error: 'Give an angle and a side (e.g. A=30, c=10), or two sides (e.g. a=5, c=13).' };
+  return {
+    ok: false,
+    error:
+      'Give an angle and a side (e.g. A=30, c=10), or two sides (e.g. a=5, c=13).',
+  };
 }
 
 // Shared by both methods below: which technique applies follows from which
@@ -273,13 +363,17 @@ export const rightTriangleSolver: Solver = {
     const explicit = /right|pythag|hyp|opp|adj|soh|cah|toa/i.test(input);
     const sides = [rt.a, rt.b, rt.c].filter((v) => v !== undefined).length;
     const angles = [rt.A, rt.B].filter((v) => v !== undefined).length;
-    if (sides === 2 || (sides === 1 && angles === 1)) return explicit ? 0.95 : 0.75;
+    if (sides === 2 || (sides === 1 && angles === 1))
+      return explicit ? 0.95 : 0.75;
     return 0;
   },
   solve(input, methodId): SolveResult {
     const rt = read(input);
     if (countKnown(rt) < 2) {
-      return { ok: false, error: 'Give two known values, e.g.  a=3, b=4  or  A=30, c=10.' };
+      return {
+        ok: false,
+        error: 'Give two known values, e.g.  a=3, b=4  or  A=30, c=10.',
+      };
     }
     const sides = [rt.a, rt.b, rt.c].filter((v) => v !== undefined).length;
     const hasAngle = rt.A !== undefined || rt.B !== undefined;
@@ -288,7 +382,10 @@ export const rightTriangleSolver: Solver = {
     if (methodId === 'pythagoras') {
       if (sides >= 2) return byPythagoras(rt);
       if (hasAngle) return byTrigRatio(rt);
-      return { ok: false, error: 'Pythagoras needs two side lengths, e.g.  a=3, b=4.' };
+      return {
+        ok: false,
+        error: 'Pythagoras needs two side lengths, e.g.  a=3, b=4.',
+      };
     }
     if (sides >= 2 && !hasAngle) return byTrigRatio(rt);
     return byTrigRatio(rt);

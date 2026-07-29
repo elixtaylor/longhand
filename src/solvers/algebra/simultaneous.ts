@@ -32,7 +32,8 @@ function coeff(str: string): Rational {
 
 function parseEq(input: string): Eq {
   const parts = normalise(input).split('=');
-  if (parts.length !== 2) throw new ParseError(`Each equation needs one "=" (got "${input}").`);
+  if (parts.length !== 2)
+    throw new ParseError(`Each equation needs one "=" (got "${input}").`);
   const l = parseSide(parts[0]);
   const r = parseSide(parts[1]);
   return { a: l.x.sub(r.x), b: l.y.sub(r.y), c: r.k.sub(l.k) };
@@ -44,7 +45,9 @@ function parseSystem(input: string): [Eq, Eq] {
     .map((s) => s.trim())
     .filter(Boolean);
   if (lines.length !== 2) {
-    throw new ParseError('Enter two equations separated by a semicolon or new line, e.g.  2x + 3y = 12 ;  x - y = 1');
+    throw new ParseError(
+      'Enter two equations separated by a semicolon or new line, e.g.  2x + 3y = 12 ;  x - y = 1',
+    );
   }
   return [parseEq(lines[0]), parseEq(lines[1])];
 }
@@ -103,7 +106,11 @@ const HEAD = 'Solve the simultaneous equations';
 /* -------------------------------------------------------------- elimination */
 function solveByElimination(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
   const steps: Step[] = [
-    { note: 'Label the two equations.', latex: systemLatex(e1, e2), annotation: '(1) and (2)' },
+    {
+      note: 'Label the two equations.',
+      latex: systemLatex(e1, e2),
+      annotation: '(1) and (2)',
+    },
   ];
   if (sol.kind !== 'unique') return degenerate(steps, 'Elimination', sol.kind);
 
@@ -172,20 +179,41 @@ function solveByElimination(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
       latex: `${wantedVar} = \\dfrac{${rl(remainder)}}{${rl(wantedCoeff)}} = ${rl(wantedVal)}`,
     });
   }
-  steps.push({ note: 'Both values together.', latex: answer(sol)!, annotation: 'solved' });
+  steps.push({
+    note: 'Both values together.',
+    latex: answer(sol)!,
+    annotation: 'solved',
+  });
 
-  return { ok: true, solution: { headline: HEAD, methodName: 'Elimination', steps, answerLatex: answer(sol) } };
+  return {
+    ok: true,
+    solution: {
+      headline: HEAD,
+      methodName: 'Elimination',
+      steps,
+      answerLatex: answer(sol),
+    },
+  };
 }
 
 /* ------------------------------------------------------------- substitution */
 function solveBySubstitution(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
   const steps: Step[] = [
-    { note: 'Label the two equations.', latex: systemLatex(e1, e2), annotation: '(1) and (2)' },
+    {
+      note: 'Label the two equations.',
+      latex: systemLatex(e1, e2),
+      annotation: '(1) and (2)',
+    },
   ];
   if (sol.kind !== 'unique') return degenerate(steps, 'Substitution', sol.kind);
 
   // Prefer to isolate a variable whose coefficient is ±1 for tidy algebra.
-  const candidates: Array<{ eq: Eq; other: Eq; solveFor: 'x' | 'y'; coef: Rational }> = [
+  const candidates: Array<{
+    eq: Eq;
+    other: Eq;
+    solveFor: 'x' | 'y';
+    coef: Rational;
+  }> = [
     { eq: e1, other: e2, solveFor: 'x' as const, coef: e1.a },
     { eq: e1, other: e2, solveFor: 'y' as const, coef: e1.b },
     { eq: e2, other: e1, solveFor: 'x' as const, coef: e2.a },
@@ -204,7 +232,10 @@ function solveBySubstitution(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
     coef.eq(Rational.int(1)) && otherCoef.isZero()
       ? `${solveFor} = ${rl(eq.c)}`
       : `${solveFor} = \\dfrac{${rl(eq.c)} - (${rl(otherCoef)})${otherVar}}{${rl(coef)}}`;
-  steps.push({ note: `Rearrange (1) to make $${solveFor}$ the subject.`, latex: isolated });
+  steps.push({
+    note: `Rearrange (1) to make $${solveFor}$ the subject.`,
+    latex: isolated,
+  });
 
   steps.push({
     note: `Substitute this into the other equation and simplify.`,
@@ -213,7 +244,10 @@ function solveBySubstitution(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
 
   const otherVal = otherVar === 'y' ? sol.y! : sol.x!;
   const thisVal = isX ? sol.x! : sol.y!;
-  steps.push({ note: `Solve for $${otherVar}$.`, latex: `${otherVar} = ${rl(otherVal)}` });
+  steps.push({
+    note: `Solve for $${otherVar}$.`,
+    latex: `${otherVar} = ${rl(otherVal)}`,
+  });
   steps.push({
     note: `Substitute back to find $${solveFor}$.`,
     latex: `${solveFor} = ${rl(thisVal)}`,
@@ -221,16 +255,31 @@ function solveBySubstitution(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
   });
   steps.push({ note: 'Both values:', latex: answer(sol)! });
 
-  return { ok: true, solution: { headline: HEAD, methodName: 'Substitution', steps, answerLatex: answer(sol) } };
+  return {
+    ok: true,
+    solution: {
+      headline: HEAD,
+      methodName: 'Substitution',
+      steps,
+      answerLatex: answer(sol),
+    },
+  };
 }
 
-function degenerate(steps: Step[], methodName: string, kind: 'none' | 'infinite'): SolveResult {
+function degenerate(
+  steps: Step[],
+  methodName: string,
+  kind: 'none' | 'infinite',
+): SolveResult {
   steps.push({
     note:
       kind === 'none'
         ? 'The lines are parallel — the equations are inconsistent, so there is no solution.'
         : 'The two equations describe the same line, so there are infinitely many solutions.',
-    latex: kind === 'none' ? '\\text{No solution}' : '\\text{Infinitely many solutions}',
+    latex:
+      kind === 'none'
+        ? '\\text{No solution}'
+        : '\\text{Infinitely many solutions}',
   });
   return { ok: true, solution: { headline: HEAD, methodName, steps } };
 }
@@ -242,8 +291,18 @@ export const simultaneousSolver: Solver = {
   blurb: 'Solve two equations in x and y at once.',
   placeholder: 'e.g.  2x + 3y = 12 ;  x - y = 1',
   methods: [
-    { id: 'elimination', name: 'Elimination', blurb: 'Scale the equations so one variable cancels when you add or subtract.' },
-    { id: 'substitution', name: 'Substitution', blurb: 'Make one variable the subject, then substitute it into the other equation.' },
+    {
+      id: 'elimination',
+      name: 'Elimination',
+      blurb:
+        'Scale the equations so one variable cancels when you add or subtract.',
+    },
+    {
+      id: 'substitution',
+      name: 'Substitution',
+      blurb:
+        'Make one variable the subject, then substitute it into the other equation.',
+    },
   ],
   defaultMethodId: 'elimination',
   detect(input) {
@@ -260,7 +319,11 @@ export const simultaneousSolver: Solver = {
     try {
       system = parseSystem(input);
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read those equations.' };
+      return {
+        ok: false,
+        error:
+          e instanceof Error ? e.message : 'Could not read those equations.',
+      };
     }
     const sol = solve2(system[0], system[1]);
     return methodId === 'substitution'

@@ -36,7 +36,12 @@ function buildPoly(coeffs: number[]): Poly {
   coeffs.forEach((c, i) => m.set(i, new Rational(c)));
   return new Poly(m, 'x');
 }
-function randomPoly(rng: Rng, degree: number, lo = -6, hi = 6): { poly: Poly; coeffs: number[] } {
+function randomPoly(
+  rng: Rng,
+  degree: number,
+  lo = -6,
+  hi = 6,
+): { poly: Poly; coeffs: number[] } {
   const coeffs: number[] = [];
   for (let i = 0; i < degree; i++) coeffs.push(rng.int(lo, hi));
   coeffs.push(rng.nonZeroInt(lo, hi)); // leading coefficient must be non-zero
@@ -77,7 +82,9 @@ describe('quadratics: every root satisfies the equation', () => {
       const disc = b * b - 4 * a * c;
       const n = quadraticRoots(a, b, c).numericRoots.length;
       const expected = disc < 0 ? 0 : disc === 0 ? 1 : 2;
-      expect(n, `Δ=${disc} for ${a}x²+${b}x+${c} gave ${n} roots`).toBe(expected);
+      expect(n, `Δ=${disc} for ${a}x²+${b}x+${c} gave ${n} roots`).toBe(
+        expected,
+      );
     }
   });
 
@@ -94,7 +101,10 @@ describe('quadratics: every root satisfies the equation', () => {
       // Factorising legitimately bows out when there is no integer factorisation.
       const usable = answers.filter((x) => x !== undefined && x !== 'ERROR');
       if (usable.length > 1) {
-        expect(new Set(usable).size, `methods disagreed on ${input}: ${answers.join(' | ')}`).toBe(1);
+        expect(
+          new Set(usable).size,
+          `methods disagreed on ${input}: ${answers.join(' | ')}`,
+        ).toBe(1);
       }
     }
   });
@@ -111,7 +121,9 @@ describe('quadratics: every root satisfies the equation', () => {
       const left = a * (vx - 0.1) ** 2 + b * (vx - 0.1) + c;
       const right = a * (vx + 0.1) ** 2 + b * (vx + 0.1) + c;
       const isMin = a > 0;
-      expect(isMin ? left > vy && right > vy : left < vy && right < vy).toBe(true);
+      expect(isMin ? left > vy && right > vy : left < vy && right < vy).toBe(
+        true,
+      );
     }
   });
 });
@@ -127,7 +139,10 @@ describe('realRoots: every root it reports is genuinely a root', () => {
       const { poly } = randomPoly(rng, degree, -5, 5);
       for (const r of realRoots(poly)) {
         const residual = evaluatePoly(poly, r);
-        expect(close(residual, 0, 1e-5), `reported root ${r} left residual ${residual}`).toBe(true);
+        expect(
+          close(residual, 0, 1e-5),
+          `reported root ${r} left residual ${residual}`,
+        ).toBe(true);
         found++;
       }
     }
@@ -169,7 +184,8 @@ describe('differentiation: matches a numerical derivative', () => {
       const d = differentiate(poly);
       for (const x of [-2.3, -0.7, 0.4, 1.6, 3.1]) {
         const h = 1e-5;
-        const numeric = (evalCoeffs(coeffs, x + h) - evalCoeffs(coeffs, x - h)) / (2 * h);
+        const numeric =
+          (evalCoeffs(coeffs, x + h) - evalCoeffs(coeffs, x - h)) / (2 * h);
         const symbolic = evaluatePoly(d, x);
         expect(
           close(symbolic, numeric, 1e-4),
@@ -222,7 +238,9 @@ describe('integration: matches numerical quadrature', () => {
       const { poly } = randomPoly(rng, rng.int(0, 4));
       const back = differentiate(integrate(poly));
       for (const x of [-1.5, 0.8, 2.2]) {
-        expect(close(evaluatePoly(back, x), evaluatePoly(poly, x), 1e-9)).toBe(true);
+        expect(close(evaluatePoly(back, x), evaluatePoly(poly, x), 1e-9)).toBe(
+          true,
+        );
       }
     }
   });
@@ -245,7 +263,9 @@ describe('linear equations: the solution satisfies the original equation', () =>
       expect(res.ok).toBe(true);
       if (!res.ok || !res.solution.answerLatex) continue;
       const x = numbersIn(res.solution.answerLatex)[0];
-      expect(close(a * x + b, c * x + d, 1e-9), `x=${x} fails ${input}`).toBe(true);
+      expect(close(a * x + b, c * x + d, 1e-9), `x=${x} fails ${input}`).toBe(
+        true,
+      );
       checked++;
     }
     expect(checked).toBeGreaterThan(150);
@@ -257,7 +277,12 @@ describe('simultaneous equations: the pair satisfies both equations', () => {
     const rng = makeRng(12);
     let checked = 0;
     for (let i = 0; i < 150; i++) {
-      const [a, b, c, d] = [rng.nonZeroInt(-6, 6), rng.nonZeroInt(-6, 6), rng.nonZeroInt(-6, 6), rng.nonZeroInt(-6, 6)];
+      const [a, b, c, d] = [
+        rng.nonZeroInt(-6, 6),
+        rng.nonZeroInt(-6, 6),
+        rng.nonZeroInt(-6, 6),
+        rng.nonZeroInt(-6, 6),
+      ];
       if (a * d - c * b === 0) continue; // parallel or identical lines
       const e = rng.int(-20, 20);
       const f = rng.int(-20, 20);
@@ -266,8 +291,14 @@ describe('simultaneous equations: the pair satisfies both equations', () => {
       if (!res.ok || !res.solution.answerLatex) continue;
       const nums = numbersIn(res.solution.answerLatex);
       const [x, y] = nums;
-      expect(close(a * x + b * y, e, 1e-6), `(${x},${y}) fails eq1 of ${input}`).toBe(true);
-      expect(close(c * x + d * y, f, 1e-6), `(${x},${y}) fails eq2 of ${input}`).toBe(true);
+      expect(
+        close(a * x + b * y, e, 1e-6),
+        `(${x},${y}) fails eq1 of ${input}`,
+      ).toBe(true);
+      expect(
+        close(c * x + d * y, f, 1e-6),
+        `(${x},${y}) fails eq2 of ${input}`,
+      ).toBe(true);
       checked++;
     }
     expect(checked).toBeGreaterThan(100);
@@ -288,9 +319,16 @@ describe('inequalities: the reported region really does satisfy them', () => {
       // A point well inside the claimed region must satisfy the inequality.
       const inside = flipped ? boundary - 1 : boundary + 1;
       const outside = flipped ? boundary + 1 : boundary - 1;
-      const holds = (x: number) => (rel === '>' ? a * x + b > 0 : a * x + b < 0);
-      expect(holds(inside), `x=${inside} should satisfy ${a}x+${b}${rel}0`).toBe(true);
-      expect(holds(outside), `x=${outside} should NOT satisfy ${a}x+${b}${rel}0`).toBe(false);
+      const holds = (x: number) =>
+        rel === '>' ? a * x + b > 0 : a * x + b < 0;
+      expect(
+        holds(inside),
+        `x=${inside} should satisfy ${a}x+${b}${rel}0`,
+      ).toBe(true);
+      expect(
+        holds(outside),
+        `x=${outside} should NOT satisfy ${a}x+${b}${rel}0`,
+      ).toBe(false);
     }
   });
 });
@@ -306,8 +344,13 @@ describe('indices & surds: simplification preserves value', () => {
       const a = res.solution.answerLatex;
       // Read "k√m", "√m" or a plain integer back into a number.
       const m = a.match(/^(-?\d+)?\\sqrt\{(\d+)\}$/);
-      const value = m ? (m[1] ? Number(m[1]) : 1) * Math.sqrt(Number(m[2])) : Number(a);
-      expect(close(value, Math.sqrt(n), 1e-9), `√${n} simplified to ${a} (=${value})`).toBe(true);
+      const value = m
+        ? (m[1] ? Number(m[1]) : 1) * Math.sqrt(Number(m[2]))
+        : Number(a);
+      expect(
+        close(value, Math.sqrt(n), 1e-9),
+        `√${n} simplified to ${a} (=${value})`,
+      ).toBe(true);
     }
   });
 });
@@ -342,11 +385,19 @@ describe('triangles: results obey the underlying geometry', () => {
       const a = rng.int(2, 25);
       const b = rng.int(2, 25);
       const C = rng.int(10, 170);
-      const res = triangleRulesSolver.solve(`a=${a}, b=${b}, C=${C}`, 'cosine-rule');
+      const res = triangleRulesSolver.solve(
+        `a=${a}, b=${b}, C=${C}`,
+        'cosine-rule',
+      );
       if (!res.ok || !res.solution.answerLatex) continue;
       const c = numbersIn(res.solution.answerLatex)[0];
-      const expected = Math.sqrt(a * a + b * b - 2 * a * b * Math.cos((C * Math.PI) / 180));
-      expect(close(c, expected, 1e-2), `a=${a},b=${b},C=${C} gave c=${c}, expected ${expected}`).toBe(true);
+      const expected = Math.sqrt(
+        a * a + b * b - 2 * a * b * Math.cos((C * Math.PI) / 180),
+      );
+      expect(
+        close(c, expected, 1e-2),
+        `a=${a},b=${b},C=${C} gave c=${c}, expected ${expected}`,
+      ).toBe(true);
       checked++;
     }
     expect(checked).toBeGreaterThan(100);
@@ -359,14 +410,21 @@ describe('triangles: results obey the underlying geometry', () => {
       const a = rng.int(3, 20);
       const b = rng.int(3, 20);
       const C = rng.int(15, 165);
-      const res = triangleRulesSolver.solve(`a=${a}, b=${b}, C=${C} area`, 'area');
+      const res = triangleRulesSolver.solve(
+        `a=${a}, b=${b}, C=${C} area`,
+        'area',
+      );
       if (!res.ok || !res.solution.answerLatex) continue;
       const area = numbersIn(res.solution.answerLatex)[0];
       // Independent route: find the third side, then use Heron's formula.
-      const c = Math.sqrt(a * a + b * b - 2 * a * b * Math.cos((C * Math.PI) / 180));
+      const c = Math.sqrt(
+        a * a + b * b - 2 * a * b * Math.cos((C * Math.PI) / 180),
+      );
       const s = (a + b + c) / 2;
       const heron = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-      expect(close(area, heron, 1e-2), `area ${area} vs Heron ${heron}`).toBe(true);
+      expect(close(area, heron, 1e-2), `area ${area} vs Heron ${heron}`).toBe(
+        true,
+      );
       checked++;
     }
     expect(checked).toBeGreaterThan(80);
@@ -417,7 +475,10 @@ describe('sequences: nth term matches walking the sequence out', () => {
       let term = a;
       for (let k = 1; k < n; k++) term += d;
       const text = res.solution.steps.map((s) => s.latex ?? '').join(' ');
-      expect(text.includes(String(term)), `t_${n} should be ${term} for a=${a}, d=${d}`).toBe(true);
+      expect(
+        text.includes(String(term)),
+        `t_${n} should be ${term} for a=${a}, d=${d}`,
+      ).toBe(true);
     }
   });
 });
@@ -432,7 +493,10 @@ describe('compound interest: matches year-by-year accumulation', () => {
       const P = rng.int(500, 50000);
       const rate = rng.int(1, 15);
       const years = rng.int(1, 20);
-      const res = financialSolver.solve(`$${P} at ${rate}% for ${years} years compound`, 'compound');
+      const res = financialSolver.solve(
+        `$${P} at ${rate}% for ${years} years compound`,
+        'compound',
+      );
       if (!res.ok || !res.solution.answerLatex) continue;
       // Independent: multiply by (1+r) once per year.
       let amount = P;
@@ -477,17 +541,36 @@ describe('fractions: exact arithmetic matches floating point', () => {
   it('agrees with the decimal value of every operation', () => {
     const rng = makeRng(22);
     for (let i = 0; i < 200; i++) {
-      const [a, b, c, d] = [rng.nonZeroInt(-9, 9), rng.int(1, 9), rng.nonZeroInt(-9, 9), rng.int(1, 9)];
+      const [a, b, c, d] = [
+        rng.nonZeroInt(-9, 9),
+        rng.int(1, 9),
+        rng.nonZeroInt(-9, 9),
+        rng.int(1, 9),
+      ];
       const op = rng.pick(['+', '-', '*', '÷'] as const);
-      const res = fractionsSolver.solve(`${a}/${b} ${op} ${c}/${d}`, 'standard');
+      const res = fractionsSolver.solve(
+        `${a}/${b} ${op} ${c}/${d}`,
+        'standard',
+      );
       expect(res.ok).toBe(true);
       if (!res.ok || !res.solution.answerLatex) continue;
       const expected =
-        op === '+' ? a / b + c / d : op === '-' ? a / b - c / d : op === '*' ? (a / b) * (c / d) : a / b / (c / d);
+        op === '+'
+          ? a / b + c / d
+          : op === '-'
+            ? a / b - c / d
+            : op === '*'
+              ? (a / b) * (c / d)
+              : a / b / (c / d);
       const ans = res.solution.answerLatex;
       const fr = ans.match(/^(-?)\\frac\{(\d+)\}\{(\d+)\}$/);
-      const value = fr ? (fr[1] === '-' ? -1 : 1) * (Number(fr[2]) / Number(fr[3])) : Number(ans);
-      expect(close(value, expected, 1e-9), `${a}/${b} ${op} ${c}/${d} gave ${ans}`).toBe(true);
+      const value = fr
+        ? (fr[1] === '-' ? -1 : 1) * (Number(fr[2]) / Number(fr[3]))
+        : Number(ans);
+      expect(
+        close(value, expected, 1e-9),
+        `${a}/${b} ${op} ${c}/${d} gave ${ans}`,
+      ).toBe(true);
     }
   });
 });
@@ -501,7 +584,10 @@ describe('percentages: reverse undoes forward', () => {
       const original = rng.int(20, 5000);
       const pct = rng.int(1, 60);
       const after = original * (1 + pct / 100);
-      const res = percentageSolver.solve(`after a ${pct}% increase the price is ${after}`, 'auto');
+      const res = percentageSolver.solve(
+        `after a ${pct}% increase the price is ${after}`,
+        'auto',
+      );
       if (!res.ok || !res.solution.answerLatex) continue;
       const recovered = numbersIn(res.solution.answerLatex)[0];
       expect(
@@ -519,7 +605,9 @@ describe('percentages: reverse undoes forward', () => {
       const res = percentageSolver.solve(`${pct}% of ${amount}`, 'decimal');
       expect(res.ok).toBe(true);
       if (!res.ok || !res.solution.answerLatex) continue;
-      expect(close(Number(res.solution.answerLatex), (pct / 100) * amount, 1e-6)).toBe(true);
+      expect(
+        close(Number(res.solution.answerLatex), (pct / 100) * amount, 1e-6),
+      ).toBe(true);
     }
   });
 });
@@ -533,7 +621,11 @@ describe('parser: reading a polynomial back gives the same function', () => {
       const { poly, coeffs } = randomPoly(rng, rng.int(1, 4));
       // Re-read the polynomial from a plain-text form of itself.
       const text = coeffs
-        .map((c, i) => (c === 0 ? '' : `${c >= 0 ? '+' : ''}${c}${i === 0 ? '' : i === 1 ? 'x' : `x^${i}`}`))
+        .map((c, i) =>
+          c === 0
+            ? ''
+            : `${c >= 0 ? '+' : ''}${c}${i === 0 ? '' : i === 1 ? 'x' : `x^${i}`}`,
+        )
         .filter(Boolean)
         .join('');
       const reparsed = parsePoly(text || '0', 'x');

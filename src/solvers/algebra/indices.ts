@@ -24,7 +24,12 @@ function simplify(n: number): SolveResult {
       latex: `\\sqrt{${n}} = ${outside}`,
       annotation: 'no surd left',
     });
-    return ok(`Simplify $\\sqrt{${n}}$`, 'Largest square factor', steps, String(outside));
+    return ok(
+      `Simplify $\\sqrt{${n}}$`,
+      'Largest square factor',
+      steps,
+      String(outside),
+    );
   }
   if (outside === 1) {
     steps.push({
@@ -32,7 +37,12 @@ function simplify(n: number): SolveResult {
       latex: `\\sqrt{${n}}`,
       annotation: 'already simplified',
     });
-    return ok(`Simplify $\\sqrt{${n}}$`, 'Largest square factor', steps, `\\sqrt{${n}}`);
+    return ok(
+      `Simplify $\\sqrt{${n}}$`,
+      'Largest square factor',
+      steps,
+      `\\sqrt{${n}}`,
+    );
   }
 
   const square = outside * outside;
@@ -50,7 +60,12 @@ function simplify(n: number): SolveResult {
     latex: `\\sqrt{${n}} = ${surdLatex(outside, inside)}`,
     annotation: 'simplest form',
   });
-  return ok(`Simplify $\\sqrt{${n}}$`, 'Largest square factor', steps, surdLatex(outside, inside));
+  return ok(
+    `Simplify $\\sqrt{${n}}$`,
+    'Largest square factor',
+    steps,
+    surdLatex(outside, inside),
+  );
 }
 
 /* ------------------------------------------------------------ rationalising */
@@ -87,9 +102,21 @@ function rationalise(num: number, rootOf: number): SolveResult {
       latex: `= \\dfrac{${surdLatex(topCoeff, inside)}}{${bottom}}`,
     });
   }
-  const answer = bottom === 1 ? surdLatex(topCoeff, inside) : `\\dfrac{${surdLatex(topCoeff, inside)}}{${bottom}}`;
-  steps.push({ note: 'The denominator is now rational.', latex: `= ${answer}`, annotation: 'rationalised' });
-  return ok(`Rationalise $\\dfrac{${fmt(num)}}{\\sqrt{${rootOf}}}$`, 'Rationalising the denominator', steps, answer);
+  const answer =
+    bottom === 1
+      ? surdLatex(topCoeff, inside)
+      : `\\dfrac{${surdLatex(topCoeff, inside)}}{${bottom}}`;
+  steps.push({
+    note: 'The denominator is now rational.',
+    latex: `= ${answer}`,
+    annotation: 'rationalised',
+  });
+  return ok(
+    `Rationalise $\\dfrac{${fmt(num)}}{\\sqrt{${rootOf}}}$`,
+    'Rationalising the denominator',
+    steps,
+    answer,
+  );
 }
 
 /* -------------------------------------------------------------- index laws */
@@ -104,10 +131,25 @@ function indexLaws(o: IndexOp): SolveResult {
   const { base, p, q, op } = o;
   const law =
     op === '*'
-      ? { name: 'a^m \\times a^n = a^{m+n}', result: p + q, sign: '+', word: 'add' }
+      ? {
+          name: 'a^m \\times a^n = a^{m+n}',
+          result: p + q,
+          sign: '+',
+          word: 'add',
+        }
       : op === '/'
-        ? { name: '\\dfrac{a^m}{a^n} = a^{m-n}', result: p - q, sign: '-', word: 'subtract' }
-        : { name: '\\left(a^m\\right)^n = a^{mn}', result: p * q, sign: '\\times', word: 'multiply' };
+        ? {
+            name: '\\dfrac{a^m}{a^n} = a^{m-n}',
+            result: p - q,
+            sign: '-',
+            word: 'subtract',
+          }
+        : {
+            name: '\\left(a^m\\right)^n = a^{mn}',
+            result: p * q,
+            sign: '\\times',
+            word: 'multiply',
+          };
 
   const written =
     op === '*'
@@ -117,9 +159,20 @@ function indexLaws(o: IndexOp): SolveResult {
         : `\\left(${base}^{${p}}\\right)^{${q}}`;
 
   const steps: Step[] = [
-    { note: 'The bases match, so use the index law.', latex: law.name, annotation: `${law.word} the indices` },
-    { note: 'Apply it to these indices.', latex: `${written} = ${base}^{${p} ${law.sign} ${q}}` },
-    { note: 'Simplify the index.', latex: `= ${base}^{${law.result}}`, annotation: 'simplified' },
+    {
+      note: 'The bases match, so use the index law.',
+      latex: law.name,
+      annotation: `${law.word} the indices`,
+    },
+    {
+      note: 'Apply it to these indices.',
+      latex: `${written} = ${base}^{${p} ${law.sign} ${q}}`,
+    },
+    {
+      note: 'Simplify the index.',
+      latex: `= ${base}^{${law.result}}`,
+      annotation: 'simplified',
+    },
   ];
 
   const value = Math.pow(base, law.result);
@@ -131,7 +184,12 @@ function indexLaws(o: IndexOp): SolveResult {
       latex: `= \\dfrac{1}{${base}^{${-law.result}}} = \\dfrac{1}{${Math.pow(base, -law.result)}}`,
     });
   }
-  return ok(`Simplify $${written}$`, 'Index laws', steps, `${base}^{${law.result}}`);
+  return ok(
+    `Simplify $${written}$`,
+    'Index laws',
+    steps,
+    `${base}^{${law.result}}`,
+  );
 }
 
 /* ------------------------------------------------------------------ parsing */
@@ -142,7 +200,10 @@ function indexLaws(o: IndexOp): SolveResult {
  */
 function bare(input: string): string {
   return input
-    .replace(/\b(?:simplify|rationalise|rationalize|the|denominator|of|surd|express|in|simplest|form)\b/gi, ' ')
+    .replace(
+      /\b(?:simplify|rationalise|rationalize|the|denominator|of|surd|express|in|simplest|form)\b/gi,
+      ' ',
+    )
     .replace(/\s+/g, '')
     .trim();
 }
@@ -167,22 +228,32 @@ function readSurd(input: string): number | null {
  * so it must be refused rather than quietly falling through to readSurd and
  * answering √3.
  */
-function readRationalise(input: string): { num: number; rootOf: number } | null {
+function readRationalise(
+  input: string,
+): { num: number; rootOf: number } | null {
   const m = bare(input).match(/^(-?\d+(?:\.\d+)?)\/(?:sqrt|√)\(?(\d+)\)?$/i);
   return m ? { num: Number(m[1]), rootOf: Number(m[2]) } : null;
 }
 function readIndex(input: string): IndexOp | null {
   const s = input.replace(/\s+/g, '');
   let m = s.match(/^(\d+)\^\(?(-?\d+)\)?[×*](\d+)\^\(?(-?\d+)\)?$/);
-  if (m && m[1] === m[3]) return { base: Number(m[1]), p: Number(m[2]), q: Number(m[4]), op: '*' };
+  if (m && m[1] === m[3])
+    return { base: Number(m[1]), p: Number(m[2]), q: Number(m[4]), op: '*' };
   m = s.match(/^(\d+)\^\(?(-?\d+)\)?[÷/](\d+)\^\(?(-?\d+)\)?$/);
-  if (m && m[1] === m[3]) return { base: Number(m[1]), p: Number(m[2]), q: Number(m[4]), op: '/' };
+  if (m && m[1] === m[3])
+    return { base: Number(m[1]), p: Number(m[2]), q: Number(m[4]), op: '/' };
   m = s.match(/^\((\d+)\^\(?(-?\d+)\)?\)\^\(?(-?\d+)\)?$/);
-  if (m) return { base: Number(m[1]), p: Number(m[2]), q: Number(m[3]), op: '^' };
+  if (m)
+    return { base: Number(m[1]), p: Number(m[2]), q: Number(m[3]), op: '^' };
   return null;
 }
 
-function ok(headline: string, methodName: string, steps: Step[], answerLatex: string): SolveResult {
+function ok(
+  headline: string,
+  methodName: string,
+  steps: Step[],
+  answerLatex: string,
+): SolveResult {
   return { ok: true, solution: { headline, methodName, steps, answerLatex } };
 }
 
@@ -193,9 +264,21 @@ export const indicesSolver: Solver = {
   blurb: 'Simplify surds, rationalise denominators, apply the index laws.',
   placeholder: 'e.g.  sqrt 48   or   1/sqrt 2   or   2^3 × 2^4',
   methods: [
-    { id: 'simplify-surd', name: 'Simplify surd', blurb: 'Pull out the largest perfect-square factor.' },
-    { id: 'rationalise', name: 'Rationalise', blurb: 'Clear a surd from the denominator by multiplying top and bottom.' },
-    { id: 'index-laws', name: 'Index laws', blurb: 'Add, subtract or multiply indices when the bases match.' },
+    {
+      id: 'simplify-surd',
+      name: 'Simplify surd',
+      blurb: 'Pull out the largest perfect-square factor.',
+    },
+    {
+      id: 'rationalise',
+      name: 'Rationalise',
+      blurb: 'Clear a surd from the denominator by multiplying top and bottom.',
+    },
+    {
+      id: 'index-laws',
+      name: 'Index laws',
+      blurb: 'Add, subtract or multiply indices when the bases match.',
+    },
   ],
   defaultMethodId: 'simplify-surd',
   detect(input) {
@@ -206,19 +289,26 @@ export const indicesSolver: Solver = {
   },
   solve(input, methodId): SolveResult {
     const rat = readRationalise(input);
-    if (rat && methodId !== 'index-laws') return rationalise(rat.num, rat.rootOf);
+    if (rat && methodId !== 'index-laws')
+      return rationalise(rat.num, rat.rootOf);
 
     const idx = readIndex(input);
     if (idx) return indexLaws(idx);
 
     const n = readSurd(input);
     if (n !== null) {
-      if (n < 0) return { ok: false, error: 'A negative number has no real square root — try Complex numbers.' };
+      if (n < 0)
+        return {
+          ok: false,
+          error:
+            'A negative number has no real square root — try Complex numbers.',
+        };
       return simplify(n);
     }
     return {
       ok: false,
-      error: 'Try  sqrt 48  to simplify a surd,  1/sqrt 2  to rationalise, or  2^3 × 2^4  for the index laws.',
+      error:
+        'Try  sqrt 48  to simplify a surd,  1/sqrt 2  to rationalise, or  2^3 × 2^4  for the index laws.',
     };
   },
 };

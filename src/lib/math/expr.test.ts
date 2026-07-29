@@ -1,7 +1,15 @@
-import { parseExpr, differentiate, simplify, toLatex, evaluateExpr, ExprError } from './expr';
+import {
+  parseExpr,
+  differentiate,
+  simplify,
+  toLatex,
+  evaluateExpr,
+  ExprError,
+} from './expr';
 
 /** Differentiate a source string and render the simplified result. */
-const d = (src: string): string => toLatex(simplify(differentiate(parseExpr(src))));
+const d = (src: string): string =>
+  toLatex(simplify(differentiate(parseExpr(src))));
 const show = (src: string): string => toLatex(parseExpr(src));
 
 describe('parseExpr', () => {

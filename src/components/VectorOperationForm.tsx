@@ -2,9 +2,15 @@ import { useState } from 'react';
 import { MethodDiagram } from './MethodDiagram';
 
 type Dims = 2 | 3;
-type VecOp = 'add' | 'sub' | 'scale' | 'dot' | 'cross' | 'magnitude' | 'unit' | 'angle';
+type VecOp =
+  'add' | 'sub' | 'scale' | 'dot' | 'cross' | 'magnitude' | 'unit' | 'angle';
 
-const OPS: Array<{ id: VecOp; label: string; needsB: boolean; needsK: boolean }> = [
+const OPS: Array<{
+  id: VecOp;
+  label: string;
+  needsB: boolean;
+  needsK: boolean;
+}> = [
   { id: 'add', label: 'Add', needsB: true, needsK: false },
   { id: 'sub', label: 'Subtract', needsB: true, needsK: false },
   { id: 'scale', label: 'Scale', needsB: false, needsK: true },
@@ -16,7 +22,12 @@ const OPS: Array<{ id: VecOp; label: string; needsB: boolean; needsK: boolean }>
 ];
 
 /** Builds the same text vectors.ts's free-text parser already reads. */
-function serialize(op: VecOp, a: number[], b: number[] | null, k: number | null): string {
+function serialize(
+  op: VecOp,
+  a: number[],
+  b: number[] | null,
+  k: number | null,
+): string {
   const va = `(${a.join(',')})`;
   const vb = b ? `(${b.join(',')})` : '';
   switch (op) {
@@ -47,7 +58,11 @@ function serialize(op: VecOp, a: number[], b: number[] | null, k: number | null)
  * for Scale) that operation needs. Submitting builds the same text string
  * vectors.ts's free-text parser already reads, same as StructuredInputForm.
  */
-export function VectorOperationForm({ onSubmit }: { onSubmit: (serialized: string) => void }) {
+export function VectorOperationForm({
+  onSubmit,
+}: {
+  onSubmit: (serialized: string) => void;
+}) {
   const [op, setOp] = useState<VecOp>('add');
   const [dims, setDims] = useState<Dims>(3);
   const [a, setA] = useState(['', '', '']);
@@ -59,7 +74,8 @@ export function VectorOperationForm({ onSubmit }: { onSubmit: (serialized: strin
   function parsePoint(values: string[]): { nums: number[]; complete: boolean } {
     const comps = values.slice(0, dims);
     const nums = comps.map((s) => Number(s.trim()));
-    const complete = comps.every((s) => s.trim() !== '') && nums.every(Number.isFinite);
+    const complete =
+      comps.every((s) => s.trim() !== '') && nums.every(Number.isFinite);
     return { nums, complete };
   }
 
@@ -68,12 +84,22 @@ export function VectorOperationForm({ onSubmit }: { onSubmit: (serialized: strin
   const kNum = Number(k.trim());
   const kComplete = k.trim() !== '' && Number.isFinite(kNum);
 
-  const complete = aResult.complete && (!current.needsB || bResult.complete) && (!current.needsK || kComplete);
+  const complete =
+    aResult.complete &&
+    (!current.needsB || bResult.complete) &&
+    (!current.needsK || kComplete);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!complete) return;
-    onSubmit(serialize(op, aResult.nums, current.needsB ? bResult.nums : null, current.needsK ? kNum : null));
+    onSubmit(
+      serialize(
+        op,
+        aResult.nums,
+        current.needsB ? bResult.nums : null,
+        current.needsK ? kNum : null,
+      ),
+    );
   }
 
   function setComponent(which: 'a' | 'b', index: number, raw: string) {
@@ -114,17 +140,34 @@ export function VectorOperationForm({ onSubmit }: { onSubmit: (serialized: strin
 
       <div className="op-picker" role="radiogroup" aria-label="Operation">
         {OPS.map((o) => (
-          <button key={o.id} type="button" aria-pressed={op === o.id} onClick={() => setOp(o.id)}>
+          <button
+            key={o.id}
+            type="button"
+            aria-pressed={op === o.id}
+            onClick={() => setOp(o.id)}
+          >
             {o.label}
           </button>
         ))}
       </div>
 
-      <div className="dims-toggle" role="radiogroup" aria-label="Number of dimensions">
-        <button type="button" aria-pressed={dims === 2} onClick={() => setDims(2)}>
+      <div
+        className="dims-toggle"
+        role="radiogroup"
+        aria-label="Number of dimensions"
+      >
+        <button
+          type="button"
+          aria-pressed={dims === 2}
+          onClick={() => setDims(2)}
+        >
           2D
         </button>
-        <button type="button" aria-pressed={dims === 3} onClick={() => setDims(3)}>
+        <button
+          type="button"
+          aria-pressed={dims === 3}
+          onClick={() => setDims(3)}
+        >
           3D
         </button>
       </div>

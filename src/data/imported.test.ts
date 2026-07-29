@@ -13,7 +13,10 @@ import { numbersIn, close } from '../validation/random';
 describe('imported problems: attribution is complete', () => {
   it('points every problem at a real source', () => {
     for (const p of IMPORTED) {
-      expect(SOURCES[p.source], `unknown source "${p.source}" on ${p.label}`).toBeTruthy();
+      expect(
+        SOURCES[p.source],
+        `unknown source "${p.source}" on ${p.label}`,
+      ).toBeTruthy();
       expect(p.ref, `${p.label} has no section reference`).toBeTruthy();
     }
   });
@@ -31,7 +34,10 @@ describe('imported problems: attribution is complete', () => {
   it('names a real topic and method for every problem', () => {
     for (const p of IMPORTED) {
       const solver = getSolver(p.solverId);
-      expect(solver, `${p.label} points at unknown topic "${p.solverId}"`).toBeTruthy();
+      expect(
+        solver,
+        `${p.label} points at unknown topic "${p.solverId}"`,
+      ).toBeTruthy();
       if (p.methodId) {
         expect(
           solver!.methods.some((m) => m.id === p.methodId),
@@ -47,10 +53,20 @@ describe('imported problems: every one actually solves', () => {
     expect(IMPORTED.length).toBeGreaterThan(40);
     for (const p of IMPORTED) {
       const solver = getSolver(p.solverId)!;
-      const res = runSolve(solver, p.input, p.methodId ?? solver.defaultMethodId);
-      expect(res.ok, `${sourceOf(p).title} ${p.ref} ("${p.input}") failed: ${res.ok ? '' : res.error}`).toBe(true);
+      const res = runSolve(
+        solver,
+        p.input,
+        p.methodId ?? solver.defaultMethodId,
+      );
+      expect(
+        res.ok,
+        `${sourceOf(p).title} ${p.ref} ("${p.input}") failed: ${res.ok ? '' : res.error}`,
+      ).toBe(true);
       if (res.ok) {
-        expect(res.solution.steps.length, `${p.ref} produced no steps`).toBeGreaterThan(0);
+        expect(
+          res.solution.steps.length,
+          `${p.ref} produced no steps`,
+        ).toBeGreaterThan(0);
       }
     }
   });
@@ -61,7 +77,11 @@ describe('imported answers: verified against the maths, not the engine', () => {
     let checked = 0;
     for (const p of IMPORTED.filter((x) => x.solverId === 'quadratics')) {
       const solver = getSolver('quadratics')!;
-      const res = runSolve(solver, p.input, p.methodId ?? solver.defaultMethodId);
+      const res = runSolve(
+        solver,
+        p.input,
+        p.methodId ?? solver.defaultMethodId,
+      );
       if (!res.ok || !res.solution.answerLatex) continue;
       // Surd answers like (4 ± √26)/2 can't be read as a list of roots, so they
       // are covered by the property harness instead, which substitutes the
@@ -102,7 +122,11 @@ describe('imported answers: verified against the maths, not the engine', () => {
     let checked = 0;
     for (const p of IMPORTED.filter((x) => x.solverId === 'simultaneous')) {
       const solver = getSolver('simultaneous')!;
-      const res = runSolve(solver, p.input, p.methodId ?? solver.defaultMethodId);
+      const res = runSolve(
+        solver,
+        p.input,
+        p.methodId ?? solver.defaultMethodId,
+      );
       if (!res.ok || !res.solution.answerLatex) continue; // degenerate systems have no unique answer
       const [x, y] = numbersIn(res.solution.answerLatex);
 
@@ -132,7 +156,11 @@ describe('imported answers: verified against the maths, not the engine', () => {
     let checked = 0;
     for (const p of IMPORTED.filter((x) => x.solverId === 'triangle-rules')) {
       const solver = getSolver('triangle-rules')!;
-      const res = runSolve(solver, p.input, p.methodId ?? solver.defaultMethodId);
+      const res = runSolve(
+        solver,
+        p.input,
+        p.methodId ?? solver.defaultMethodId,
+      );
       expect(res.ok, `${p.ref} failed to solve`).toBe(true);
       if (!res.ok || !res.solution.answerLatex) continue;
 
@@ -144,23 +172,50 @@ describe('imported answers: verified against the maths, not the engine', () => {
 
       // Some exercises deliberately have no triangle at all; the working says so
       // rather than producing an answer to check.
-      if (/no triangle exists/i.test(res.solution.steps.map((s) => s.latex ?? '').join(' '))) continue;
+      if (
+        /no triangle exists/i.test(
+          res.solution.steps.map((s) => s.latex ?? '').join(' '),
+        )
+      )
+        continue;
 
       // Three sides given → the answer is an angle; check with the law of cosines.
-      if (given.a !== undefined && given.b !== undefined && given.c !== undefined) {
+      if (
+        given.a !== undefined &&
+        given.b !== undefined &&
+        given.c !== undefined
+      ) {
         const reported = numbersIn(res.solution.answerLatex)[0];
         const expected =
-          (Math.acos((given.a ** 2 + given.b ** 2 - given.c ** 2) / (2 * given.a * given.b)) * 180) / Math.PI;
-        expect(Math.abs(reported - expected) <= 0.02, `${p.ref}: angle ${reported}, expected ${expected}`).toBe(true);
+          (Math.acos(
+            (given.a ** 2 + given.b ** 2 - given.c ** 2) /
+              (2 * given.a * given.b),
+          ) *
+            180) /
+          Math.PI;
+        expect(
+          Math.abs(reported - expected) <= 0.02,
+          `${p.ref}: angle ${reported}, expected ${expected}`,
+        ).toBe(true);
         checked++;
         continue;
       }
       // Two sides and the included angle → the answer is the third side.
-      for (const [side, ang] of [['c', 'C'], ['a', 'A'], ['b', 'B']] as const) {
+      for (const [side, ang] of [
+        ['c', 'C'],
+        ['a', 'A'],
+        ['b', 'B'],
+      ] as const) {
         const others = (['a', 'b', 'c'] as const).filter((k) => k !== side);
-        if (given[side] === undefined && given[ang] !== undefined && others.every((k) => given[k] !== undefined)) {
+        if (
+          given[side] === undefined &&
+          given[ang] !== undefined &&
+          others.every((k) => given[k] !== undefined)
+        ) {
           const [x, y] = others.map((k) => given[k]);
-          const expected = Math.sqrt(x * x + y * y - 2 * x * y * Math.cos(rad(given[ang])));
+          const expected = Math.sqrt(
+            x * x + y * y - 2 * x * y * Math.cos(rad(given[ang])),
+          );
           const reported = numbersIn(res.solution.answerLatex)[0];
           expect(
             Math.abs(reported - expected) <= 0.02,

@@ -1,4 +1,9 @@
-import { THEMES, type ThemeId, type RevealMode, type TextSize } from '../lib/ui';
+import {
+  THEMES,
+  type ThemeId,
+  type RevealMode,
+  type TextSize,
+} from '../lib/ui';
 
 /**
  * The settings controls, inline — this is one section of the sidebar (see
@@ -27,7 +32,9 @@ export function SettingsPanel({
     <div className="settings-fields">
       <div className="setting-row">
         <span className="field-label">Theme</span>
-        <span className="setting-hint">Three complete looks — pick whichever suits you.</span>
+        <span className="setting-hint">
+          Three complete looks — pick whichever suits you.
+        </span>
         <div className="theme-swatches">
           {THEMES.map((t) => (
             <button
@@ -55,12 +62,22 @@ export function SettingsPanel({
 
       <div className="setting-row">
         <span className="field-label">Light or dark</span>
-        <span className="setting-hint">Each theme keeps its own character after dark.</span>
+        <span className="setting-hint">
+          Each theme keeps its own character after dark.
+        </span>
         <div className="segmented" role="group" aria-label="Light or dark">
-          <button type="button" aria-pressed={!dark} onClick={() => onDark(false)}>
+          <button
+            type="button"
+            aria-pressed={!dark}
+            onClick={() => onDark(false)}
+          >
             Light
           </button>
-          <button type="button" aria-pressed={dark} onClick={() => onDark(true)}>
+          <button
+            type="button"
+            aria-pressed={dark}
+            onClick={() => onDark(true)}
+          >
             Dark
           </button>
         </div>
@@ -68,15 +85,29 @@ export function SettingsPanel({
 
       <div className="setting-row">
         <span className="field-label">Text size</span>
-        <span className="setting-hint">How large the working itself renders.</span>
+        <span className="setting-hint">
+          How large the working itself renders.
+        </span>
         <div className="segmented" role="group" aria-label="Text size">
-          <button type="button" aria-pressed={textSize === 'sm'} onClick={() => onTextSize('sm')}>
+          <button
+            type="button"
+            aria-pressed={textSize === 'sm'}
+            onClick={() => onTextSize('sm')}
+          >
             Small
           </button>
-          <button type="button" aria-pressed={textSize === 'md'} onClick={() => onTextSize('md')}>
+          <button
+            type="button"
+            aria-pressed={textSize === 'md'}
+            onClick={() => onTextSize('md')}
+          >
             Medium
           </button>
-          <button type="button" aria-pressed={textSize === 'lg'} onClick={() => onTextSize('lg')}>
+          <button
+            type="button"
+            aria-pressed={textSize === 'lg'}
+            onClick={() => onTextSize('lg')}
+          >
             Large
           </button>
         </div>
@@ -84,19 +115,30 @@ export function SettingsPanel({
 
       <div className="setting-row">
         <span className="field-label">Working out</span>
-        <span className="setting-hint">Show every line at once, or reveal one step at a time.</span>
+        <span className="setting-hint">
+          Show every line at once, or reveal one step at a time.
+        </span>
         <div className="segmented" role="group" aria-label="Reveal mode">
-          <button type="button" aria-pressed={revealMode === 'all'} onClick={() => onRevealMode('all')}>
+          <button
+            type="button"
+            aria-pressed={revealMode === 'all'}
+            onClick={() => onRevealMode('all')}
+          >
             Show all steps
           </button>
-          <button type="button" aria-pressed={revealMode === 'step'} onClick={() => onRevealMode('step')}>
+          <button
+            type="button"
+            aria-pressed={revealMode === 'step'}
+            onClick={() => onRevealMode('step')}
+          >
             One at a time
           </button>
         </div>
       </div>
 
       <p className="setting-hint">
-        Longhand works out every problem itself — no AI, no guessing. Every line is exact.
+        Longhand works out every problem itself — no AI, no guessing. Every line
+        is exact.
       </p>
     </div>
   );

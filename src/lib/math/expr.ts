@@ -23,7 +23,8 @@ export type Expr =
 
 import { isProseWord } from '../nl/vocabulary';
 
-export type FnName = 'sin' | 'cos' | 'tan' | 'sec' | 'ln' | 'log' | 'exp' | 'sqrt';
+export type FnName =
+  'sin' | 'cos' | 'tan' | 'sec' | 'ln' | 'log' | 'exp' | 'sqrt';
 
 export class ExprError extends Error {}
 
@@ -34,7 +35,10 @@ export const num = (v: number): Expr => ({ t: 'num', v });
 export const variable = (name = 'x'): Expr => ({ t: 'var', name });
 
 /* ------------------------------------------------------------- tokenising */
-type Token = { k: 'num'; v: number } | { k: 'id'; v: string; base?: number } | { k: 'op'; v: string };
+type Token =
+  | { k: 'num'; v: number }
+  | { k: 'id'; v: string; base?: number }
+  | { k: 'op'; v: string };
 
 function tokenise(src: string): Token[] {
   const s = src
@@ -52,7 +56,8 @@ function tokenise(src: string): Token[] {
       let j = i;
       while (j < s.length && /[\d.]/.test(s[j])) j++;
       const v = Number(s.slice(i, j));
-      if (!Number.isFinite(v)) throw new ExprError(`Couldn't read the number "${s.slice(i, j)}".`);
+      if (!Number.isFinite(v))
+        throw new ExprError(`Couldn't read the number "${s.slice(i, j)}".`);
       out.push({ k: 'num', v });
       i = j;
     } else if (c === 'π') {
@@ -64,7 +69,7 @@ function tokenise(src: string): Token[] {
     } else if (/[a-zA-Z]/.test(c)) {
       let j = i;
       while (j < s.length && /[a-zA-Z]/.test(s[j])) j++;
-      let word = s.slice(i, j);
+      const word = s.slice(i, j);
       // An English word left in the input must stop the parse. Below, any
       // unrecognised run becomes a product of single-letter variables, which
       // would quietly turn "and stationary points" into a·n·d·s·t·… and hand
@@ -83,8 +88,13 @@ function tokenise(src: string): Token[] {
           // and log_{2}x all mean log base 2. Without this the digits parse as
           // a separate factor and log2(x+1) becomes log(2(x+1)) — a silently
           // different function.
-          const base = fn === 'log' && k + fn.length === word.length ? readBase() : undefined;
-          out.push(base === undefined ? { k: 'id', v: fn } : { k: 'id', v: fn, base });
+          const base =
+            fn === 'log' && k + fn.length === word.length
+              ? readBase()
+              : undefined;
+          out.push(
+            base === undefined ? { k: 'id', v: fn } : { k: 'id', v: fn, base },
+          );
           k += fn.length;
         } else {
           out.push({ k: 'id', v: word[k] });
@@ -169,7 +179,8 @@ export function parseExpr(src: string): Expr {
       // Everyone writes the exponential function as e^x, and read literally
       // that is a variable called e raised to a power — which differentiates
       // to e^x·ln e and prints back as something no student would recognise.
-      if (base.t === 'var' && base.name === 'e') return { t: 'fn', name: 'exp', a: index };
+      if (base.t === 'var' && base.name === 'e')
+        return { t: 'fn', name: 'exp', a: index };
       return { t: 'pow', a: base, b: index };
     }
     return base;
@@ -188,7 +199,9 @@ export function parseExpr(src: string): Expr {
         const name = t.v as FnName;
         // sin(2x) and sin 2x are both fine; sin x^2 means sin(x^2).
         const arg = eat('(') ? closeParen(parseExpression()) : parsePower();
-        return t.base === undefined ? { t: 'fn', name, a: arg } : { t: 'fn', name, a: arg, base: t.base };
+        return t.base === undefined
+          ? { t: 'fn', name, a: arg }
+          : { t: 'fn', name, a: arg, base: t.base };
       }
       return variable(t.v);
     }
@@ -205,12 +218,14 @@ export function parseExpr(src: string): Expr {
   }
 
   const result = parseExpression();
-  if (pos < tokens.length) throw new ExprError('There is something left over at the end.');
+  if (pos < tokens.length)
+    throw new ExprError('There is something left over at the end.');
   return result;
 }
 
 /* ----------------------------------------------------------- simplifying */
-const isNum = (e: Expr, v: number): boolean => e.t === 'num' && Math.abs(e.v - v) < 1e-12;
+const isNum = (e: Expr, v: number): boolean =>
+  e.t === 'num' && Math.abs(e.v - v) < 1e-12;
 
 export function simplify(e: Expr): Expr {
   switch (e.t) {
@@ -268,7 +283,9 @@ export function simplify(e: Expr): Expr {
 
       if (coeff === 0) return num(0);
       if (parts.length === 0) return num(coeff);
-      const body = parts.reduce((acc, x) => ({ t: 'mul', a: acc, b: x }) as Expr);
+      const body = parts.reduce(
+        (acc, x) => ({ t: 'mul', a: acc, b: x }) as Expr,
+      );
       if (coeff === 1) return body;
       if (coeff === -1) return { t: 'neg', a: body };
       return { t: 'mul', a: num(coeff), b: body };
@@ -278,7 +295,12 @@ export function simplify(e: Expr): Expr {
       const b = simplify(e.b);
       if (isNum(a, 0)) return num(0);
       if (isNum(b, 1)) return a;
-      if (a.t === 'num' && b.t === 'num' && b.v !== 0 && Number.isInteger(a.v / b.v)) {
+      if (
+        a.t === 'num' &&
+        b.t === 'num' &&
+        b.v !== 0 &&
+        Number.isInteger(a.v / b.v)
+      ) {
         return num(a.v / b.v);
       }
       return { t: 'div', a, b };
@@ -301,12 +323,21 @@ export function simplify(e: Expr): Expr {
  * no value. Callers must check with Number.isFinite rather than assume — a
  * silent NaN propagating into printed working is how wrong answers happen.
  */
-export function evaluateExpr(e: Expr, vars: Record<string, number> = {}): number {
+export function evaluateExpr(
+  e: Expr,
+  vars: Record<string, number> = {},
+): number {
   switch (e.t) {
     case 'num':
       return e.v;
     case 'var':
-      return e.name in vars ? vars[e.name] : e.name === 'e' ? Math.E : e.name === 'π' ? Math.PI : NaN;
+      return e.name in vars
+        ? vars[e.name]
+        : e.name === 'e'
+          ? Math.E
+          : e.name === 'π'
+            ? Math.PI
+            : NaN;
     case 'neg':
       return -evaluateExpr(e.a, vars);
     case 'add':
@@ -345,7 +376,8 @@ export function evaluateExpr(e: Expr, vars: Record<string, number> = {}): number
 
 /* -------------------------------------------------------- differentiating */
 /** Which rule applies at the top level — used to narrate the working. */
-export type RuleName = 'constant' | 'power' | 'product' | 'quotient' | 'chain' | 'sum' | 'standard';
+export type RuleName =
+  'constant' | 'power' | 'product' | 'quotient' | 'chain' | 'sum' | 'standard';
 
 export function topRule(e: Expr): RuleName {
   switch (e.t) {
@@ -380,7 +412,9 @@ export function isConstant(e: Expr): boolean {
     case 'fn':
       return isConstant(e.a);
     default:
-      return isConstant((e as { a: Expr }).a) && isConstant((e as { b: Expr }).b);
+      return (
+        isConstant((e as { a: Expr }).a) && isConstant((e as { b: Expr }).b)
+      );
   }
 }
 
@@ -419,7 +453,8 @@ export function differentiate(e: Expr): Expr {
       const constantBase = isConstant(e.a);
       if (constantExponent) {
         // n·u^(n−1)·u'  — power rule with the chain rule
-        const nMinus1: Expr = e.b.t === 'num' ? num(e.b.v - 1) : { t: 'sub', a: e.b, b: num(1) };
+        const nMinus1: Expr =
+          e.b.t === 'num' ? num(e.b.v - 1) : { t: 'sub', a: e.b, b: num(1) };
         return {
           t: 'mul',
           a: { t: 'mul', a: e.b, b: { t: 'pow', a: e.a, b: nMinus1 } },
@@ -434,7 +469,9 @@ export function differentiate(e: Expr): Expr {
           b: differentiate(e.b),
         };
       }
-      throw new ExprError('Differentiating a power with x in both the base and the index needs logarithmic differentiation, which isn’t supported yet.');
+      throw new ExprError(
+        'Differentiating a power with x in both the base and the index needs logarithmic differentiation, which isn’t supported yet.',
+      );
     }
     case 'fn': {
       const u = e.a;
@@ -448,15 +485,31 @@ export function differentiate(e: Expr): Expr {
           case 'tan':
             return { t: 'pow', a: { t: 'fn', name: 'sec', a: u }, b: num(2) };
           case 'sec':
-            return { t: 'mul', a: { t: 'fn', name: 'sec', a: u }, b: { t: 'fn', name: 'tan', a: u } };
+            return {
+              t: 'mul',
+              a: { t: 'fn', name: 'sec', a: u },
+              b: { t: 'fn', name: 'tan', a: u },
+            };
           case 'exp':
             return { t: 'fn', name: 'exp', a: u };
           case 'ln':
             return { t: 'div', a: num(1), b: u };
           case 'log':
-            return { t: 'div', a: num(1), b: { t: 'mul', a: u, b: { t: 'fn', name: 'ln', a: num(e.base ?? 10) } } };
+            return {
+              t: 'div',
+              a: num(1),
+              b: {
+                t: 'mul',
+                a: u,
+                b: { t: 'fn', name: 'ln', a: num(e.base ?? 10) },
+              },
+            };
           case 'sqrt':
-            return { t: 'div', a: num(1), b: { t: 'mul', a: num(2), b: { t: 'fn', name: 'sqrt', a: u } } };
+            return {
+              t: 'div',
+              a: num(1),
+              b: { t: 'mul', a: num(2), b: { t: 'fn', name: 'sqrt', a: u } },
+            };
         }
       })();
       return { t: 'mul', a: outer, b: du };
@@ -565,12 +618,16 @@ export function toLatex(e: Expr): string {
 /** The function's name in LaTeX, carrying a log's subscript when it has one. */
 function fnName(e: Extract<Expr, { t: 'fn' }>): string {
   const stem = FN_TEX[e.name] ?? `\\${e.name}`;
-  return e.name === 'log' && e.base !== undefined ? `${stem}_{${toLatex(num(e.base))}}` : stem;
+  return e.name === 'log' && e.base !== undefined
+    ? `${stem}_{${toLatex(num(e.base))}}`
+    : stem;
 }
 
 /** A function's argument: bare when it is a single symbol, bracketed otherwise. */
 function fnArg(a: Expr): string {
-  return a.t === 'var' || a.t === 'num' ? toLatex(a) : `\\left(${toLatex(a)}\\right)`;
+  return a.t === 'var' || a.t === 'num'
+    ? toLatex(a)
+    : `\\left(${toLatex(a)}\\right)`;
 }
 
 /**

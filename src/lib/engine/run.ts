@@ -33,7 +33,11 @@ export function interpret(raw: string): Interpretation {
 }
 
 /** Solve raw input with a given solver, normalising first. */
-export function runSolve(solver: Solver, raw: string, methodId: string): SolveResult {
+export function runSolve(
+  solver: Solver,
+  raw: string,
+  methodId: string,
+): SolveResult {
   const { text } = normalise(raw);
   const first = solver.solve(text, methodId);
   if (first.ok) return first;

@@ -25,11 +25,14 @@ function parseProblem(input: string): Problem {
   const s = input.replace(/×/g, '*').replace(/\s+/g, '');
   const m = s.match(/^(-?\d+(?:\/\d+)?)([+\-*÷])(-?\d+(?:\/\d+)?)$/);
   if (!m) {
-    throw new Error('Enter two fractions and an operation, e.g.  3/4 + 1/6  or  2/3 × 5/7');
+    throw new Error(
+      'Enter two fractions and an operation, e.g.  3/4 + 1/6  or  2/3 × 5/7',
+    );
   }
   const a = parseFrac(m[1]);
   const b = parseFrac(m[3]);
-  if (a.den === 0 || b.den === 0) throw new Error('A denominator can’t be zero.');
+  if (a.den === 0 || b.den === 0)
+    throw new Error('A denominator can’t be zero.');
   return { a, b, op: m[2] as Op };
 }
 
@@ -51,7 +54,12 @@ function opSymbol(op: Op): string {
   return op === '*' ? '\\times' : op === '÷' ? '\\div' : op;
 }
 
-function reduceStepIfNeeded(rawNum: number, rawDen: number, reduced: Rational, steps: Step[]) {
+function reduceStepIfNeeded(
+  rawNum: number,
+  rawDen: number,
+  reduced: Rational,
+  steps: Step[],
+) {
   const same = Math.abs(rawNum) === Math.abs(reduced.n) && rawDen === reduced.d;
   if (!same) {
     steps.push({
@@ -121,7 +129,11 @@ export function solveFraction(p: Problem): SolveResult {
   if (steps[steps.length - 1]?.latex === `= ${answerLatex}`) {
     steps[steps.length - 1].annotation = 'answer';
   } else {
-    steps.push({ note: 'Final answer.', latex: `= ${answerLatex}`, annotation: 'answer' });
+    steps.push({
+      note: 'Final answer.',
+      latex: `= ${answerLatex}`,
+      annotation: 'answer',
+    });
   }
 
   return {
@@ -141,7 +153,13 @@ export const fractionsSolver: Solver = {
   subjects: ['Foundations'],
   blurb: 'Add, subtract, multiply or divide two fractions.',
   placeholder: 'e.g.  3/4 + 1/6',
-  methods: [{ id: 'standard', name: 'Common denominator', blurb: 'Line up denominators for + and −; multiply across for × and ÷.' }],
+  methods: [
+    {
+      id: 'standard',
+      name: 'Common denominator',
+      blurb: 'Line up denominators for + and −; multiply across for × and ÷.',
+    },
+  ],
   defaultMethodId: 'standard',
   detect(input) {
     const s = input.replace(/\s+/g, '');
@@ -154,7 +172,10 @@ export const fractionsSolver: Solver = {
     try {
       return solveFraction(parseProblem(input));
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that.',
+      };
     }
   },
 };

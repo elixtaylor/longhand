@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { solvers, getSolver } from '../lib/engine/registry';
 import { interpret, runWorked, type Worked } from '../lib/engine/run';
 import { hasMethodChoice } from '../lib/engine/methods';
@@ -20,10 +27,19 @@ import { VectorOperationForm } from './VectorOperationForm';
 import { ComplexOperationForm } from './ComplexOperationForm';
 import { ProbabilityOperationForm } from './ProbabilityOperationForm';
 import { StepList } from './StepList';
-import { CompareMethods } from './CompareMethods';
-import { Sidebar } from './Sidebar';
 import { PartedSolution } from './PartedSolution';
 import { TeX, RichText } from './TeX';
+import { MAX_INPUT_LENGTH } from '../lib/safety';
+import { useLocalStorage } from '../lib/useLocalStorage';
+
+const Sidebar = lazy(() =>
+  import('./Sidebar').then((module) => ({ default: module.Sidebar })),
+);
+const CompareMethods = lazy(() =>
+  import('./CompareMethods').then((module) => ({
+    default: module.CompareMethods,
+  })),
+);
 
 /**
  * A topic and method the student settled on, which the engine is told to use
@@ -60,16 +76,25 @@ export function Workspace({
   textSize: TextSize;
   onTextSize: (s: TextSize) => void;
 }) {
-  const shared = typeof window !== 'undefined' ? decodeShare(window.location.hash) : null;
+  const shared =
+    typeof window !== 'undefined' ? decodeShare(window.location.hash) : null;
+  const sharedSolver = getSolver(shared?.solverId ?? '');
 
   const [pin, setPin] = useState<Pin>(
-    shared?.solverId ? { solverId: shared.solverId, methodId: shared.methodId ?? '' } : null,
+    sharedSolver
+      ? { solverId: sharedSolver.id, methodId: shared?.methodId ?? '' }
+      : null,
   );
-  const [solverId, setSolverId] = useState(shared?.solverId ?? solvers[0].id);
+  const [solverId, setSolverId] = useState(sharedSolver?.id ?? solvers[0].id);
   const [methodId, setMethodId] = useState(
-    shared?.methodId ?? getSolver(shared?.solverId ?? '')?.defaultMethodId ?? solvers[0].defaultMethodId,
+    shared?.methodId ??
+      sharedSolver?.defaultMethodId ??
+      solvers[0].defaultMethodId,
   );
-  const [input, setInput] = useState(shared?.input ?? '');
+  const [input, setInput] = useLocalStorage<string>(
+    'longhand.draft',
+    shared?.input ?? '',
+  );
   const [worked, setWorked] = useState<Worked | null>(null);
   const [detected, setDetected] = useState<Solver | null>(null);
   /** The canonical rewrite of what was typed, shown when it differs. */
@@ -77,6 +102,7 @@ export function Workspace({
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [comparing, setComparing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyMessage, setCopyMessage] = useState('');
   const hasSolved = useRef(false);
 
   /**
@@ -85,6 +111,10 @@ export function Workspace({
    * this method", which also means there is nothing to go looking for.
    */
   const solveWith = useCallback((value: string, pinned: Pin) => {
+    if (value.length > MAX_INPUT_LENGTH) {
+      setWorked({ parts: [], split: false });
+      return;
+    }
     if (value.trim() === '') {
       setWorked(null);
       hasSolved.current = false;
@@ -94,7 +124,9 @@ export function Workspace({
     setWorked(
       runWorked(
         value,
-        solver ? { solver, methodId: pinned!.methodId || solver.defaultMethodId } : undefined,
+        solver
+          ? { solver, methodId: pinned!.methodId || solver.defaultMethodId }
+          : undefined,
       ),
     );
     hasSolved.current = true;
@@ -107,10 +139,21 @@ export function Workspace({
       if (value.trim() === '') return;
       const sid = pinned?.solverId ?? solverId;
       const mid = pinned?.methodId ?? methodId;
-      setHistory(pushHistory({ input: value, solverId: sid, methodId: mid, at: Date.now() }));
-      window.history.replaceState(null, '', encodeShare({ input: value, solverId: sid, methodId: mid }));
+      setHistory(
+        pushHistory({
+          input: value,
+          solverId: sid,
+          methodId: mid,
+          at: Date.now(),
+        }),
+      );
+      window.history.replaceState(
+        null,
+        '',
+        encodeShare({ input: value, solverId: sid, methodId: mid }),
+      );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [solveWith, solverId, methodId],
   );
 
@@ -129,12 +172,17 @@ export function Workspace({
     function onHashChange() {
       const next = decodeShare(window.location.hash);
       if (!next?.input) return;
-      const pinned: Pin = next.solverId
-        ? { solverId: next.solverId, methodId: next.methodId ?? '' }
+      const nextSolver = getSolver(next?.solverId ?? '');
+      const pinned: Pin = nextSolver
+        ? { solverId: nextSolver.id, methodId: next.methodId ?? '' }
         : null;
       if (pinned) {
         setSolverId(pinned.solverId);
-        setMethodId(pinned.methodId || getSolver(pinned.solverId)?.defaultMethodId || methodId);
+        setMethodId(
+          pinned.methodId ||
+            getSolver(pinned.solverId)?.defaultMethodId ||
+            methodId,
+        );
       }
       setPin(pinned);
       setInput(next.input);
@@ -142,8 +190,7 @@ export function Workspace({
     }
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [methodId, solveWith]);
+  }, [methodId, setInput, solveWith]);
 
   /**
    * The topic always follows what the student types. Detection only changes
@@ -184,7 +231,12 @@ export function Workspace({
     const nextMethod = solver.methods.find((m) => m.id === id);
     setMethodId(id);
     setPin({ solverId, methodId: id });
-    if (prevMethod?.fields || nextMethod?.fields || prevMethod?.opForm || nextMethod?.opForm) {
+    if (
+      prevMethod?.fields ||
+      nextMethod?.fields ||
+      prevMethod?.opForm ||
+      nextMethod?.opForm
+    ) {
       setInput('');
       setWorked(null);
       hasSolved.current = false;
@@ -222,15 +274,20 @@ export function Workspace({
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(shareUrl({ input, solverId, methodId }));
+      await navigator.clipboard.writeText(
+        shareUrl({ input, solverId, methodId }),
+      );
       setCopied(true);
+      setCopyMessage('Share link copied to clipboard.');
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      /* clipboard blocked — the URL bar already holds the link */
+      setCopyMessage(
+        'Could not copy the link. You can copy it from the address bar.',
+      );
     }
   }
 
-  const solver = getSolver(solverId)!;
+  const solver = getSolver(solverId) ?? solvers[0];
   const activeMethod = solver.methods.find((m) => m.id === methodId);
   // A method better filled in than typed (a handful of named values rather
   // than one free-text expression) — see StructuredInputForm. Gated on `pin`,
@@ -247,7 +304,8 @@ export function Workspace({
   // Only say we cannot read it when nothing has been worked out either —
   // otherwise a solved question could show its topic and "not sure what this
   // is" at the same time.
-  const unknown = input.trim() !== '' && !detected && !pin && !worked?.parts.length;
+  const unknown =
+    input.trim() !== '' && !detected && !pin && !worked?.parts.length;
   // One part is the ordinary case; the single-solution view and the method
   // comparison both speak in terms of it.
   const single = worked && worked.parts.length === 1 ? worked.parts[0] : null;
@@ -261,182 +319,208 @@ export function Workspace({
   return (
     <>
       {sidebarOpen && (
-        <Sidebar
-          onClose={onSidebarClose}
-          solver={solver}
-          onLoadImported={(p) =>
-            loadImported(p.solverId, p.methodId ?? getSolver(p.solverId)!.defaultMethodId, p.input)
-          }
-          history={history}
-          onLoadHistory={loadHistoryEntry}
-          onClearHistory={() => setHistory(clearHistory())}
-          onJumpToCalculator={jumpToCalculator}
-          theme={theme}
-          onTheme={onTheme}
-          revealMode={revealMode}
-          onRevealMode={onRevealMode}
-          dark={dark}
-          onDark={onDark}
-          textSize={textSize}
-          onTextSize={onTextSize}
-        />
+        <Suspense fallback={null}>
+          <Sidebar
+            onClose={onSidebarClose}
+            solver={solver}
+            onLoadImported={(p) =>
+              loadImported(
+                p.solverId,
+                p.methodId ?? getSolver(p.solverId)!.defaultMethodId,
+                p.input,
+              )
+            }
+            history={history}
+            onLoadHistory={loadHistoryEntry}
+            onClearHistory={() => setHistory(clearHistory())}
+            onJumpToCalculator={jumpToCalculator}
+            theme={theme}
+            onTheme={onTheme}
+            revealMode={revealMode}
+            onRevealMode={onRevealMode}
+            dark={dark}
+            onDark={onDark}
+            textSize={textSize}
+            onTextSize={onTextSize}
+          />
+        </Suspense>
       )}
       <main className="worksheet">
-      <aside className="controls">
-        <section className="panel">
-          {structuredMethod ? (
-            <StructuredInputForm
-              // Remount whenever the field *set* changes (not on every
-              // method switch) — see StructuredInputForm's own doc comment
-              // for why an effect-based reset isn't safe here.
-              key={structuredMethod.fields!.map((f) => f.id).join('|')}
-              method={structuredMethod}
-              onSubmit={(serialized) => {
-                setInput(serialized);
-                commit(serialized, pin);
-              }}
-            />
-          ) : pin && activeMethod?.opForm === 'vector' ? (
-            <VectorOperationForm
-              onSubmit={(serialized) => {
-                setInput(serialized);
-                commit(serialized, pin);
-              }}
-            />
-          ) : pin && activeMethod?.opForm === 'complex' ? (
-            <ComplexOperationForm
-              onSubmit={(serialized) => {
-                setInput(serialized);
-                commit(serialized, pin);
-              }}
-              onOperationChange={(id) => {
-                if (id !== methodId) chooseMethod(id);
-              }}
-            />
-          ) : pin && activeMethod?.opForm === 'probability' ? (
-            <ProbabilityOperationForm
-              onOperationChange={(id) => {
-                if (id !== methodId) chooseMethod(id);
-              }}
-              onSubmit={(serialized) => {
-                setInput(serialized);
-                commit(serialized, pin);
-              }}
-            />
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                commit(input, pin);
-              }}
-            >
-              <ProblemInput
-                value={input}
-                onChange={(v) => {
-                  // A new question is a new question: stop forcing the topic and
-                  // method that were chosen for the last one.
-                  setInput(v);
-                  setPin(null);
+        <p className="sr-only" role="status">
+          {copyMessage}
+        </p>
+        <aside className="controls">
+          <section className="panel">
+            {structuredMethod ? (
+              <StructuredInputForm
+                // Remount whenever the field *set* changes (not on every
+                // method switch) — see StructuredInputForm's own doc comment
+                // for why an effect-based reset isn't safe here.
+                key={structuredMethod.fields!.map((f) => f.id).join('|')}
+                method={structuredMethod}
+                onSubmit={(serialized) => {
+                  setInput(serialized);
+                  commit(serialized, pin);
                 }}
-                placeholder="Ask in plain English — “area of a circle with radius 5”"
-                preview={reading}
               />
+            ) : pin && activeMethod?.opForm === 'vector' ? (
+              <VectorOperationForm
+                onSubmit={(serialized) => {
+                  setInput(serialized);
+                  commit(serialized, pin);
+                }}
+              />
+            ) : pin && activeMethod?.opForm === 'complex' ? (
+              <ComplexOperationForm
+                onSubmit={(serialized) => {
+                  setInput(serialized);
+                  commit(serialized, pin);
+                }}
+                onOperationChange={(id) => {
+                  if (id !== methodId) chooseMethod(id);
+                }}
+              />
+            ) : pin && activeMethod?.opForm === 'probability' ? (
+              <ProbabilityOperationForm
+                onOperationChange={(id) => {
+                  if (id !== methodId) chooseMethod(id);
+                }}
+                onSubmit={(serialized) => {
+                  setInput(serialized);
+                  commit(serialized, pin);
+                }}
+              />
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  commit(input, pin);
+                }}
+              >
+                <ProblemInput
+                  value={input}
+                  onChange={(v) => {
+                    // A new question is a new question: stop forcing the topic and
+                    // method that were chosen for the last one.
+                    setInput(v.slice(0, MAX_INPUT_LENGTH));
+                    setPin(null);
+                  }}
+                  placeholder="e.g. x^2 + 5x + 6 = 0"
+                  preview={reading}
+                />
 
-              {reading && (
-                <p className="reading" role="status">
-                  <span className="reading-label">Read as</span>
-                  <code className="reading-text">{reading}</code>
-                </p>
-              )}
+                {reading && (
+                  <p className="reading" role="status">
+                    <span className="reading-label">Read as</span>
+                    <code className="reading-text">{reading}</code>
+                  </p>
+                )}
 
-              {/* Name the topics and nothing else. Once a question has been
+                {/* Name the topics and nothing else. Once a question has been
                   worked, use what it actually turned out to be: live detection
                   only ever sees one topic, so on a split question it would name
                   whichever half it liked best. */}
-              {topics.length > 0 && (
-                <p className="detected" role="status">
-                  <span className="detected-dot" aria-hidden="true" />
-                  <strong>{topics.join(' → ')}</strong>
-                </p>
-              )}
-              {unknown && (
-                <p className="detected detected-unknown" role="status">
-                  Not sure what this one is yet — try rewording it.
-                </p>
-              )}
+                {topics.length > 0 && (
+                  <p className="detected" role="status">
+                    <span className="detected-dot" aria-hidden="true" />
+                    <strong>{topics.join(' → ')}</strong>
+                    {!worked && detected && <span> · {detected.blurb}</span>}
+                  </p>
+                )}
+                {unknown && (
+                  <p className="detected detected-unknown" role="status">
+                    Not sure what this one is yet — try rewording it.
+                  </p>
+                )}
 
-              <button
-                type="submit"
-                className="btn-primary"
-                style={{ marginTop: 'var(--sp-3)' }}
-                disabled={input.trim() === '' || (!detected && !pin)}
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ marginTop: 'var(--sp-3)' }}
+                  disabled={input.trim() === '' || (!detected && !pin)}
+                >
+                  Show the working
+                </button>
+              </form>
+            )}
+          </section>
+        </aside>
+
+        <section className="solution" aria-live="polite">
+          {worked && worked.parts.length > 0 && (
+            <button
+              type="button"
+              className="notes-toggle"
+              aria-pressed={showNotes}
+              onClick={() => onShowNotes(!showNotes)}
+              title={
+                showNotes
+                  ? 'Hide the reason for each line'
+                  : 'Show why each line follows from the one above'
+              }
+            >
+              {showNotes ? 'Hide why' : 'Why?'}
+            </button>
+          )}
+          {comparing && single?.result.ok ? (
+            <>
+              <header className="solution-head">
+                <div>
+                  <div className="solution-title">
+                    <RichText text={single.result.solution.headline} />
+                  </div>
+                  <div className="solution-sub">
+                    Comparing all <em>{single.solver.methods.length}</em>{' '}
+                    methods
+                  </div>
+                </div>
+                <div className="solution-tools">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setComparing(false)}
+                  >
+                    Back to one method
+                  </button>
+                </div>
+              </header>
+              <Suspense
+                fallback={<p className="empty-state">Loading comparison…</p>}
               >
-                Show the working
-              </button>
-            </form>
+                <CompareMethods solver={single.solver} input={single.text} />
+              </Suspense>
+            </>
+          ) : worked && worked.parts.length > 1 ? (
+            <PartedSolution
+              worked={worked}
+              revealMode={revealMode}
+              showNotes={showNotes}
+              onFocusPart={(part) =>
+                // Working one part alone is how a student gets the method
+                // choices and the comparison for just that topic.
+                loadImported(part.solver.id, part.methodId, part.text)
+              }
+            />
+          ) : (
+            <SolutionView
+              result={single?.result ?? null}
+              revealMode={revealMode}
+              showNotes={showNotes}
+              canCompare={
+                !!single?.result.ok &&
+                hasMethodChoice(single.solver, single.text)
+              }
+              onCompare={() => setComparing(true)}
+              onCopyLink={copyLink}
+              copied={copied}
+              solverId={solverId}
+              input={input}
+              methodId={methodId}
+              onSelectMethod={chooseMethod}
+              pinned={!!pin}
+            />
           )}
         </section>
-      </aside>
-
-      <section className="solution" aria-live="polite">
-        {worked && worked.parts.length > 0 && (
-          <button
-            type="button"
-            className="notes-toggle"
-            aria-pressed={showNotes}
-            onClick={() => onShowNotes(!showNotes)}
-            title={showNotes ? 'Hide the reason for each line' : 'Show why each line follows from the one above'}
-          >
-            {showNotes ? 'Hide why' : 'Why?'}
-          </button>
-        )}
-        {comparing && single?.result.ok ? (
-          <>
-            <header className="solution-head">
-              <div>
-                <div className="solution-title">
-                  <RichText text={single.result.solution.headline} />
-                </div>
-                <div className="solution-sub">
-                  Comparing all <em>{single.solver.methods.length}</em> methods
-                </div>
-              </div>
-              <div className="solution-tools">
-                <button type="button" className="btn" onClick={() => setComparing(false)}>
-                  Back to one method
-                </button>
-              </div>
-            </header>
-            <CompareMethods solver={single.solver} input={single.text} />
-          </>
-        ) : worked && worked.parts.length > 1 ? (
-          <PartedSolution
-            worked={worked}
-            revealMode={revealMode}
-            showNotes={showNotes}
-            onFocusPart={(part) =>
-              // Working one part alone is how a student gets the method
-              // choices and the comparison for just that topic.
-              loadImported(part.solver.id, part.methodId, part.text)
-            }
-          />
-        ) : (
-          <SolutionView
-            result={single?.result ?? null}
-            revealMode={revealMode}
-            showNotes={showNotes}
-            canCompare={!!single?.result.ok && hasMethodChoice(single.solver, single.text)}
-            onCompare={() => setComparing(true)}
-            onCopyLink={copyLink}
-            copied={copied}
-            solverId={solverId}
-            input={input}
-            methodId={methodId}
-            onSelectMethod={chooseMethod}
-            pinned={!!pin}
-          />
-        )}
-      </section>
       </main>
     </>
   );
@@ -481,9 +565,11 @@ function SolutionView({
   // is: without it, live detection into a topic with no free-text method
   // left would show empty structured tabs before the student has chosen
   // anything, or a stale free-text result under the wrong tab template.
-  const hasStructuredMethod = pinned && solver.methods.some((m) => m.fields || m.opForm);
+  const hasStructuredMethod =
+    pinned && solver.methods.some((m) => m.fields || m.opForm);
   const currentMethod = solver.methods.find((m) => m.id === methodId);
-  const structured = pinned && !!(currentMethod?.fields || currentMethod?.opForm);
+  const structured =
+    pinned && !!(currentMethod?.fields || currentMethod?.opForm);
 
   const methodPicker = solver.methods.length > 1 && (
     <div className="solution-methods">
@@ -532,7 +618,11 @@ function SolutionView({
           <div className="empty-state">
             <div className="empty-glyph">∴</div>
             <h2>Fill in the values on the left</h2>
-            <p>{result && !result.ok ? result.error : 'Once every field has a number, press “Show the working”.'}</p>
+            <p>
+              {result && !result.ok
+                ? result.error
+                : 'Once every field has a number, press “Show the working”.'}
+            </p>
           </div>
         )}
       </div>
@@ -547,8 +637,9 @@ function SolutionView({
           <div className="empty-glyph">∴</div>
           <h2>Your working will appear here</h2>
           <p>
-            Type your problem and Longhand works out what topic it is, then shows every line —
-            worked out exactly, using the method you were taught.
+            Type your problem and Longhand works out what topic it is, then
+            shows every line — worked out exactly, using the method you were
+            taught.
           </p>
         </div>
       </div>

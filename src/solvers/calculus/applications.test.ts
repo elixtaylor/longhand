@@ -11,12 +11,16 @@ const ans = (input: string, method = app.defaultMethodId) => {
 describe('gradient at a point', () => {
   it('differentiates then substitutes', () => {
     // f(x) = x², f'(x) = 2x, f'(3) = 6.
-    expect(ans('gradient of y = x^2 at x = 3', 'gradient')).toBe('\\text{gradient} = 6');
+    expect(ans('gradient of y = x^2 at x = 3', 'gradient')).toBe(
+      '\\text{gradient} = 6',
+    );
   });
 
   it('handles a negative point', () => {
     // f'(x) = 3x² − 4, f'(−2) = 12 − 4 = 8.
-    expect(ans('gradient of y = x^3 - 4x at x = -2', 'gradient')).toBe('\\text{gradient} = 8');
+    expect(ans('gradient of y = x^3 - 4x at x = -2', 'gradient')).toBe(
+      '\\text{gradient} = 8',
+    );
   });
 
   it('asks where, rather than guessing', () => {
@@ -50,7 +54,9 @@ describe('stationary points', () => {
 
   it('says so when the gradient is never zero', () => {
     // f'(x) = 3x² + 1 > 0 for every x.
-    expect(ans('stationary points of x^3 + x')).toBe('\\text{no stationary points}');
+    expect(ans('stationary points of x^3 + x')).toBe(
+      '\\text{no stationary points}',
+    );
   });
 
   it('shows the derivative, the equation and the substitution', () => {
@@ -73,7 +79,9 @@ describe('tangents and normals', () => {
   it('uses the negative reciprocal for the normal', () => {
     // At x = 2 on y = x²: m = 4, so the normal has gradient −1/4 through
     // (2, 4): y = −0.25x + 4.5.
-    expect(ans('normal to y = x^2 at x = 2', 'normal')).toBe('y = -0.25x + 4.5');
+    expect(ans('normal to y = x^2 at x = 2', 'normal')).toBe(
+      'y = -0.25x + 4.5',
+    );
   });
 });
 
@@ -90,13 +98,22 @@ describe('claiming the right questions', () => {
   });
 
   it('leaves plain differentiation and sketching alone', () => {
-    expect(detectSolver('d/dx x^3 - 4x^2 + 2x - 7')?.solver.id).toBe('differentiate');
-    expect(detectSolver('sketch y = x^2 - 6x + 5')?.solver.id).toBe('functions');
+    expect(detectSolver('d/dx x^3 - 4x^2 + 2x - 7')?.solver.id).toBe(
+      'differentiate',
+    );
+    expect(detectSolver('sketch y = x^2 - 6x + 5')?.solver.id).toBe(
+      'functions',
+    );
   });
 
   it('works "differentiate … and find the stationary points" as two parts', () => {
-    const w = runWorked('differentiate x^3 - 3x and find the stationary points');
-    expect(w.parts.map((p) => p.solver.id)).toEqual(['differentiate', 'calculus-applications']);
+    const w = runWorked(
+      'differentiate x^3 - 3x and find the stationary points',
+    );
+    expect(w.parts.map((p) => p.solver.id)).toEqual([
+      'differentiate',
+      'calculus-applications',
+    ]);
     expect(w.parts.every((p) => p.result.ok)).toBe(true);
   });
 });

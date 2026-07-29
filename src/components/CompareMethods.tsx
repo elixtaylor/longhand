@@ -11,7 +11,13 @@ import { TeX, RichText } from './TeX';
  * can see it lands on exactly the same answer as the formula, and compare how
  * much work each route takes.
  */
-export function CompareMethods({ solver, input }: { solver: Solver; input: string }) {
+export function CompareMethods({
+  solver,
+  input,
+}: {
+  solver: Solver;
+  input: string;
+}) {
   // Comparing a method against an identical copy of itself teaches nothing,
   // so compare only the ones that genuinely differ on this problem.
   const runs = useMemo(
@@ -35,7 +41,8 @@ export function CompareMethods({ solver, input }: { solver: Solver; input: strin
           <span className="compare-tick" aria-hidden="true">
             ✓
           </span>
-          All {answers.length} methods give the same answer — <TeX tex={answers[0]} />
+          All {answers.length} methods give the same answer —{' '}
+          <TeX tex={answers[0]} />
         </p>
       )}
 
@@ -45,7 +52,9 @@ export function CompareMethods({ solver, input }: { solver: Solver; input: strin
             <header className="compare-head">
               <h3>{method.name}</h3>
               {result.ok && (
-                <span className="compare-count">{result.solution.steps.length} steps</span>
+                <span className="compare-count">
+                  {result.solution.steps.length} steps
+                </span>
               )}
             </header>
 

@@ -6,7 +6,11 @@ export function LongDivision({ data }: { data: LongDivisionData }) {
 
   return (
     <div className="viz-scroll">
-      <div className="bus-stop" role="img" aria-label={`${dividendDigits.join('')} divided by ${divisor} equals ${data.quotient}${remainder ? ' remainder ' + remainder : ''}`}>
+      <div
+        className="bus-stop"
+        role="img"
+        aria-label={`${dividendDigits.join('')} divided by ${divisor} equals ${data.quotient}${remainder ? ' remainder ' + remainder : ''}`}
+      >
         <div className="bus-divisor">{divisor}</div>
         <div className="bus-body">
           <div className="bus-quotient">
@@ -15,12 +19,16 @@ export function LongDivision({ data }: { data: LongDivisionData }) {
                 {firstSignificant !== -1 && i >= firstSignificant ? d : ''}
               </span>
             ))}
-            {remainder > 0 && <span className="bus-remainder">r {remainder}</span>}
+            {remainder > 0 && (
+              <span className="bus-remainder">r {remainder}</span>
+            )}
           </div>
           <div className="bus-dividend">
             {dividendDigits.map((d, i) => (
               <span key={i} className="bus-cell">
-                {carries[i] != null && <sup className="bus-carry">{carries[i]}</sup>}
+                {carries[i] != null && (
+                  <sup className="bus-carry">{carries[i]}</sup>
+                )}
                 {d}
               </span>
             ))}

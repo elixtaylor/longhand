@@ -55,7 +55,11 @@ export function TopicMethodPicker({
       </div>
       {methods.length > 1 ? (
         <>
-          <div className="method-tabs" role="tablist" aria-label="Choose a method">
+          <div
+            className="method-tabs"
+            role="tablist"
+            aria-label="Choose a method"
+          >
             {methods.map((m) => (
               <button
                 key={m.id}

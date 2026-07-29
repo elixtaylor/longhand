@@ -26,12 +26,26 @@ export const functionsSolver: Solver = {
   blurb: 'Intercepts, turning points, nature and shape of a polynomial curve.',
   placeholder: 'e.g.  sketch y = x^2 - 4x + 3',
   methods: [
-    { id: 'features', name: 'Key features', blurb: 'Intercepts, turning points and their nature — everything a sketch needs.' },
-    { id: 'calculus', name: 'Using calculus', blurb: 'Find turning points from f′(x) = 0 and classify them with f″(x).' },
+    {
+      id: 'features',
+      name: 'Key features',
+      blurb:
+        'Intercepts, turning points and their nature — everything a sketch needs.',
+    },
+    {
+      id: 'calculus',
+      name: 'Using calculus',
+      blurb: 'Find turning points from f′(x) = 0 and classify them with f″(x).',
+    },
   ],
   defaultMethodId: 'features',
   detect(input) {
-    if (!/\bsketch|\bgraph\b|turning\s*point|key\s*features?|\bvertex\b/i.test(input)) return 0;
+    if (
+      !/\bsketch|\bgraph\b|turning\s*point|key\s*features?|\bvertex\b/i.test(
+        input,
+      )
+    )
+      return 0;
     try {
       const p = parsePoly(clean(input), 'x');
       if (p.degree() < 1) return 0;
@@ -49,14 +63,27 @@ export const functionsSolver: Solver = {
     try {
       p = parsePoly(clean(input), 'x');
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : 'Could not read that function.' };
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : 'Could not read that function.',
+      };
     }
     const deg = p.degree();
-    if (deg < 1) return { ok: false, error: 'That is a constant — there is no curve to sketch.' };
-    if (deg > 4) return { ok: false, error: 'Sketching handles polynomials up to degree 4.' };
+    if (deg < 1)
+      return {
+        ok: false,
+        error: 'That is a constant — there is no curve to sketch.',
+      };
+    if (deg > 4)
+      return {
+        ok: false,
+        error: 'Sketching handles polynomials up to degree 4.',
+      };
 
     const fx = polyLatex(p);
-    const steps: Step[] = [{ note: 'Write the function.', latex: `f(x) = ${fx}` }];
+    const steps: Step[] = [
+      { note: 'Write the function.', latex: `f(x) = ${fx}` },
+    ];
 
     // y-intercept
     const yInt = p.get(0).toNumber();
@@ -77,13 +104,17 @@ export const functionsSolver: Solver = {
       steps.push({
         note: 'Find the $x$-intercepts by solving $f(x) = 0$.',
         latex: roots.map((r) => `x = ${fmt(r, 4)}`).join(', \\quad '),
-        annotation: roots.length === 1 ? 'one crossing' : `${roots.length} crossings`,
+        annotation:
+          roots.length === 1 ? 'one crossing' : `${roots.length} crossings`,
       });
     }
 
     // Turning points from the derivative
     const d1 = differentiate(p);
-    steps.push({ note: 'Differentiate to locate the turning points.', latex: `f'(x) = ${polyLatex(d1)}` });
+    steps.push({
+      note: 'Differentiate to locate the turning points.',
+      latex: `f'(x) = ${polyLatex(d1)}`,
+    });
 
     const stationary = realRoots(d1);
     if (stationary.length === 0) {
@@ -99,7 +130,10 @@ export const functionsSolver: Solver = {
       });
 
       const d2 = differentiate(d1);
-      steps.push({ note: 'Differentiate again to classify each one.', latex: `f''(x) = ${polyLatex(d2)}` });
+      steps.push({
+        note: 'Differentiate again to classify each one.',
+        latex: `f''(x) = ${polyLatex(d2)}`,
+      });
 
       for (const x of stationary) {
         const y = evaluatePoly(p, x);
@@ -112,7 +146,11 @@ export const functionsSolver: Solver = {
               : 'a maximum';
         steps.push({
           note: `At $x = ${fmt(x, 4)}$, $f''(x) = ${fmt(curvature, 4)}$, which is ${
-            Math.abs(curvature) < 1e-9 ? 'zero' : curvature > 0 ? 'positive' : 'negative'
+            Math.abs(curvature) < 1e-9
+              ? 'zero'
+              : curvature > 0
+                ? 'positive'
+                : 'negative'
           }.`,
           latex: `\\left(${fmt(x, 4)},\\; ${fmt(y, 4)}\\right) \\text{ is ${kind}}`,
           annotation: kind,
@@ -167,7 +205,9 @@ export const functionsSolver: Solver = {
       visual: {
         kind: 'curve',
         data: {
-          coeffs: p.terms().map((t) => [t.power, t.coeff.toNumber()] as [number, number]),
+          coeffs: p
+            .terms()
+            .map((t) => [t.power, t.coeff.toNumber()] as [number, number]),
           roots,
           yIntercept: yInt,
           turningPoints: realRoots(d1ForPlot).map((x) => {
@@ -175,10 +215,11 @@ export const functionsSolver: Solver = {
             return {
               x,
               y: evaluatePoly(p, x),
-              kind: (Math.abs(curvature) < 1e-9 ? 'inflection' : curvature > 0 ? 'min' : 'max') as
-                | 'max'
-                | 'min'
-                | 'inflection',
+              kind: (Math.abs(curvature) < 1e-9
+                ? 'inflection'
+                : curvature > 0
+                  ? 'min'
+                  : 'max') as 'max' | 'min' | 'inflection',
             };
           }),
         },
@@ -193,7 +234,12 @@ export const functionsSolver: Solver = {
 
     return {
       ok: true,
-      solution: { headline: `Sketch $y = ${fx}$`, methodName: 'Key features', steps, answerLatex: summary },
+      solution: {
+        headline: `Sketch $y = ${fx}$`,
+        methodName: 'Key features',
+        steps,
+        answerLatex: summary,
+      },
     };
   },
 };
