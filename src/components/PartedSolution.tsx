@@ -80,7 +80,7 @@ export function PartedSolution({
               input={part.text}
               methodId={part.methodId}
               onSelectMethod={(methodId) => onSelectPartMethod(part, methodId)}
-              showDescription={showNotes}
+              showDescription={false}
             />
           )}
 

@@ -14,6 +14,13 @@ interface TablePoint {
   source: string;
 }
 
+interface GraphBounds {
+  xMin?: number;
+  xMax?: number;
+  yMin?: number;
+  yMax?: number;
+}
+
 const COLOURS = ['#2f6fed', '#d05242', '#2f8b68', '#9a63c7', '#d18a2a'];
 
 /** Evaluate the same expression grammar used by the numerical fallback. */
@@ -77,22 +84,26 @@ function samplePath(
 function GraphPlot({
   expressions,
   points,
+  bounds,
 }: {
   expressions: GraphExpression[];
   points: TablePoint[];
+  bounds: GraphBounds;
 }) {
   const finitePoints = points.filter(
     (point) => Number.isFinite(point.x) && Number.isFinite(point.y),
   );
   const xValues = finitePoints.map((point) => point.x);
-  const xMin = Math.min(
+  const autoXMin = Math.min(
     -5,
     ...(xValues.length ? [Math.min(...xValues) - 1] : []),
   );
-  const xMax = Math.max(
+  const autoXMax = Math.max(
     10,
     ...(xValues.length ? [Math.max(...xValues) + 1] : []),
   );
+  const xMin = bounds.xMin ?? autoXMin;
+  const xMax = bounds.xMax ?? autoXMax;
   const sampled: number[] = [];
   for (const expression of expressions) {
     for (let i = 0; i <= 120; i++) {
@@ -105,17 +116,17 @@ function GraphPlot({
       }
     }
   }
-  const rawYMin = Math.min(
+  const autoYMin = Math.min(
     -5,
     ...(sampled.length ? [Math.min(...sampled)] : []),
   );
-  const rawYMax = Math.max(
+  const autoYMax = Math.max(
     5,
     ...(sampled.length ? [Math.max(...sampled)] : []),
   );
-  const padding = Math.max((rawYMax - rawYMin) * 0.12, 1);
-  const yMin = rawYMin - padding;
-  const yMax = rawYMax + padding;
+  const yPadding = Math.max((autoYMax - autoYMin) * 0.12, 1);
+  const yMin = bounds.yMin ?? autoYMin - yPadding;
+  const yMax = bounds.yMax ?? autoYMax + yPadding;
   const width = 860;
   const height = 470;
   const pad = { left: 50, right: 18, top: 18, bottom: 38 };
@@ -212,23 +223,46 @@ function GraphPlot({
           />
         );
       })}
-      {points.map((point, index) => (
-        <g key={`${point.x}-${index}`}>
-          <circle
-            cx={sx(point.x)}
-            cy={sy(point.y)}
-            r="5"
-            className="graph-table-point"
-          />
-          <text
-            x={sx(point.x) + 8}
-            y={sy(point.y) - 8}
-            className="graph-point-label"
-          >
-            ({fmt(point.x)}, {fmt(point.y)})
-          </text>
-        </g>
-      ))}
+      {points
+        .filter(
+          (point) =>
+            point.x >= xMin &&
+            point.x <= xMax &&
+            point.y >= yMin &&
+            point.y <= yMax,
+        )
+        .map((point, index) => {
+          const label = `(${fmt(point.x)}, ${fmt(point.y)})`;
+          const labelX = Math.min(
+            Math.max(sx(point.x) + 8, pad.left + 4),
+            width - pad.right - label.length * 6.4 - 8,
+          );
+          const labelY = Math.max(
+            sy(point.y) - 12 - (index % 3) * 17,
+            pad.top + 14,
+          );
+          return (
+            <g key={`${point.x}-${index}`}>
+              <circle
+                cx={sx(point.x)}
+                cy={sy(point.y)}
+                r="5"
+                className="graph-table-point"
+              />
+              <rect
+                x={labelX - 4}
+                y={labelY - 12}
+                width={label.length * 6.4 + 8}
+                height="16"
+                rx="3"
+                className="graph-point-label-bg"
+              />
+              <text x={labelX} y={labelY} className="graph-point-label">
+                {label}
+              </text>
+            </g>
+          );
+        })}
     </svg>
   );
 }
@@ -239,6 +273,14 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
   ]);
   const [xValues, setXValues] = useState(['0', '1', '2', '3', '4']);
   const [nextId, setNextId] = useState(2);
+  const [bounds, setBounds] = useState<GraphBounds>({});
+  const [draftBounds, setDraftBounds] = useState({
+    xMin: '',
+    xMax: '',
+    yMin: '',
+    yMax: '',
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const table = useMemo(() => {
     try {
       return tableFor(expressions[0]?.text ?? '', xValues);
@@ -258,6 +300,39 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
       { id: nextId, text: '', colour: COLOURS[nextId % COLOURS.length] },
     ]);
     setNextId((value) => value + 1);
+  }
+
+  function openSettings() {
+    setDraftBounds({
+      xMin: bounds.xMin === undefined ? '' : String(bounds.xMin),
+      xMax: bounds.xMax === undefined ? '' : String(bounds.xMax),
+      yMin: bounds.yMin === undefined ? '' : String(bounds.yMin),
+      yMax: bounds.yMax === undefined ? '' : String(bounds.yMax),
+    });
+    setSettingsOpen(true);
+  }
+
+  function applySettings() {
+    const values = Object.fromEntries(
+      Object.entries(draftBounds).map(([key, value]) => [
+        key,
+        value.trim() === '' ? undefined : Number(value),
+      ]),
+    ) as GraphBounds;
+    const allValid = Object.values(values).every(
+      (value) => value === undefined || Number.isFinite(value),
+    );
+    const xValid =
+      values.xMin === undefined ||
+      values.xMax === undefined ||
+      values.xMin < values.xMax;
+    const yValid =
+      values.yMin === undefined ||
+      values.yMax === undefined ||
+      values.yMin < values.yMax;
+    if (!allValid || !xValid || !yValid) return;
+    setBounds(values);
+    setSettingsOpen(false);
   }
 
   return (
@@ -281,10 +356,6 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
           <div className="graphing-section-head">
             <div>
               <h2>Expressions</h2>
-              <p>
-                Use x as the input. Any parseable <code>y = f(x)</code>{' '}
-                expression can be tabled and plotted.
-              </p>
             </div>
             <button type="button" className="btn" onClick={addExpression}>
               + Add
@@ -342,10 +413,6 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
             <div className="graphing-section-head">
               <div>
                 <h2>Table</h2>
-                <p>
-                  Enter x-coordinates. The first expression fills y
-                  automatically.
-                </p>
               </div>
               <button
                 type="button"
@@ -410,22 +477,76 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
         </aside>
         <section className="graphing-canvas">
           <div className="graphing-canvas-head">
-            <div>
-              <h2>Graph</h2>
-              <p>Table points are labelled on the curve.</p>
+            <h2>Graph</h2>
+            <div className="graphing-canvas-actions">
+              <span className="graphing-status">{table.length} points</span>
+              <button type="button" className="btn" onClick={openSettings}>
+                Settings
+              </button>
             </div>
-            <span className="graphing-status">
-              {table.length} plotted points
-            </span>
           </div>
+          {settingsOpen && (
+            <div
+              className="graph-settings-popover"
+              role="dialog"
+              aria-label="Graph settings"
+            >
+              <div className="graph-settings-head">
+                <strong>Viewing window</strong>
+                <button
+                  type="button"
+                  className="graph-remove"
+                  aria-label="Close graph settings"
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="graph-settings-grid">
+                {(['xMin', 'xMax', 'yMin', 'yMax'] as const).map((key) => (
+                  <label key={key}>
+                    {key.replace('Min', ' min').replace('Max', ' max')}
+                    <input
+                      inputMode="decimal"
+                      value={draftBounds[key]}
+                      onChange={(event) =>
+                        setDraftBounds((current) => ({
+                          ...current,
+                          [key]: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="graph-settings-actions">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    setBounds({});
+                    setSettingsOpen(false);
+                  }}
+                >
+                  Auto
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={applySettings}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
           <div className="graphing-plot-wrap">
-            <GraphPlot expressions={expressions} points={table} />
+            <GraphPlot
+              expressions={expressions}
+              points={table}
+              bounds={bounds}
+            />
           </div>
-          <p className="graphing-help">
-            Angles use radians, matching the graphing convention. Try{' '}
-            <code>500e^(-0.08x)</code>, <code>sin(x)</code> or{' '}
-            <code>x^2 - 4</code>.
-          </p>
         </section>
       </main>
     </div>

@@ -15,7 +15,7 @@ export function TopicMethodPicker({
   methodId,
   onSelectMethod,
   forceAll,
-  showDescription = true,
+  showDescription = false,
 }: {
   solverId: string;
   input: string;

@@ -139,11 +139,6 @@ export function ProbabilityOperationForm({
             {numberField('P(B)', pb, setPb, '0–1')}
             {op !== 'intersection' && numberField('P(A∩B)', pab, setPab)}
           </div>
-          {op !== 'intersection' && (
-            <p className="setting-hint">
-              Leave P(A∩B) blank to assume independent events.
-            </p>
-          )}
         </>
       )}
 

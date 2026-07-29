@@ -254,10 +254,6 @@ export function Sidebar({
 
                   {s.id === 'graphing' && (
                     <div className="sidebar-tool">
-                      <p className="sidebar-tool-hint">
-                        Plot one or more expressions and fill a live x/y table
-                        with labelled points.
-                      </p>
                       <button
                         type="button"
                         className="btn-primary"

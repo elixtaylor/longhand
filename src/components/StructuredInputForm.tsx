@@ -189,13 +189,6 @@ export function StructuredInputForm({
         </div>
       )}
 
-      {allOptional && (
-        <p className="setting-hint">
-          Fill in what you know — any missing value that can be found is filled
-          in automatically.
-        </p>
-      )}
-
       {fixedFields.map((f) => (
         <div className="structured-field" key={f.id}>
           <label className="field-label">{f.label}</label>

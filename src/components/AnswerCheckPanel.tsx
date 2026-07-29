@@ -30,11 +30,6 @@ export function AnswerCheckPanel({
         setResult(checkAnswer(expected, answer));
       }}
     >
-      <p className="sidebar-tool-hint">
-        {part
-          ? 'Type your answer for the selected part.'
-          : 'Solve one problem first, then check your answer here.'}
-      </p>
       {parts.length > 1 && (
         <select
           className="sidebar-tool-input"

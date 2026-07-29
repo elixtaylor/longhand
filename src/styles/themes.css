@@ -19,14 +19,14 @@
      that font or --rule changes. */
   --rule-baseline: 14.2656px;
   /* Typography — system stacks chosen for character, not the Inter/Google default */
-  --font-display:
-    'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia,
-    'Times New Roman', serif;
-  --font-ui:
-    'Avenir Next', Avenir, 'Segoe UI', system-ui, -apple-system,
-    BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-  --font-mono:
-    'SF Mono', ui-monospace, Menlo, Consolas, 'Roboto Mono', monospace;
+  /* One calm Apple-like system face across the interface. The only visual
+     exception is the notebook theme's handwritten working below. */
+  --font-apple:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Helvetica Neue', Arial, sans-serif;
+  --font-display: var(--font-apple);
+  --font-ui: var(--font-apple);
+  --font-mono: var(--font-apple);
   /* Handwriting, from faces that ship with macOS and Windows — nothing is
      fetched, so the app still works offline. It ends at `cursive` so a Linux
      browser substitutes something in the right spirit rather than falling
@@ -34,7 +34,7 @@
   --font-hand:
     'Bradley Hand', 'Segoe Print', 'Chalkboard SE', Noteworthy, 'Comic Sans MS',
     'Comic Neue', cursive;
-  --font-annotation: var(--font-hand);
+  --font-annotation: var(--font-ui);
 
   /* Shape & depth — restrained, no neon glows */
   --radius: 6px;
@@ -204,7 +204,7 @@
   --focus-ring: #2f7d63;
 
   /* rounded, friendly display uses the humanist sans (bold), not an italic serif */
-  --font-display: 'Avenir Next', Avenir, 'Segoe UI', system-ui, sans-serif;
+  --font-display: var(--font-apple);
   --display-weight: 700;
   --display-style: normal;
   --display-tracking: -0.005em;

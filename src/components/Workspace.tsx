@@ -528,7 +528,6 @@ export function Workspace({
                   <p className="detected" role="status">
                     <span className="detected-dot" aria-hidden="true" />
                     <strong>{topics.join(' → ')}</strong>
-                    {!worked && detected && <span> · {detected.blurb}</span>}
                   </p>
                 )}
                 {unknown && (
@@ -696,7 +695,7 @@ function SolutionView({
         methodId={methodId}
         onSelectMethod={onSelectMethod}
         forceAll={hasStructuredMethod}
-        showDescription={showNotes}
+        showDescription={false}
       />
     </div>
   );
