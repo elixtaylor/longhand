@@ -338,18 +338,20 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
   return (
     <div className="graphing-overlay">
       <header className="graphing-header">
-        <div>
-          <span className="graphing-kicker">Longhand / Graphing</span>
-          <h1>Explore functions</h1>
+        <div className="graphing-header-left">
+          <button
+            type="button"
+            className="return-btn"
+            aria-label="Return to equation input"
+            onClick={onClose}
+          >
+            ← Return
+          </button>
+          <div>
+            <span className="graphing-kicker">Longhand / Graphing</span>
+            <h1>Explore functions</h1>
+          </div>
         </div>
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label="Close graphing"
-          onClick={onClose}
-        >
-          ✕
-        </button>
       </header>
       <main className="graphing-layout">
         <aside className="graphing-inspector">

@@ -1381,6 +1381,14 @@ button {
     opacity: 0;
   }
 }
+[data-reduce-motion='on'] *,
+[data-reduce-motion='on'] *::before,
+[data-reduce-motion='on'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
+}
 .sidebar-panel {
   width: min(312px, 90vw);
   height: 100vh;
@@ -1589,6 +1597,63 @@ button {
   border-radius: var(--control-radius);
   align-items: stretch;
 }
+.setting-reset-row {
+  padding-top: var(--sp-4);
+}
+
+/* Standalone pages -------------------------------------------------------- */
+.page-shell {
+  min-height: 100vh;
+  padding: var(--sp-5) var(--sp-6) var(--sp-7);
+  background: var(--bg);
+}
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-5);
+  width: min(920px, 100%);
+  margin: 0 auto var(--sp-5);
+}
+.page-header h1 {
+  margin-top: 2px;
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+}
+.page-kicker {
+  color: var(--ink-3);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.return-btn {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--control-radius);
+  color: var(--ink-2);
+  background: var(--surface);
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition:
+    border-color 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.return-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.page-card {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
 .theme-swatch[aria-pressed='true'] {
   border-color: var(--accent);
 }
@@ -1627,6 +1692,11 @@ button {
   padding: var(--sp-4) var(--sp-6);
   background: var(--surface);
   border-bottom: 1px solid var(--line-strong);
+}
+.graphing-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
 }
 .graphing-header h1 {
   margin-top: 2px;
@@ -1891,6 +1961,15 @@ button {
   }
 }
 @media (max-width: 600px) {
+  .page-shell {
+    padding: var(--sp-4);
+  }
+  .page-header {
+    gap: var(--sp-3);
+  }
+  .page-card {
+    padding: var(--sp-4);
+  }
   .graphing-header {
     padding: var(--sp-4);
   }

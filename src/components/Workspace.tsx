@@ -80,7 +80,10 @@ export function Workspace({
   onShowPalette,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
-  onOpenGraphing = () => undefined,
+  autoScroll = true,
+  showReading = true,
+  reduceMotion = false,
+  onNavigatePage = () => undefined,
   resetKey = 0,
 }: {
   revealMode: RevealMode;
@@ -99,7 +102,10 @@ export function Workspace({
   onShowPalette: (show: boolean) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
-  onOpenGraphing?: () => void;
+  autoScroll?: boolean;
+  showReading?: boolean;
+  reduceMotion?: boolean;
+  onNavigatePage?: (page: 'home' | 'graphing' | 'settings') => void;
   resetKey?: number;
 }) {
   const shared =
@@ -189,7 +195,7 @@ export function Workspace({
   /** Solving is the moment worth recording and worth making shareable. */
   const commit = useCallback(
     (value: string, pinned: Pin) => {
-      if (value.trim() !== '') scrollToSolution.current = true;
+      if (value.trim() !== '' && autoScroll) scrollToSolution.current = true;
       solveWith(value, pinned);
       if (value.trim() === '') return;
       const sid = pinned?.solverId ?? solverId;
@@ -209,7 +215,7 @@ export function Workspace({
       );
     },
 
-    [solveWith, solverId, methodId],
+    [solveWith, solverId, methodId, autoScroll],
   );
 
   // A solved result is taller than the input controls on most screens. Move
@@ -223,16 +229,16 @@ export function Workspace({
     const frame = window.requestAnimationFrame(() => {
       const solution = solutionRef.current;
       if (!solution || typeof solution.scrollIntoView !== 'function') return;
-      const reducedMotion =
+      const prefersReducedMotion =
         window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ??
         false;
       solution.scrollIntoView({
-        behavior: reducedMotion ? 'auto' : 'smooth',
+        behavior: reduceMotion || prefersReducedMotion ? 'auto' : 'smooth',
         block: 'start',
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [worked]);
+  }, [worked, reduceMotion]);
 
   // Restore a shared link on first load.
   useEffect(() => {
@@ -442,7 +448,7 @@ export function Workspace({
             }
             displayMode={displayMode}
             onDisplayMode={onDisplayMode}
-            onOpenGraphing={onOpenGraphing}
+            onNavigatePage={onNavigatePage}
           />
         </Suspense>
       )}
@@ -513,7 +519,7 @@ export function Workspace({
                   showPalette={showPalette}
                 />
 
-                {reading && (
+                {showReading && reading && (
                   <p className="reading" role="status">
                     <span className="reading-label">Read as</span>
                     <code className="reading-text">{reading}</code>

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { useLocalStorage } from './lib/useLocalStorage';
 import type { ThemeId, RevealMode, TextSize, DisplayMode } from './lib/ui';
 import { Workspace } from './components/Workspace';
 import { DisplayModeContext } from './components/TeX';
 import { GraphingWorkspace } from './components/GraphingWorkspace';
+import { SettingsPanel } from './components/SettingsPanel';
+import { pageFromPath, pagePath, type PageId } from './lib/routes';
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'mono');
@@ -34,21 +36,51 @@ export default function App() {
     'longhand.notes',
     false,
   );
+  const [autoScroll, setAutoScroll] = useLocalStorage<boolean>(
+    'longhand.autoScroll',
+    true,
+  );
+  const [showReading, setShowReading] = useLocalStorage<boolean>(
+    'longhand.reading',
+    true,
+  );
+  const [reduceMotion, setReduceMotion] = useLocalStorage<boolean>(
+    'longhand.reduceMotion',
+    false,
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [graphingOpen, setGraphingOpen] = useState(false);
+  const [page, setPage] = useState<PageId>(() =>
+    pageFromPath(window.location.pathname),
+  );
   const [resetKey, setResetKey] = useState(0);
+  function navigate(next: PageId, replace = false) {
+    const url = pagePath(next);
+    (replace ? window.history.replaceState : window.history.pushState).call(
+      window.history,
+      null,
+      '',
+      url,
+    );
+    setPage(next);
+    setSidebarOpen(false);
+  }
   function goHome() {
     setSidebarOpen(false);
     setResetKey((key) => key + 1);
-    window.history.replaceState(
-      null,
-      '',
-      `${window.location.pathname}${window.location.search}`,
-    );
+    navigate('home', true);
     window.requestAnimationFrame(() =>
       document.getElementById('problem')?.focus(),
     );
   }
+
+  useEffect(() => {
+    function onPopState() {
+      setPage(pageFromPath(window.location.pathname));
+      setSidebarOpen(false);
+    }
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const closeSidebar = () => {
     setSidebarOpen(false);
     window.requestAnimationFrame(() =>
@@ -63,7 +95,8 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.dark = dark ? 'on' : 'off';
     document.documentElement.dataset.textSize = textSize;
-  }, [theme, dark, textSize]);
+    document.documentElement.dataset.reduceMotion = reduceMotion ? 'on' : 'off';
+  }, [theme, dark, textSize, reduceMotion]);
 
   // Keyboard shortcuts: "/" focuses the problem box, "," opens the menu.
   useEffect(() => {
@@ -86,70 +119,135 @@ export default function App() {
   return (
     <DisplayModeContext.Provider value={displayMode}>
       <div className="app">
-        <header className="masthead">
-          <div className="masthead-left">
-            <button
-              type="button"
-              className="icon-btn"
-              aria-label="Open menu"
-              aria-haspopup="dialog"
-              onClick={() => setSidebarOpen((o) => !o)}
-            >
-              {/* hamburger glyph — the drawer holds calculators, practice,
-                answer checking, textbook questions and settings */}
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+        {page === 'home' && (
+          <header className="masthead">
+            <div className="masthead-left">
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label="Open menu"
+                aria-haspopup="dialog"
+                onClick={() => setSidebarOpen((o) => !o)}
               >
-                <path d="M3 6h18M3 12h18M3 18h18" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="wordmark"
-              aria-label="Longhand home, clear the current problem"
-              onClick={goHome}
-            >
-              <span className="wordmark-mark">L</span>
-              Longhand
-            </button>
-          </div>
-        </header>
+                {/* hamburger glyph — the drawer holds calculators, practice,
+                answer checking, textbook questions and settings */}
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 6h18M3 12h18M3 18h18" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="wordmark"
+                aria-label="Longhand home, clear the current problem"
+                onClick={goHome}
+              >
+                <span className="wordmark-mark">L</span>
+                Longhand
+              </button>
+            </div>
+          </header>
+        )}
 
-        <Workspace
-          revealMode={revealMode}
-          onRevealMode={setRevealMode}
-          showNotes={showNotes}
-          onShowNotes={setShowNotes}
-          sidebarOpen={sidebarOpen}
-          onSidebarClose={closeSidebar}
-          theme={theme}
-          onTheme={setTheme}
-          dark={dark}
-          onDark={setDark}
-          textSize={textSize}
-          onTextSize={setTextSize}
-          showPalette={showPalette}
-          onShowPalette={setShowPalette}
-          resetKey={resetKey}
-          displayMode={displayMode}
-          onDisplayMode={setDisplayMode}
-          onOpenGraphing={() => {
-            setSidebarOpen(false);
-            setGraphingOpen(true);
-          }}
-        />
-        {graphingOpen && (
-          <GraphingWorkspace onClose={() => setGraphingOpen(false)} />
+        {page === 'graphing' ? (
+          <GraphingWorkspace onClose={() => navigate('home')} />
+        ) : page === 'settings' ? (
+          <SettingsPage
+            onReturn={() => navigate('home')}
+            theme={theme}
+            onTheme={setTheme}
+            revealMode={revealMode}
+            onRevealMode={setRevealMode}
+            dark={dark}
+            onDark={setDark}
+            textSize={textSize}
+            onTextSize={setTextSize}
+            showPalette={showPalette}
+            onShowPalette={setShowPalette}
+            displayMode={displayMode}
+            onDisplayMode={setDisplayMode}
+            autoScroll={autoScroll}
+            onAutoScroll={setAutoScroll}
+            showReading={showReading}
+            onShowReading={setShowReading}
+            reduceMotion={reduceMotion}
+            onReduceMotion={setReduceMotion}
+            showNotes={showNotes}
+            onShowNotes={setShowNotes}
+            onResetPreferences={() => {
+              setTheme('mono');
+              setRevealMode('all');
+              setDark(false);
+              setTextSize('md');
+              setDisplayMode('exact');
+              setShowPalette(true);
+              setAutoScroll(true);
+              setShowReading(true);
+              setReduceMotion(false);
+              setShowNotes(false);
+            }}
+          />
+        ) : (
+          <Workspace
+            revealMode={revealMode}
+            onRevealMode={setRevealMode}
+            showNotes={showNotes}
+            onShowNotes={setShowNotes}
+            sidebarOpen={sidebarOpen}
+            onSidebarClose={closeSidebar}
+            theme={theme}
+            onTheme={setTheme}
+            dark={dark}
+            onDark={setDark}
+            textSize={textSize}
+            onTextSize={setTextSize}
+            showPalette={showPalette}
+            onShowPalette={setShowPalette}
+            resetKey={resetKey}
+            displayMode={displayMode}
+            onDisplayMode={setDisplayMode}
+            autoScroll={autoScroll}
+            showReading={showReading}
+            reduceMotion={reduceMotion}
+            onNavigatePage={navigate}
+          />
         )}
       </div>
     </DisplayModeContext.Provider>
+  );
+}
+
+function SettingsPage({
+  onReturn,
+  onResetPreferences,
+  ...settings
+}: ComponentProps<typeof SettingsPanel> & {
+  onReturn: () => void;
+  onResetPreferences: () => void;
+}) {
+  return (
+    <main className="page-shell">
+      <header className="page-header">
+        <button type="button" className="return-btn" onClick={onReturn}>
+          ← Return
+        </button>
+        <div>
+          <span className="page-kicker">Longhand / Settings</span>
+          <h1>Settings</h1>
+        </div>
+      </header>
+      <section className="page-card">
+        <SettingsPanel {...settings} onResetPreferences={onResetPreferences} />
+      </section>
+    </main>
   );
 }

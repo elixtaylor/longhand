@@ -20,6 +20,9 @@ npm run build
 # Without this, Pages runs the output through Jekyll, which silently drops any
 # file or folder whose name begins with an underscore.
 touch dist/.nojekyll
+# GitHub Pages serves this document for deep links such as /longhand/settings.
+# Keep the built asset URLs intact so the client-side route can render there.
+cp dist/index.html dist/404.html
 
 rm -rf dist/.git
 git -C dist init -q -b gh-pages

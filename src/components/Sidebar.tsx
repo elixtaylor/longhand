@@ -52,7 +52,7 @@ export function Sidebar({
   onOpenExample = () => undefined,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
-  onOpenGraphing = () => undefined,
+  onNavigatePage = () => undefined,
 }: {
   onClose: () => void;
   solver: Solver;
@@ -76,7 +76,7 @@ export function Sidebar({
   onOpenExample?: (example: Example) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
-  onOpenGraphing?: () => void;
+  onNavigatePage?: (page: 'home' | 'graphing' | 'settings') => void;
 }) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -151,6 +151,15 @@ export function Sidebar({
     setOpenSection((cur) => (cur === id ? null : id));
   }
 
+  function activate(id: SectionId) {
+    if (id === 'graphing' || id === 'settings') {
+      onNavigatePage(id);
+      onClose();
+      return;
+    }
+    toggle(id);
+  }
+
   function jumpToCalculator(solverId: string, methodId: string) {
     onJumpToCalculator(solverId, methodId);
     onClose();
@@ -198,9 +207,17 @@ export function Sidebar({
                 <button
                   type="button"
                   className="accordion-trigger"
-                  aria-expanded={openSection === s.id}
-                  aria-controls={`sidebar-panel-${s.id}`}
-                  onClick={() => toggle(s.id)}
+                  aria-expanded={
+                    s.id === 'graphing' || s.id === 'settings'
+                      ? undefined
+                      : openSection === s.id
+                  }
+                  aria-controls={
+                    s.id === 'graphing' || s.id === 'settings'
+                      ? undefined
+                      : `sidebar-panel-${s.id}`
+                  }
+                  onClick={() => activate(s.id)}
                 >
                   <span className="sidebar-nav-label">
                     {s.label}
@@ -249,18 +266,6 @@ export function Sidebar({
                           </button>
                         );
                       })}
-                    </div>
-                  )}
-
-                  {s.id === 'graphing' && (
-                    <div className="sidebar-tool">
-                      <button
-                        type="button"
-                        className="btn-primary"
-                        onClick={onOpenGraphing}
-                      >
-                        Open graphing workspace
-                      </button>
                     </div>
                   )}
 

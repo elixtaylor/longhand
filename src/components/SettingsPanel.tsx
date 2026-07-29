@@ -23,6 +23,15 @@ export function SettingsPanel({
   onShowPalette,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
+  autoScroll = true,
+  onAutoScroll = () => undefined,
+  showReading = true,
+  onShowReading = () => undefined,
+  reduceMotion = false,
+  onReduceMotion = () => undefined,
+  showNotes = false,
+  onShowNotes = () => undefined,
+  onResetPreferences,
 }: {
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
@@ -36,7 +45,42 @@ export function SettingsPanel({
   onShowPalette: (show: boolean) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
+  autoScroll?: boolean;
+  onAutoScroll?: (value: boolean) => void;
+  showReading?: boolean;
+  onShowReading?: (value: boolean) => void;
+  reduceMotion?: boolean;
+  onReduceMotion?: (value: boolean) => void;
+  showNotes?: boolean;
+  onShowNotes?: (value: boolean) => void;
+  onResetPreferences?: () => void;
 }) {
+  function Switch({
+    label,
+    value,
+    onChange,
+  }: {
+    label: string;
+    value: boolean;
+    onChange: (value: boolean) => void;
+  }) {
+    return (
+      <button
+        type="button"
+        className="setting-switch"
+        role="switch"
+        aria-label={label}
+        aria-checked={value}
+        onClick={() => onChange(!value)}
+      >
+        <span className="setting-switch-track" aria-hidden="true">
+          <span className="setting-switch-thumb" />
+        </span>
+        <span>{value ? 'On' : 'Off'}</span>
+      </button>
+    );
+  }
+
   return (
     <div className="settings-fields">
       <div className="setting-row">
@@ -151,20 +195,60 @@ export function SettingsPanel({
 
       <div className="setting-row">
         <span className="field-label">Equation buttons</span>
-        <button
-          type="button"
-          className="setting-switch"
-          role="switch"
-          aria-label="Equation buttons"
-          aria-checked={showPalette}
-          onClick={() => onShowPalette(!showPalette)}
-        >
-          <span className="setting-switch-track" aria-hidden="true">
-            <span className="setting-switch-thumb" />
-          </span>
-          <span>{showPalette ? 'On' : 'Off'}</span>
-        </button>
+        <Switch
+          label="Equation buttons"
+          value={showPalette}
+          onChange={onShowPalette}
+        />
       </div>
+
+      <div className="setting-row">
+        <span className="field-label">Auto-scroll to working</span>
+        <Switch
+          label="Auto-scroll to working"
+          value={autoScroll}
+          onChange={onAutoScroll}
+        />
+      </div>
+
+      <div className="setting-row">
+        <span className="field-label">Reading preview</span>
+        <Switch
+          label="Reading preview"
+          value={showReading}
+          onChange={onShowReading}
+        />
+      </div>
+
+      <div className="setting-row">
+        <span className="field-label">Reduce motion</span>
+        <Switch
+          label="Reduce motion"
+          value={reduceMotion}
+          onChange={onReduceMotion}
+        />
+      </div>
+
+      <div className="setting-row">
+        <span className="field-label">Why explanations</span>
+        <Switch
+          label="Why explanations"
+          value={showNotes}
+          onChange={onShowNotes}
+        />
+      </div>
+
+      {onResetPreferences && (
+        <div className="setting-row setting-reset-row">
+          <button
+            type="button"
+            className="link-btn"
+            onClick={onResetPreferences}
+          >
+            Reset preferences
+          </button>
+        </div>
+      )}
     </div>
   );
 }
