@@ -13,7 +13,6 @@ export interface StepVisual {
     | 'grid-multiply'
     | 'long-division'
     | 'number-line'
-    | 'triangle'
     | 'curve'
     | 'normal'
     | 'box-plot';

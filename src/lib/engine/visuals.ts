@@ -1,18 +1,5 @@
 /** Data payloads for the bespoke step diagrams (kept UI-agnostic). */
 
-/** A triangle drawn to scale from its three sides, with labels. */
-export interface TriangleData {
-  a: number;
-  b: number;
-  c: number;
-  A?: number;
-  B?: number;
-  C?: number;
-  /** Which side or angle the working just found, so it can be highlighted. */
-  solvedFor?: string;
-  rightAngle?: boolean;
-}
-
 /** A polynomial curve with its key features marked. */
 export interface CurveData {
   /** Coefficients as [power, coefficient] pairs. */

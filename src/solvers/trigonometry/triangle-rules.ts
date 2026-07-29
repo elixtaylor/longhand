@@ -58,27 +58,32 @@ function finish(
   };
 }
 
-/**
- * A scale drawing of the triangle once all three sides are known. Any angles
- * not yet worked out are filled in from the cosine rule, so the picture is
- * fully labelled even when the working only asked for one of them.
- */
-function diagramStep(a: number, b: number, c: number): Step | null {
-  if (![a, b, c].every((s) => Number.isFinite(s) && s > 0)) return null;
-  if (a + b <= c || a + c <= b || b + c <= a) return null;
-  const ang = (opp: number, x: number, y: number) =>
+/** Label a completed triangle with text instead of drawing it in the working. */
+function labelledValuesSteps(a: number, b: number, c: number): Step[] {
+  const angle = (opposite: number, x: number, y: number) =>
     rad2deg(
       Math.acos(
-        Math.max(-1, Math.min(1, (x * x + y * y - opp * opp) / (2 * x * y))),
+        Math.max(
+          -1,
+          Math.min(1, (x * x + y * y - opposite * opposite) / (2 * x * y)),
+        ),
       ),
     );
-  return {
-    note: 'The triangle drawn to scale, with every side and angle labelled.',
-    visual: {
-      kind: 'triangle',
-      data: { a, b, c, A: ang(a, b, c), B: ang(b, a, c), C: ang(c, a, b) },
+  const A = angle(a, b, c);
+  const B = angle(b, a, c);
+  const C = angle(c, a, b);
+  return [
+    {
+      note: 'Label the three side lengths.',
+      latex: `a = ${fmt(a)} \\quad b = ${fmt(b)} \\quad c = ${fmt(c)}`,
+      annotation: 'sides',
     },
-  };
+    {
+      note: 'Label the three angles.',
+      latex: `A = ${fmt(A)}${DEG} \\quad B = ${fmt(B)}${DEG} \\quad C = ${fmt(C)}${DEG}`,
+      annotation: 'angles',
+    },
+  ];
 }
 
 /** Pair up each side with its opposite angle. */
@@ -472,8 +477,7 @@ function byCosineRule(t: Tri): SolveResult {
       latex: `C = \\cos^{-1}(${fmt(cosC, 4)}) = ${fmt(C)}${DEG}`,
       annotation: 'angle found',
     });
-    const dia = diagramStep(a, b, c);
-    if (dia) steps.push(dia);
+    steps.push(...labelledValuesSteps(a, b, c));
     return finish(
       steps,
       'Cosine rule',
@@ -547,8 +551,7 @@ function byCosineRule(t: Tri): SolveResult {
       annotation: 'side found',
     });
     const full = { ...t, [ts]: val } as Tri;
-    const dia = diagramStep(full.a!, full.b!, full.c!);
-    if (dia) steps.push(dia);
+    steps.push(...labelledValuesSteps(full.a!, full.b!, full.c!));
     return finish(
       steps,
       'Cosine rule',

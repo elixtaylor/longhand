@@ -103,23 +103,22 @@ function finish(
   };
 }
 
-/** A scale drawing of the finished triangle, once all three sides are known. */
-function diagramStep(a: number, b: number, c: number, A?: number): Step {
-  return {
-    note: 'The finished triangle, drawn to scale.',
-    visual: {
-      kind: 'triangle',
-      data: {
-        a,
-        b,
-        c,
-        C: 90,
-        A: A ?? rad2deg(Math.asin(Math.min(1, a / c))),
-        B: A !== undefined ? 90 - A : rad2deg(Math.asin(Math.min(1, b / c))),
-        rightAngle: true,
-      },
+/** Label the completed triangle without adding a drawn diagram to the working. */
+function labelledValuesSteps(a: number, b: number, c: number): Step[] {
+  const A = rad2deg(Math.asin(Math.min(1, a / c)));
+  const B = 90 - A;
+  return [
+    {
+      note: 'Label the three side lengths.',
+      latex: `a = ${fmt(a)} \\quad b = ${fmt(b)} \\quad c = ${fmt(c)}`,
+      annotation: 'sides',
     },
-  };
+    {
+      note: 'Label the three angles. C is the right angle.',
+      latex: `A = ${fmt(A)}${DEG} \\quad B = ${fmt(B)}${DEG} \\quad C = 90${DEG}`,
+      annotation: 'angles',
+    },
+  ];
 }
 
 /* ------------------------------------------------------------- Pythagoras */
@@ -154,7 +153,7 @@ function byPythagoras(rt: RT): SolveResult {
       latex: `c = \\sqrt{${fmt(a * a + b * b, 4)}} = ${fmt(cc, 4)}`,
       annotation: 'hypotenuse',
     });
-    steps.push(diagramStep(a, b, cc));
+    steps.push(...labelledValuesSteps(a, b, cc));
     return finish(
       steps,
       'Pythagoras’ theorem',
@@ -197,9 +196,11 @@ function byPythagoras(rt: RT): SolveResult {
     annotation: 'missing side',
   });
   steps.push(
-    target === 'b'
-      ? diagramStep(known, other, hyp)
-      : diagramStep(other, known, hyp),
+    ...labelledValuesSteps(
+      target === 'b' ? known : other,
+      target === 'b' ? other : known,
+      hyp,
+    ),
   );
   return finish(
     steps,

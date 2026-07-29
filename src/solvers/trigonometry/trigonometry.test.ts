@@ -41,6 +41,17 @@ describe('rightTriangleSolver', () => {
       expect(result.solution.derivedValues?.B).toBeCloseTo(53.1301, 3);
     }
   });
+  it('labels completed right triangles in text instead of drawing them', () => {
+    const result = rightTriangleSolver.solve('a=3, b=4', 'pythagoras');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.steps.some((step) => step.visual)).toBe(false);
+      const lines = result.solution.steps.map((step) => step.latex ?? '');
+      expect(lines.some((line) => line.includes('a = 3'))).toBe(true);
+      expect(lines.some((line) => line.includes('A ='))).toBe(true);
+      expect(lines.join(' ')).toContain('^{\\circ}');
+    }
+  });
 });
 
 describe('triangleRulesSolver', () => {
@@ -95,6 +106,17 @@ describe('triangleRulesSolver', () => {
       expect(result.solution.derivedValues?.c).toBeCloseTo(5.79, 2);
       expect(result.solution.derivedValues?.A).toBeDefined();
       expect(result.solution.derivedValues?.B).toBeDefined();
+    }
+  });
+  it('labels completed general triangles in text instead of drawing them', () => {
+    const result = triangleRulesSolver.solve('a=3, b=4, c=5', 'cosine-rule');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.steps.some((step) => step.visual)).toBe(false);
+      const lines = result.solution.steps.map((step) => step.latex ?? '');
+      expect(lines.some((line) => line.includes('a = 3'))).toBe(true);
+      expect(lines.some((line) => line.includes('C = 90'))).toBe(true);
+      expect(lines.join(' ')).toContain('^{\\circ}');
     }
   });
   it('finds area from two sides and the included angle', () => {
