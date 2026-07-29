@@ -2,9 +2,30 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { rightTriangleSolver } from '../solvers/trigonometry/right-triangle';
 import { triangleRulesSolver } from '../solvers/trigonometry/triangle-rules';
 import { distributionsSolver } from '../solvers/statistics/distributions';
+import { vectorsSolver } from '../solvers/specialist/vectors';
 import { StructuredInputForm } from './StructuredInputForm';
 
 describe('StructuredInputForm calculators', () => {
+  it('starts vector point fields in 2D with an optional 3D toggle', () => {
+    const method = vectorsSolver.methods.find(
+      (candidate) => candidate.id === 'collinear',
+    )!;
+    render(
+      <StructuredInputForm
+        method={method}
+        solver={vectorsSolver}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Point A — x')).toBeTruthy();
+    expect(screen.getByLabelText('Point A — y')).toBeTruthy();
+    expect(screen.queryByLabelText('Point A — z')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '3D' }));
+    expect(screen.getByLabelText('Point A — z')).toBeTruthy();
+  });
+
   it('fills a missing right-triangle side without showing working', async () => {
     const method = rightTriangleSolver.methods.find(
       (candidate) => candidate.id === 'pythagoras',

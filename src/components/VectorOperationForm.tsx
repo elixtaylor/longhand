@@ -66,7 +66,7 @@ export function VectorOperationForm({
   onSubmit: (serialized: string) => void;
 }) {
   const [op, setOp] = useState<VecOp>('add');
-  const [dims, setDims] = useState<Dims>(3);
+  const [dims, setDims] = useState<Dims>(2);
   const [a, setA] = useState(['', '', '']);
   const [b, setB] = useState(['', '', '']);
   const [k, setK] = useState('');

@@ -51,11 +51,16 @@ button {
 .masthead {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--sp-4);
   padding: var(--sp-4) var(--sp-6);
   border-bottom: 1px solid var(--line-strong);
   background: var(--surface);
+}
+.masthead-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
 }
 .wordmark {
   display: flex;
@@ -649,20 +654,16 @@ button {
   line-height: 1.5;
 }
 /* The line of maths and its side-note share a row — the note reads as a
-   comment beside the line rather than a caption underneath it. flex-end
-   rather than baseline: the notebook theme's .step-expr is itself a flex
-   column bottom-anchoring its own content (see below), and a flex item's
-   baseline for alignment purposes is its content's baseline only when that
-   content is simple text — nested flex contexts make that ambiguous. Every
-   item's bottom margin edge lining up is unambiguous in any theme, and
-   close enough to baseline for a short annotation beside a line of maths.
-   No wrapping: a wrapped annotation wound up on its own row with nothing
-   pinning the notebook theme's inline step-number to the equation above it
-   rather than the note beside it. The equation absorbs the squeeze instead
-   — see .step-expr's own overflow-x below — so the row stays one row. */
+   comment beside the line rather than a caption underneath it. Stretching
+   the annotation to the equation row makes its marker line share the same
+   vertical extent as the working, while its text remains bottom-aligned.
+   The notebook theme replaces that height with its ruled-square measurement
+   below. A wrapped annotation still stays on one row: the equation absorbs
+   the squeeze instead — see .step-expr's own overflow-x below.
+   */
 .step-line {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: var(--sp-3);
 }
 .step-expr {
@@ -674,8 +675,12 @@ button {
   padding: 4px 0;
 }
 .step-annotation {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
   flex-shrink: 0;
   padding-left: 10px;
+  padding-bottom: 4px;
   font-family: var(--font-annotation);
   font-size: 1rem;
   color: var(--marker);
@@ -695,6 +700,7 @@ button {
   align-items: center;
   height: var(--rule);
   margin-bottom: calc(var(--rule) - var(--rule-baseline));
+  padding-bottom: 0;
 }
 :root[data-theme='notebook'] .step-annotation-text {
   /* Centering the line box (above) isn't quite centering the ink — the
@@ -1133,38 +1139,31 @@ button {
   gap: var(--sp-3);
 }
 .calc-group .examples {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 .calc-item {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  padding: 7px 8px;
+  min-height: 34px;
+  padding: 7px 4px;
   text-align: left;
-  border-radius: var(--control-radius);
-  border: 1px solid transparent;
+  border-top: 1px solid var(--line);
   transition: background 0.12s var(--ease);
+}
+.calc-item:first-child {
+  border-top: 0;
 }
 .calc-item:hover {
   background: var(--bg-tint);
-  border-color: var(--line);
 }
 .calc-item-label {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--ink);
-}
-.calc-item-blurb {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: 0.7rem;
-  line-height: 1.35;
-  color: var(--ink-3);
 }
 
 /* Imported question attribution ------------------------------------------- */
@@ -1383,12 +1382,13 @@ button {
 .accordion {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: 0;
 }
 .accordion-section {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+.accordion-section:last-child {
+  border-bottom: 0;
 }
 .accordion-trigger {
   width: 100%;
@@ -1396,7 +1396,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
+  padding: var(--sp-3) 4px;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--ink-2);
@@ -1531,6 +1531,13 @@ button {
 :root[data-theme='notebook'] .katex .textsf,
 :root[data-theme='notebook'] .katex .texttt {
   font-family: var(--font-hand) !important;
+  font-style: normal !important;
+}
+/* Private KaTeX glyphs, including \\neq, do not exist in handwriting fonts.
+   Keep relation marks in KaTeX's own face while letters and digits retain the
+   notebook character, preventing the not-equal slash from becoming malformed. */
+:root[data-theme='notebook'] .katex .mrel {
+  font-family: KaTeX_Main, 'Times New Roman', serif !important;
   font-style: normal !important;
 }
 .step-expr .katex-display {

@@ -237,9 +237,6 @@ export function Sidebar({
                                   <span className="calc-item-label">
                                     {item.label ?? method.name}
                                   </span>
-                                  <span className="calc-item-blurb">
-                                    {item.blurb ?? method.blurb}
-                                  </span>
                                 </button>
                               );
                             })}

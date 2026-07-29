@@ -58,8 +58,9 @@ export function StructuredInputForm({
   // there's something to solve.
   const allOptional =
     fields.length > 0 && fields.every((f) => f.kind === 'number' && f.optional);
-  // Specialist's own vector work is mostly 3D — 2D is the one click away.
-  const [dims, setDims] = useState<Dims>(3);
+  // Most vector questions in SACE start in the plane. Keep 3D one click away
+  // without making every student clear an unnecessary third coordinate.
+  const [dims, setDims] = useState<Dims>(2);
   const [values, setValues] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(fields.map((f) => [f.id, blank(f)])),
   );
