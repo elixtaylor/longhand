@@ -287,7 +287,7 @@ function GraphPlot({
               : belowY + boxHeight <= height - pad.bottom
                 ? belowY
                 : Math.max(pad.top, aboveY);
-          const labelY = boxY + 13;
+          const labelY = boxY + boxHeight / 2;
           return (
             <g
               key={pointId}
@@ -323,6 +323,8 @@ function GraphPlot({
               <text
                 x={labelX}
                 y={labelY}
+                textAnchor="middle"
+                dominantBaseline="middle"
                 className={`graph-point-label${isActive ? ' is-visible' : ''}`}
               >
                 {label}

@@ -28,15 +28,28 @@ describe('graphing expression table', () => {
     const labelBackground = document.querySelector(
       '.graph-point-label-bg.is-visible',
     );
+    const labelText = document.querySelector('.graph-point-label.is-visible');
     expect(point).toBeTruthy();
     expect(labelBackground).toBeTruthy();
+    expect(labelText).toBeTruthy();
     const pointX = Number(point?.getAttribute('cx'));
     const pointY = Number(point?.getAttribute('cy'));
     const labelX = Number(labelBackground?.getAttribute('x'));
     const labelY = Number(labelBackground?.getAttribute('y'));
     const labelWidth = Number(labelBackground?.getAttribute('width'));
+    const labelHeight = Number(labelBackground?.getAttribute('height'));
     expect(labelX + labelWidth / 2).toBeCloseTo(pointX, 1);
     expect(labelY).toBeLessThan(pointY);
+    expect(Number(labelText?.getAttribute('x'))).toBeCloseTo(
+      labelX + labelWidth / 2,
+      1,
+    );
+    expect(Number(labelText?.getAttribute('y'))).toBeCloseTo(
+      labelY + labelHeight / 2,
+      1,
+    );
+    expect(labelText?.getAttribute('text-anchor')).toBe('middle');
+    expect(labelText?.getAttribute('dominant-baseline')).toBe('middle');
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.getByRole('dialog', { name: 'Graph settings' })).toBeTruthy();
     expect(screen.getByLabelText('x min')).toBeTruthy();
