@@ -17,6 +17,13 @@ describe('graphing expression table', () => {
     expect(
       document.querySelectorAll('.graph-point-label').length,
     ).toBeGreaterThan(0);
+    expect(document.querySelector('.graph-point-label.is-visible')).toBeNull();
+    const pointTarget = document.querySelector('.graph-point-hover-target');
+    expect(pointTarget).toBeTruthy();
+    fireEvent.mouseEnter(pointTarget!);
+    expect(
+      document.querySelector('.graph-point-label.is-visible'),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.getByRole('dialog', { name: 'Graph settings' })).toBeTruthy();
     expect(screen.getByLabelText('x min')).toBeTruthy();

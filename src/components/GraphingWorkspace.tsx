@@ -116,6 +116,7 @@ function GraphPlot({
   bounds: GraphBounds;
   axisSteps: AxisSteps;
 }) {
+  const [activePoint, setActivePoint] = useState<string | null>(null);
   const finitePoints = points.filter(
     (point) => Number.isFinite(point.x) && Number.isFinite(point.y),
   );
@@ -255,6 +256,8 @@ function GraphPlot({
         )
         .map((point, index) => {
           const label = `(${fmt(point.x)}, ${fmt(point.y)})`;
+          const pointId = `${point.x}-${index}`;
+          const isActive = activePoint === pointId;
           const pointX = sx(point.x);
           const pointY = sy(point.y);
           const boxWidth = label.length * 6.4 + 8;
@@ -276,11 +279,27 @@ function GraphPlot({
                 : Math.max(pad.top, aboveY);
           const labelY = boxY + 12;
           return (
-            <g key={`${point.x}-${index}`}>
+            <g
+              key={pointId}
+              className={`graph-point-group${isActive ? ' is-active' : ''}`}
+              tabIndex={0}
+              role="button"
+              aria-label={`Point ${label}`}
+              onMouseEnter={() => setActivePoint(pointId)}
+              onMouseLeave={() => setActivePoint(null)}
+              onFocus={() => setActivePoint(pointId)}
+              onBlur={() => setActivePoint(null)}
+            >
               <circle
                 cx={pointX}
                 cy={pointY}
-                r="5"
+                r="12"
+                className="graph-point-hover-target"
+              />
+              <circle
+                cx={pointX}
+                cy={pointY}
+                r={isActive ? 6 : 5}
                 className="graph-table-point"
               />
               <rect
@@ -289,9 +308,13 @@ function GraphPlot({
                 width={boxWidth}
                 height={boxHeight}
                 rx="3"
-                className="graph-point-label-bg"
+                className={`graph-point-label-bg${isActive ? ' is-visible' : ''}`}
               />
-              <text x={labelX} y={labelY} className="graph-point-label">
+              <text
+                x={labelX}
+                y={labelY}
+                className={`graph-point-label${isActive ? ' is-visible' : ''}`}
+              >
                 {label}
               </text>
             </g>

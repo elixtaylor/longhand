@@ -1871,6 +1871,26 @@ button {
   fill: var(--accent);
   stroke: var(--surface-raised);
   stroke-width: 2;
+  transition: r 0.14s var(--ease);
+}
+.graph-point-group {
+  cursor: pointer;
+}
+.graph-point-hover-target {
+  fill: transparent;
+  pointer-events: all;
+}
+.graph-point-label,
+.graph-point-label-bg {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.14s var(--ease);
+}
+.graph-point-label.is-visible,
+.graph-point-label-bg.is-visible {
+  opacity: 1;
+  visibility: visible;
 }
 .graph-point-label {
   fill: var(--ink);
@@ -1882,7 +1902,6 @@ button {
   fill: var(--surface-raised);
   stroke: var(--line);
   stroke-width: 1;
-  opacity: 0.96;
 }
 .graph-settings-popover {
   position: absolute;
