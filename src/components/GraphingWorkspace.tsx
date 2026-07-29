@@ -21,6 +21,11 @@ interface GraphBounds {
   yMax?: number;
 }
 
+interface AxisSteps {
+  x?: number;
+  y?: number;
+}
+
 const COLOURS = ['#2f6fed', '#d05242', '#2f8b68', '#9a63c7', '#d18a2a'];
 
 /** Evaluate the same expression grammar used by the numerical fallback. */
@@ -81,14 +86,35 @@ function samplePath(
   return commands.join(' ');
 }
 
+function niceStep(range: number, targetTicks: number): number {
+  const rough = Math.max(range / targetTicks, Number.EPSILON);
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const normalised = rough / magnitude;
+  const factor =
+    normalised <= 1 ? 1 : normalised <= 2 ? 2 : normalised <= 5 ? 5 : 10;
+  return factor * magnitude;
+}
+
+function ticksFor(min: number, max: number, step: number): number[] {
+  if (!Number.isFinite(step) || step <= 0) return [];
+  const first = Math.ceil((min - Number.EPSILON) / step) * step;
+  const count = Math.min(80, Math.floor((max - first) / step) + 1);
+  return Array.from(
+    { length: Math.max(count, 0) },
+    (_, index) => first + index * step,
+  );
+}
+
 function GraphPlot({
   expressions,
   points,
   bounds,
+  axisSteps,
 }: {
   expressions: GraphExpression[];
   points: TablePoint[];
   bounds: GraphBounds;
+  axisSteps: AxisSteps;
 }) {
   const finitePoints = points.filter(
     (point) => Number.isFinite(point.x) && Number.isFinite(point.y),
@@ -136,14 +162,10 @@ function GraphPlot({
     height -
     pad.bottom -
     ((y - yMin) / (yMax - yMin)) * (height - pad.top - pad.bottom);
-  const xTicks = Array.from(
-    { length: 9 },
-    (_, i) => xMin + ((xMax - xMin) * i) / 8,
-  );
-  const yTicks = Array.from(
-    { length: 7 },
-    (_, i) => yMin + ((yMax - yMin) * i) / 6,
-  );
+  const xStep = axisSteps.x ?? niceStep(xMax - xMin, 8);
+  const yStep = axisSteps.y ?? niceStep(yMax - yMin, 6);
+  const xTicks = ticksFor(xMin, xMax, xStep);
+  const yTicks = ticksFor(yMin, yMax, yStep);
 
   return (
     <svg
@@ -233,27 +255,39 @@ function GraphPlot({
         )
         .map((point, index) => {
           const label = `(${fmt(point.x)}, ${fmt(point.y)})`;
-          const labelX = Math.min(
-            Math.max(sx(point.x) + 8, pad.left + 4),
-            width - pad.right - label.length * 6.4 - 8,
-          );
-          const labelY = Math.max(
-            sy(point.y) - 12 - (index % 3) * 17,
-            pad.top + 14,
-          );
+          const pointX = sx(point.x);
+          const pointY = sy(point.y);
+          const boxWidth = label.length * 6.4 + 8;
+          const gap = 12;
+          const rightX = pointX + gap;
+          const leftX = pointX - gap - boxWidth;
+          const labelX =
+            rightX + boxWidth <= width - pad.right
+              ? rightX
+              : Math.max(pad.left + 4, leftX);
+          const boxHeight = 16;
+          const aboveY = pointY - gap - boxHeight;
+          const belowY = pointY + gap;
+          const boxY =
+            aboveY >= pad.top
+              ? aboveY
+              : belowY + boxHeight <= height - pad.bottom
+                ? belowY
+                : Math.max(pad.top, aboveY);
+          const labelY = boxY + 12;
           return (
             <g key={`${point.x}-${index}`}>
               <circle
-                cx={sx(point.x)}
-                cy={sy(point.y)}
+                cx={pointX}
+                cy={pointY}
                 r="5"
                 className="graph-table-point"
               />
               <rect
                 x={labelX - 4}
-                y={labelY - 12}
-                width={label.length * 6.4 + 8}
-                height="16"
+                y={boxY}
+                width={boxWidth}
+                height={boxHeight}
                 rx="3"
                 className="graph-point-label-bg"
               />
@@ -274,12 +308,14 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
   const [xValues, setXValues] = useState(['0', '1', '2', '3', '4']);
   const [nextId, setNextId] = useState(2);
   const [bounds, setBounds] = useState<GraphBounds>({});
+  const [axisSteps, setAxisSteps] = useState<AxisSteps>({});
   const [draftBounds, setDraftBounds] = useState({
     xMin: '',
     xMax: '',
     yMin: '',
     yMax: '',
   });
+  const [draftSteps, setDraftSteps] = useState({ x: '', y: '' });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const table = useMemo(() => {
     try {
@@ -309,6 +345,10 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
       yMin: bounds.yMin === undefined ? '' : String(bounds.yMin),
       yMax: bounds.yMax === undefined ? '' : String(bounds.yMax),
     });
+    setDraftSteps({
+      x: axisSteps.x === undefined ? '' : String(axisSteps.x),
+      y: axisSteps.y === undefined ? '' : String(axisSteps.y),
+    });
     setSettingsOpen(true);
   }
 
@@ -331,7 +371,19 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
       values.yMax === undefined ||
       values.yMin < values.yMax;
     if (!allValid || !xValid || !yValid) return;
+    const steps = {
+      x: draftSteps.x.trim() === '' ? undefined : Number(draftSteps.x),
+      y: draftSteps.y.trim() === '' ? undefined : Number(draftSteps.y),
+    };
+    if (
+      Object.values(steps).some(
+        (value) =>
+          value !== undefined && (!Number.isFinite(value) || value <= 0),
+      )
+    )
+      return;
     setBounds(values);
+    setAxisSteps(steps);
     setSettingsOpen(false);
   }
 
@@ -520,6 +572,34 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
                     />
                   </label>
                 ))}
+                <label>
+                  x increment
+                  <input
+                    inputMode="decimal"
+                    aria-label="x axis increment"
+                    value={draftSteps.x}
+                    onChange={(event) =>
+                      setDraftSteps((current) => ({
+                        ...current,
+                        x: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  y increment
+                  <input
+                    inputMode="decimal"
+                    aria-label="y axis increment"
+                    value={draftSteps.y}
+                    onChange={(event) =>
+                      setDraftSteps((current) => ({
+                        ...current,
+                        y: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
               </div>
               <div className="graph-settings-actions">
                 <button
@@ -527,6 +607,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
                   className="btn"
                   onClick={() => {
                     setBounds({});
+                    setAxisSteps({});
                     setSettingsOpen(false);
                   }}
                 >
@@ -547,6 +628,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
               expressions={expressions}
               points={table}
               bounds={bounds}
+              axisSteps={axisSteps}
             />
           </div>
         </section>

@@ -20,5 +20,7 @@ describe('graphing expression table', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.getByRole('dialog', { name: 'Graph settings' })).toBeTruthy();
     expect(screen.getByLabelText('x min')).toBeTruthy();
+    expect(screen.getByLabelText('x axis increment')).toBeTruthy();
+    expect(screen.getByLabelText('y axis increment')).toBeTruthy();
   });
 });
