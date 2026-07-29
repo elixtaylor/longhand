@@ -257,6 +257,32 @@ button {
   font-family: var(--font-mono);
   font-size: 0.85rem;
 }
+.error-toast {
+  position: fixed;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  z-index: 100;
+  max-width: min(260px, calc(100vw - 32px));
+  padding: 8px 12px;
+  color: var(--ink-2);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--control-radius);
+  box-shadow: var(--shadow-2);
+  font-size: 0.78rem;
+  font-weight: 650;
+  animation: error-toast-in 0.18s var(--ease);
+}
+@keyframes error-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.error-recovery-fallback {
+  min-height: 100dvh;
+  background: var(--bg);
+}
 
 .detected {
   display: flex;
