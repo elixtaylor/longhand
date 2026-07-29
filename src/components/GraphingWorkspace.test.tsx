@@ -24,6 +24,19 @@ describe('graphing expression table', () => {
     expect(
       document.querySelector('.graph-point-label.is-visible'),
     ).toBeTruthy();
+    const point = document.querySelector('.graph-table-point');
+    const labelBackground = document.querySelector(
+      '.graph-point-label-bg.is-visible',
+    );
+    expect(point).toBeTruthy();
+    expect(labelBackground).toBeTruthy();
+    const pointX = Number(point?.getAttribute('cx'));
+    const pointY = Number(point?.getAttribute('cy'));
+    const labelX = Number(labelBackground?.getAttribute('x'));
+    const labelY = Number(labelBackground?.getAttribute('y'));
+    const labelWidth = Number(labelBackground?.getAttribute('width'));
+    expect(labelX + labelWidth / 2).toBeCloseTo(pointX, 1);
+    expect(labelY).toBeLessThan(pointY);
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
     expect(screen.getByRole('dialog', { name: 'Graph settings' })).toBeTruthy();
     expect(screen.getByLabelText('x min')).toBeTruthy();

@@ -273,12 +273,11 @@ function GraphPlot({
           const pointY = sy(point.y);
           const boxWidth = label.length * 6.4 + 8;
           const gap = 16;
-          const rightX = pointX + gap;
-          const leftX = pointX - gap - boxWidth;
-          const labelX =
-            rightX + boxWidth <= width - pad.right
-              ? rightX
-              : Math.max(pad.left + 4, leftX);
+          const boxX = Math.min(
+            Math.max(pointX - boxWidth / 2, pad.left + 4),
+            width - pad.right - boxWidth - 4,
+          );
+          const labelX = boxX + boxWidth / 2;
           const boxHeight = 18;
           const aboveY = pointY - gap - boxHeight;
           const belowY = pointY + gap;
@@ -314,7 +313,7 @@ function GraphPlot({
                 className="graph-table-point"
               />
               <rect
-                x={labelX - 4}
+                x={boxX}
                 y={boxY}
                 width={boxWidth}
                 height={boxHeight}
