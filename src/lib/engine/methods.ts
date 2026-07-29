@@ -58,6 +58,29 @@ export function distinctMethods(solver: Solver, input: string): Method[] {
   return distinct.length === 0 ? solver.methods : distinct;
 }
 
+/**
+ * Every method that can produce working for this particular input.
+ *
+ * This is intentionally broader than `distinctMethods`: in a question split
+ * across topics, a student may still want to choose a named method even when
+ * its early lines happen to match another method. The part picker uses this
+ * list, while the ordinary one-topic view stays concise by using the
+ * distinct-working list above.
+ */
+export function applicableMethods(solver: Solver, input: string): Method[] {
+  if (solver.methods.length <= 1 || input.trim() === '') return solver.methods;
+
+  const applicable = solver.methods.filter((method) => {
+    try {
+      return runSolve(solver, input, method.id).ok;
+    } catch {
+      return false;
+    }
+  });
+
+  return applicable.length > 0 ? applicable : solver.methods;
+}
+
 /** True when the topic offers a real choice for this particular problem. */
 export function hasMethodChoice(solver: Solver, input: string): boolean {
   return distinctMethods(solver, input).length > 1;

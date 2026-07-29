@@ -45,6 +45,15 @@ export interface Worked {
 }
 
 /**
+ * A method choice belongs to one worked fragment, not every occurrence of a
+ * topic in the same question. Keep the plain solver id fallback below for
+ * shared links and existing callers that predate per-part choices.
+ */
+export function partMethodKey(solverId: string, text: string): string {
+  return `${solverId}:${text.trim().replace(/\s+/g, ' ')}`;
+}
+
+/**
  * Separators, strongest first. "then" and ";" state outright that another
  * task follows; "and" only might.
  */
@@ -172,8 +181,11 @@ function attempt(
     result: SolveResult;
   } | null = null;
   for (const { solver } of candidates) {
+    const override =
+      methodOverrides[partMethodKey(solver.id, text)] ??
+      methodOverrides[solver.id];
     const selectedMethod =
-      solver.methods.find((m) => m.id === methodOverrides[solver.id]) ??
+      solver.methods.find((m) => m.id === override) ??
       solver.methods.find((m) => m.id === solver.defaultMethodId) ??
       solver.methods[0];
     const first = solveOne(solver, text, selectedMethod.id);

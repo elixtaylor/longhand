@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { getSolver } from '../lib/engine/registry';
-import { distinctMethods } from '../lib/engine/methods';
+import { applicableMethods, distinctMethods } from '../lib/engine/methods';
 
 /**
  * The method choice for the current topic — the one control that stays, now
@@ -15,6 +15,8 @@ export function TopicMethodPicker({
   methodId,
   onSelectMethod,
   forceAll,
+  showAllApplicable,
+  highlightedMethodId,
   showDescription = false,
 }: {
   solverId: string;
@@ -31,13 +33,22 @@ export function TopicMethodPicker({
    * of question.
    */
   forceAll?: boolean;
+  /** Keep every method that can solve this part, including equivalent starts. */
+  showAllApplicable?: boolean;
+  /** Briefly draw attention to a method just selected in a multi-part answer. */
+  highlightedMethodId?: string | null;
   /** Hide the prose explanation while keeping the method choices available. */
   showDescription?: boolean;
 }) {
   const solver = getSolver(solverId)!;
   const methods = useMemo(
-    () => (forceAll ? solver.methods : distinctMethods(solver, input)),
-    [solver, input, forceAll],
+    () =>
+      forceAll
+        ? solver.methods
+        : showAllApplicable
+          ? applicableMethods(solver, input)
+          : distinctMethods(solver, input),
+    [solver, input, forceAll, showAllApplicable],
   );
 
   // If the selected method was folded into another, move the selection to the
@@ -69,7 +80,7 @@ export function TopicMethodPicker({
                 type="button"
                 role="tab"
                 aria-selected={m.id === current?.id}
-                className="method-tab"
+                className={`method-tab${m.id === highlightedMethodId ? ' method-tab--changed' : ''}`}
                 onClick={() => onSelectMethod(m.id)}
               >
                 {m.name}

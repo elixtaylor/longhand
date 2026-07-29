@@ -18,12 +18,14 @@ export function PartedSolution({
   showNotes,
   onFocusPart,
   onSelectPartMethod,
+  changedPart,
 }: {
   worked: Worked;
   revealMode: RevealMode;
   showNotes: boolean;
   onFocusPart?: (part: WorkedPart) => void;
   onSelectPartMethod?: (part: WorkedPart, methodId: string) => void;
+  changedPart?: { label: string; methodId: string } | null;
 }) {
   return (
     <div className="parts">
@@ -36,75 +38,86 @@ export function PartedSolution({
         </span>
       </div>
 
-      {worked.parts.map((part) => (
-        <section key={part.label} className="part">
-          <header className="part-head">
-            <span className="part-label" aria-hidden="true">
-              ({part.label})
-            </span>
-            <div className="part-titles">
-              <div className="part-title">
-                {part.result.ok ? (
-                  <RichText text={part.result.solution.headline} />
-                ) : (
-                  <span className="part-failed">Couldn’t work this part</span>
+      {worked.parts.map((part) => {
+        const changed = changedPart?.label === part.label;
+        return (
+          <section key={part.label} className="part">
+            <header className="part-head">
+              <span className="part-label" aria-hidden="true">
+                ({part.label})
+              </span>
+              <div className="part-titles">
+                <div className="part-title">
+                  {part.result.ok ? (
+                    <RichText text={part.result.solution.headline} />
+                  ) : (
+                    <span className="part-failed">Couldn’t work this part</span>
+                  )}
+                </div>
+                <div className="part-sub">
+                  <span className="part-topic">{part.solver.title}</span>
+                </div>
+                {part.carried && (
+                  // Show the substitution itself rather than describing it: the
+                  // student needs to be able to check that "it" was resolved to
+                  // the thing they meant.
+                  <p className="part-carried">
+                    You wrote <em>“{part.carried.trim()}”</em> — read as{' '}
+                    <em>“{part.text.trim()}”</em>, using part (
+                    {prevLabel(part.label)}).
+                  </p>
                 )}
               </div>
-              <div className="part-sub">
-                <span className="part-topic">{part.solver.title}</span>
-              </div>
-              {part.carried && (
-                // Show the substitution itself rather than describing it: the
-                // student needs to be able to check that "it" was resolved to
-                // the thing they meant.
-                <p className="part-carried">
-                  You wrote <em>“{part.carried.trim()}”</em> — read as{' '}
-                  <em>“{part.text.trim()}”</em>, using part (
-                  {prevLabel(part.label)}).
-                </p>
+              {part.result.ok && part.result.solution.answerLatex && (
+                <div className="answer-card answer-card-sm">
+                  <span className="answer-label">Answer</span>
+                  <span className="answer-value">
+                    <TeX tex={part.result.solution.answerLatex} />
+                  </span>
+                </div>
               )}
-            </div>
-            {part.result.ok && part.result.solution.answerLatex && (
-              <div className="answer-card answer-card-sm">
-                <span className="answer-label">Answer</span>
-                <span className="answer-value">
-                  <TeX tex={part.result.solution.answerLatex} />
-                </span>
-              </div>
+            </header>
+
+            {onSelectPartMethod && part.solver.methods.length > 1 && (
+              <TopicMethodPicker
+                solverId={part.solver.id}
+                input={part.text}
+                methodId={part.methodId}
+                onSelectMethod={(methodId) =>
+                  onSelectPartMethod(part, methodId)
+                }
+                showAllApplicable
+                highlightedMethodId={
+                  changed && changedPart?.methodId === part.methodId
+                    ? part.methodId
+                    : null
+                }
+                showDescription={false}
+              />
             )}
-          </header>
 
-          {onSelectPartMethod && part.solver.methods.length > 1 && (
-            <TopicMethodPicker
-              solverId={part.solver.id}
-              input={part.text}
-              methodId={part.methodId}
-              onSelectMethod={(methodId) => onSelectPartMethod(part, methodId)}
-              showDescription={false}
-            />
-          )}
+            {part.result.ok ? (
+              <StepList
+                solution={part.result.solution}
+                revealMode={revealMode}
+                showNotes={showNotes}
+              />
+            ) : (
+              <p className="part-error">{part.result.error}</p>
+            )}
 
-          {part.result.ok ? (
-            <StepList
-              solution={part.result.solution}
-              revealMode={revealMode}
-              showNotes={showNotes}
-            />
-          ) : (
-            <p className="part-error">{part.result.error}</p>
-          )}
-
-          {onFocusPart && part.result.ok && (
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={() => onFocusPart(part)}
-            >
-              Work part ({part.label}) on its own
-            </button>
-          )}
-        </section>
-      ))}
+            {onFocusPart && part.result.ok && (
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => onFocusPart(part)}
+              >
+                Work part ({part.label}) on its own
+              </button>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

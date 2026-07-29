@@ -404,6 +404,21 @@ button {
   color: var(--accent);
   box-shadow: var(--shadow-1);
 }
+.method-tab--changed {
+  animation: methodChanged 1.4s var(--ease) both;
+}
+@keyframes methodChanged {
+  0% {
+    background: var(--accent-soft);
+    color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  100% {
+    background: var(--surface-raised);
+    color: var(--accent);
+    box-shadow: var(--shadow-1);
+  }
+}
 
 /* Structured input form ---------------------------------------------------- */
 /* For methods better filled in than typed (a handful of named values, not

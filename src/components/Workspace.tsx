@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { solvers, getSolver } from '../lib/engine/registry';
 import { interpret, runWorked, type Worked } from '../lib/engine/run';
+import { partMethodKey } from '../lib/engine/parts';
 import { hasMethodChoice } from '../lib/engine/methods';
 import type { SolveResult, Solver } from '../lib/engine/types';
 import type { ThemeId, RevealMode, TextSize, DisplayMode } from '../lib/ui';
@@ -136,6 +137,10 @@ export function Workspace({
   const [partMethodOverrides, setPartMethodOverrides] = useState<
     Record<string, string>
   >({});
+  const [changedPart, setChangedPart] = useState<{
+    label: string;
+    methodId: string;
+  } | null>(null);
   const [detected, setDetected] = useState<Solver | null>(null);
   /** The canonical rewrite of what was typed, shown when it differs. */
   const [reading, setReading] = useState<string | null>(null);
@@ -146,6 +151,16 @@ export function Workspace({
   const hasSolved = useRef(false);
   const solutionRef = useRef<HTMLElement>(null);
   const scrollToSolution = useRef(false);
+  const changedPartTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (changedPartTimer.current !== null) {
+        window.clearTimeout(changedPartTimer.current);
+      }
+    },
+    [],
+  );
 
   // The wordmark is a home/reset action. Keep preferences and history intact,
   // but clear the active equation, method pin, working and shared-link state.
@@ -157,6 +172,7 @@ export function Workspace({
     setInput('');
     setWorked(null);
     setPartMethodOverrides({});
+    setChangedPart(null);
     setDetected(null);
     setReading(null);
     setComparing(false);
@@ -322,6 +338,7 @@ export function Workspace({
    */
   function chooseMethod(id: string) {
     setPartMethodOverrides({});
+    setChangedPart(null);
     const prevMethod = solver.methods.find((m) => m.id === methodId);
     const nextMethod = solver.methods.find((m) => m.id === id);
     setMethodId(id);
@@ -340,6 +357,7 @@ export function Workspace({
 
   function loadImported(solverIdIn: string, methodIdIn: string, value: string) {
     setPartMethodOverrides({});
+    setChangedPart(null);
     const pinned: Pin = { solverId: solverIdIn, methodId: methodIdIn };
     setSolverId(solverIdIn);
     setMethodId(methodIdIn);
@@ -360,6 +378,7 @@ export function Workspace({
    */
   function jumpToCalculator(solverIdIn: string, methodIdIn: string) {
     setPartMethodOverrides({});
+    setChangedPart(null);
     setSolverId(solverIdIn);
     setMethodId(methodIdIn);
     setPin({ solverId: solverIdIn, methodId: methodIdIn });
@@ -515,6 +534,7 @@ export function Workspace({
                     setInput(v.slice(0, MAX_INPUT_LENGTH));
                     setPin(null);
                     setPartMethodOverrides({});
+                    setChangedPart(null);
                   }}
                   placeholder="e.g. x^2 + 5x + 6 = 0"
                   preview={reading}
@@ -611,6 +631,7 @@ export function Workspace({
               worked={worked}
               revealMode={revealMode}
               showNotes={showNotes}
+              changedPart={changedPart}
               onFocusPart={(part) =>
                 // Working one part alone is how a student gets the method
                 // choices and the comparison for just that topic.
@@ -619,9 +640,17 @@ export function Workspace({
               onSelectPartMethod={(part, nextMethodId) => {
                 const nextOverrides = {
                   ...partMethodOverrides,
-                  [part.solver.id]: nextMethodId,
+                  [partMethodKey(part.solver.id, part.text)]: nextMethodId,
                 };
                 setPartMethodOverrides(nextOverrides);
+                setChangedPart({ label: part.label, methodId: nextMethodId });
+                if (changedPartTimer.current !== null) {
+                  window.clearTimeout(changedPartTimer.current);
+                }
+                changedPartTimer.current = window.setTimeout(
+                  () => setChangedPart(null),
+                  1400,
+                );
                 solveWith(input, null, nextOverrides);
               }}
             />

@@ -1,5 +1,5 @@
 import { runWorked } from './run';
-import { plainAnswer, subjectOf } from './parts';
+import { partMethodKey, plainAnswer, subjectOf } from './parts';
 import { getSolver } from './registry';
 
 /**
@@ -106,6 +106,14 @@ describe('questions that only look like two topics', () => {
       'formula',
       'first-principles',
     ]);
+  });
+
+  it('keeps a method choice local when one topic appears in two parts', () => {
+    const first = '3x + 4 = 10';
+    const w = runWorked(`${first} then 5x - 3 = 7`, undefined, {
+      [partMethodKey('linear', first)]: 'backtracking',
+    });
+    expect(w.parts.map((p) => p.methodId)).toEqual(['backtracking', 'balance']);
   });
 });
 
