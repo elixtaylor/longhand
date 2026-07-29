@@ -16,7 +16,7 @@ describe('CalculatorsPage', () => {
       (count, group) => count + group.items.length,
       0,
     );
-    expect(screen.getByRole('heading', { name: 'Calculators' })).toBeTruthy();
+    expect(screen.getByText('Calculators')).toBeTruthy();
     expect(screen.getAllByRole('button')).toHaveLength(expectedCount + 1);
 
     fireEvent.click(screen.getAllByRole('button')[1]);

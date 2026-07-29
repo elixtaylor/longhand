@@ -1619,27 +1619,6 @@ button {
   padding: var(--sp-5) var(--sp-6) var(--sp-7);
   background: var(--bg);
 }
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-5);
-  width: min(920px, 100%);
-  margin: 0 auto var(--sp-5);
-}
-.page-header h1 {
-  margin-top: 2px;
-  font-family: var(--font-display);
-  font-size: 1.65rem;
-  font-weight: var(--display-weight);
-  letter-spacing: var(--display-tracking);
-}
-.page-kicker {
-  color: var(--ink-3);
-  font-size: 0.67rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 .return-btn {
   flex: 0 0 auto;
   padding: 7px 10px;
@@ -1666,38 +1645,21 @@ button {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
 }
-.calculators-page .page-header {
-  margin-bottom: var(--sp-6);
-}
 .calculator-directory {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--sp-5);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
   width: min(1080px, 100%);
-  margin: 0 auto;
-}
-.calculator-group {
-  min-width: 0;
-}
-.calculator-group h2 {
-  margin: 0 0 var(--sp-3);
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: var(--display-weight);
-  letter-spacing: var(--display-tracking);
-  color: var(--ink);
-}
-.calculator-group-list {
-  display: grid;
-  gap: 8px;
+  margin: var(--sp-5) auto 0;
 }
 .calculator-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  justify-content: center;
+  gap: 3px;
   width: 100%;
-  min-height: 68px;
+  min-height: 88px;
   padding: 13px 14px;
   text-align: left;
   background: var(--surface);
@@ -1725,7 +1687,17 @@ button {
 }
 .calculator-card-topic {
   color: var(--ink-3);
-  font-size: 0.72rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.calculator-card-solver {
+  color: var(--ink-3);
+  font-size: 0.7rem;
+}
+.settings-page .page-card {
+  margin-top: var(--sp-5);
 }
 .theme-swatch[aria-pressed='true'] {
   border-color: var(--accent);

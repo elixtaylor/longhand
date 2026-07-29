@@ -251,13 +251,17 @@ function SettingsPage({
 }) {
   return (
     <main className="page-shell settings-page">
-      <header className="page-header">
-        <button type="button" className="return-btn" onClick={onReturn}>
-          ← Return
-        </button>
-        <div>
-          <span className="page-kicker">Longhand / Settings</span>
-          <h1>Settings</h1>
+      <header className="graphing-header">
+        <div className="graphing-header-left">
+          <button
+            type="button"
+            className="return-btn"
+            aria-label="Return to equation input"
+            onClick={onReturn}
+          >
+            ← Return
+          </button>
+          <span className="graphing-kicker">Settings</span>
         </div>
       </header>
       <section className="page-card">
