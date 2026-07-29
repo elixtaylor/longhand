@@ -107,7 +107,7 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className="setting-row">
+      <div className="setting-row setting-row-light">
         <span className="field-label">Light or dark</span>
         <div className="segmented" role="group" aria-label="Light or dark">
           <button
@@ -127,7 +127,47 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className="setting-row">
+      <div className="setting-row setting-row-working">
+        <span className="field-label">Working out</span>
+        <div className="segmented" role="group" aria-label="Reveal mode">
+          <button
+            type="button"
+            aria-pressed={revealMode === 'all'}
+            onClick={() => onRevealMode('all')}
+          >
+            Show all steps
+          </button>
+          <button
+            type="button"
+            aria-pressed={revealMode === 'step'}
+            onClick={() => onRevealMode('step')}
+          >
+            One at a time
+          </button>
+        </div>
+      </div>
+
+      <div className="setting-row setting-row-number">
+        <span className="field-label">Number format</span>
+        <div className="segmented" role="group" aria-label="Number format">
+          <button
+            type="button"
+            aria-pressed={displayMode === 'exact'}
+            onClick={() => onDisplayMode('exact')}
+          >
+            Exact
+          </button>
+          <button
+            type="button"
+            aria-pressed={displayMode === 'decimal'}
+            onClick={() => onDisplayMode('decimal')}
+          >
+            Decimal
+          </button>
+        </div>
+      </div>
+
+      <div className="setting-row setting-row-text">
         <span className="field-label">Text size</span>
         <div className="segmented" role="group" aria-label="Text size">
           <button
@@ -154,46 +194,7 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className="setting-row setting-row-working">
-        <span className="field-label">Working out</span>
-        <div className="segmented" role="group" aria-label="Reveal mode">
-          <button
-            type="button"
-            aria-pressed={revealMode === 'all'}
-            onClick={() => onRevealMode('all')}
-          >
-            Show all steps
-          </button>
-          <button
-            type="button"
-            aria-pressed={revealMode === 'step'}
-            onClick={() => onRevealMode('step')}
-          >
-            One at a time
-          </button>
-        </div>
-        <div className="setting-subrow">
-          <span className="field-label">Number format</span>
-          <div className="segmented" role="group" aria-label="Number format">
-            <button
-              type="button"
-              aria-pressed={displayMode === 'exact'}
-              onClick={() => onDisplayMode('exact')}
-            >
-              Exact
-            </button>
-            <button
-              type="button"
-              aria-pressed={displayMode === 'decimal'}
-              onClick={() => onDisplayMode('decimal')}
-            >
-              Decimal
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="setting-row">
+      <div className="setting-row setting-row-palette">
         <span className="field-label">Equation buttons</span>
         <Switch
           label="Equation buttons"
@@ -202,7 +203,7 @@ export function SettingsPanel({
         />
       </div>
 
-      <div className="setting-row">
+      <div className="setting-row setting-row-auto">
         <span className="field-label">Auto-scroll to working</span>
         <Switch
           label="Auto-scroll to working"
@@ -211,7 +212,7 @@ export function SettingsPanel({
         />
       </div>
 
-      <div className="setting-row">
+      <div className="setting-row setting-row-reading">
         <span className="field-label">Reading preview</span>
         <Switch
           label="Reading preview"
@@ -220,7 +221,7 @@ export function SettingsPanel({
         />
       </div>
 
-      <div className="setting-row">
+      <div className="setting-row setting-row-reduce">
         <span className="field-label">Reduce motion</span>
         <Switch
           label="Reduce motion"
@@ -229,7 +230,7 @@ export function SettingsPanel({
         />
       </div>
 
-      <div className="setting-row">
+      <div className="setting-row setting-row-notes">
         <span className="field-label">Why explanations</span>
         <Switch
           label="Why explanations"

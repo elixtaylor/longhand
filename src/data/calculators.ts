@@ -31,6 +31,12 @@ export const CALCULATORS: CalculatorGroup[] = [
         blurb:
           'Fill in any two of a, b, c, A, B — Pythagoras or SOH CAH TOA, whichever applies.',
       },
+      {
+        solverId: 'right-triangle',
+        methodId: 'trig-ratio',
+        label: 'Trigonometric ratios',
+        blurb: 'Find a missing side or angle with sine, cosine or tangent.',
+      },
     ],
   },
   {
