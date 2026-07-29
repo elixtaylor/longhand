@@ -83,7 +83,7 @@ button {
 }
 .home-workspace > .masthead-menu {
   position: absolute;
-  top: 0;
+  top: var(--sp-4);
   left: 0;
   z-index: 2;
 }
@@ -1372,12 +1372,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 50px;
-  padding: 8px 8px 8px 10px;
-  background: var(--bg-tint);
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  box-shadow: var(--shadow-1);
+  min-height: 40px;
+  padding: 2px 4px 2px 2px;
 }
 .sidebar-title-group {
   display: flex;
@@ -1415,6 +1411,10 @@ button {
 .sidebar-head > .icon-btn {
   position: static;
   flex: 0 0 auto;
+}
+.sidebar-head > .icon-btn:hover {
+  color: var(--ink);
+  background: var(--bg-tint);
 }
 
 .accordion {
