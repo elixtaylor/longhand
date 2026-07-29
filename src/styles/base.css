@@ -1558,6 +1558,14 @@ button {
 .settings-page .page-card {
   width: min(1040px, 100%);
 }
+.settings-page .settings-content {
+  width: min(1040px, 100%);
+  margin: var(--sp-5) auto 0;
+}
+.settings-page .settings-content .page-card {
+  width: 100%;
+  margin: 0;
+}
 .settings-page .settings-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1603,18 +1611,49 @@ button {
 .settings-page .setting-row-light,
 .settings-page .setting-row-number,
 .settings-page .setting-row-text,
-.settings-page .setting-row-working {
+.settings-page .setting-row-working,
+.settings-page .setting-row-reduce {
   grid-column: 1;
 }
 .settings-page .setting-row-palette,
 .settings-page .setting-row-auto,
 .settings-page .setting-row-reading,
-.settings-page .setting-row-reduce,
 .settings-page .setting-row-notes {
   grid-column: 2;
 }
+.settings-page .setting-row-theme {
+  grid-row: 1;
+}
+.settings-page .setting-row-light {
+  grid-row: 2;
+}
+.settings-page .setting-row-number {
+  grid-row: 3;
+}
+.settings-page .setting-row-text {
+  grid-row: 4;
+}
+.settings-page .setting-row-working {
+  grid-row: 5;
+}
+.settings-page .setting-row-palette {
+  grid-row: 2;
+}
+.settings-page .setting-row-auto {
+  grid-row: 3;
+}
+.settings-page .setting-row-reading {
+  grid-row: 4;
+}
+.settings-page .setting-row-reduce {
+  grid-row: 6;
+}
+.settings-page .setting-row-notes {
+  grid-row: 5;
+}
 .settings-page .setting-reset-row {
   grid-column: 1 / -1;
+  grid-row: 7;
   min-height: 30px;
   padding: 10px 0 0;
   border-top: 1px solid var(--line);
@@ -2083,6 +2122,7 @@ button {
   }
   .settings-page .setting-row {
     grid-column: 1;
+    grid-row: auto;
   }
 }
 @media (max-width: 600px) {

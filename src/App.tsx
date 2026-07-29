@@ -264,9 +264,14 @@ function SettingsPage({
           <span className="graphing-kicker">Settings</span>
         </div>
       </header>
-      <section className="page-card">
-        <SettingsPanel {...settings} onResetPreferences={onResetPreferences} />
-      </section>
+      <div className="settings-content">
+        <section className="page-card">
+          <SettingsPanel
+            {...settings}
+            onResetPreferences={onResetPreferences}
+          />
+        </section>
+      </div>
     </main>
   );
 }
