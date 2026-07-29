@@ -67,6 +67,10 @@ export function TriangleDiagram({ data }: { data: TriangleData }) {
   ];
 
   const scale = 260 / Math.max(w, h);
+  // The triangle is drawn in a data-sized viewBox and then scaled to a
+  // compact 260px canvas. SVG text scales with that viewBox too, so keep the
+  // labels at the same readable screen size as the other diagrams.
+  const labelStyle = { fontSize: `${11 / scale}px` };
 
   return (
     <div className="viz-scroll">
@@ -89,6 +93,7 @@ export function TriangleDiagram({ data }: { data: TriangleData }) {
             x={l.pos.x}
             y={l.pos.y}
             className="diagram-label"
+            style={labelStyle}
             textAnchor="middle"
           >
             {l.text}
@@ -100,6 +105,7 @@ export function TriangleDiagram({ data }: { data: TriangleData }) {
             x={l.pos.x}
             y={l.pos.y}
             className="diagram-label diagram-label-vertex"
+            style={labelStyle}
             textAnchor="middle"
           >
             {l.text}
