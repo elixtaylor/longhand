@@ -727,14 +727,8 @@ button {
   margin-bottom: 6px;
   line-height: 1.5;
 }
-/* The line of maths and its side-note share a row — the note reads as a
-   comment beside the line rather than a caption underneath it. Stretching
-   the annotation to the equation row makes its marker line share the same
-   vertical extent as the working, while its text remains bottom-aligned.
-   The notebook theme replaces that height with its ruled-square measurement
-   below. The equation takes the remaining row width, with no nested scrolling
-   surface competing with the page itself.
-   */
+/* Keep each line of working as a single equation row. Explanations remain
+   available through the Why? control above the solution. */
 .step-line {
   display: flex;
   align-items: center;
@@ -749,30 +743,6 @@ button {
   color: var(--ink);
   overflow: hidden;
   padding: 4px 0;
-}
-.step-annotation {
-  align-self: center;
-  display: flex;
-  align-items: center;
-  flex: 0 0 min(220px, 30%);
-  width: min(220px, 30%);
-  max-width: min(220px, 30%);
-  padding: 0;
-  font-family: var(--font-annotation);
-  font-size: 0.78rem;
-  line-height: 1.35;
-  color: var(--ink-3);
-  overflow-wrap: anywhere;
-}
-:root[data-theme='notebook'] .step-annotation {
-  display: flex;
-  align-items: center;
-  height: var(--rule);
-  margin-bottom: calc(var(--rule) - var(--rule-baseline));
-  border: 0;
-}
-:root[data-theme='notebook'] .step-annotation-text {
-  position: static;
 }
 .step.is-hidden {
   display: none;

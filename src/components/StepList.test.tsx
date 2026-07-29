@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { StepList } from './StepList';
 
 describe('StepList annotations', () => {
-  it('keeps operation annotations unhighlighted', () => {
+  it('keeps operation annotations out of the equation line', () => {
     Object.defineProperty(document, 'fonts', {
       configurable: true,
       value: {
@@ -38,6 +38,6 @@ describe('StepList annotations', () => {
     expect(screen.getByRole('listitem').className).not.toContain(
       'step-operation',
     );
-    expect(screen.getByText('same to both sides')).toBeTruthy();
+    expect(screen.queryByText('same to both sides')).toBeNull();
   });
 });

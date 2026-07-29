@@ -191,20 +191,11 @@ export function StepList({
                     <RichText text={step.note} />
                   </p>
                 )}
-                {(step.latex || step.annotation) && (
+                {step.latex && (
                   <div className="step-line">
-                    {step.latex && (
-                      <div className="step-expr">
-                        <TeX tex={step.latex} display />
-                      </div>
-                    )}
-                    {step.annotation && (
-                      <span className="step-annotation">
-                        <span className="step-annotation-text">
-                          {step.annotation}
-                        </span>
-                      </span>
-                    )}
+                    <div className="step-expr">
+                      <TeX tex={step.latex} display />
+                    </div>
                   </div>
                 )}
                 {step.visual && <StepVisualView visual={step.visual} />}
