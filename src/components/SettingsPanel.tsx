@@ -7,8 +7,8 @@ import {
 } from '../lib/ui';
 
 /**
- * The settings controls, inline — this is one section of the sidebar (see
- * Sidebar), not a dialog of its own, so it owns no open/close state.
+ * The settings controls used by the dedicated Settings page. It owns no
+ * navigation or open/close state.
  */
 export function SettingsPanel({
   theme,

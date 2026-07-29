@@ -1,9 +1,10 @@
-export type PageId = 'home' | 'graphing' | 'settings';
+export type PageId = 'home' | 'graphing' | 'calculators' | 'settings';
 
 /** The small set of pages currently backed by real URLs. */
 export function pageFromPath(pathname: string): PageId {
   const path = pathname.replace(/\/+$/, '');
   if (path.endsWith('/graphing')) return 'graphing';
+  if (path.endsWith('/calculators')) return 'calculators';
   if (path.endsWith('/settings')) return 'settings';
   return 'home';
 }

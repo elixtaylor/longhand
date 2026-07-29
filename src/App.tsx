@@ -4,7 +4,9 @@ import type { ThemeId, RevealMode, TextSize, DisplayMode } from './lib/ui';
 import { Workspace } from './components/Workspace';
 import { DisplayModeContext } from './components/TeX';
 import { GraphingWorkspace } from './components/GraphingWorkspace';
+import { CalculatorsPage } from './components/CalculatorsPage';
 import { SettingsPanel } from './components/SettingsPanel';
+import type { CalculatorRef } from './data/calculators';
 import { pageFromPath, pagePath, type PageId } from './lib/routes';
 
 export default function App() {
@@ -52,6 +54,8 @@ export default function App() {
   const [page, setPage] = useState<PageId>(() =>
     pageFromPath(window.location.pathname),
   );
+  const [pendingCalculator, setPendingCalculator] =
+    useState<CalculatorRef | null>(null);
   const [resetKey, setResetKey] = useState(0);
   function navigate(next: PageId, replace = false) {
     const url = pagePath(next);
@@ -66,6 +70,7 @@ export default function App() {
   }
   function goHome() {
     setSidebarOpen(false);
+    setPendingCalculator(null);
     setResetKey((key) => key + 1);
     navigate('home', true);
     window.requestAnimationFrame(() =>
@@ -129,8 +134,8 @@ export default function App() {
                 aria-haspopup="dialog"
                 onClick={() => setSidebarOpen((o) => !o)}
               >
-                {/* hamburger glyph — the drawer holds calculators, practice,
-                answer checking, textbook questions and settings */}
+                {/* hamburger glyph — the drawer holds calculators, textbook
+                questions, recent work and settings */}
                 <svg
                   width="20"
                   height="20"
@@ -160,6 +165,14 @@ export default function App() {
 
         {page === 'graphing' ? (
           <GraphingWorkspace onClose={() => navigate('home')} />
+        ) : page === 'calculators' ? (
+          <CalculatorsPage
+            onReturn={() => navigate('home')}
+            onOpenCalculator={(calculator) => {
+              setPendingCalculator(calculator);
+              navigate('home');
+            }}
+          />
         ) : page === 'settings' ? (
           <SettingsPage
             onReturn={() => navigate('home')}
@@ -219,6 +232,8 @@ export default function App() {
             showReading={showReading}
             reduceMotion={reduceMotion}
             onNavigatePage={navigate}
+            pendingCalculator={pendingCalculator}
+            onCalculatorHandled={() => setPendingCalculator(null)}
           />
         )}
       </div>

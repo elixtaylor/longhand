@@ -48,8 +48,8 @@ own, so the working shows the join: differentiate, solve what you differentiated
 
 - **Compare all methods** — every method for the same problem side by side, with a
   step count for each and a check that they agree. The whole point of the app, in one view.
-- **Compact sidebar** — calculators, textbook questions, recent work, practice mode,
-  answer checking and settings are one click away.
+- **Compact sidebar** — calculators, textbook questions, recent work and settings are one click
+  away. Calculators open in a dedicated directory page grouped by topic.
 - **Maths first** — the working shows lines only. **Why?**, top right, adds the reason
   for each line when you want it.
 - **No duplicate methods** — if two methods give identical working for your problem
@@ -58,8 +58,6 @@ own, so the working shows the join: differentiate, solve what you differentiated
   curves, box plots, and number lines for inequalities.
 - **Measurement units** — length units are converted consistently and answers carry the
   correct linear, square or cubic dimension.
-- **Practice mode and answer checking** — generate a worked example, hide the answer, then
-  check your own response against the current solution.
 - **Graphing workspace** — plot multiple `y = f(x)` expressions, add x-coordinates, and see
   the calculated y-values and labelled table points on the graph.
 - **Shareable links** — every solve updates the URL, so you can send working to a
@@ -67,8 +65,7 @@ own, so the working shows the join: differentiate, solve what you differentiated
 - **Recent problems**, kept locally so you can pick up where you left off.
 - **Light and dark**, with Mono (black, grey and white) as the default theme, plus Editorial,
   Notebook and Warm alternatives.
-- **Keyboard**: `/` jumps to the problem box, `,` opens settings.
-- **Print** produces a clean worked solution with the controls stripped out.
+- **Keyboard**: `/` jumps to the problem box, `,` opens the menu.
 
 ## Topics & methods
 

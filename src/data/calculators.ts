@@ -1,5 +1,5 @@
 /**
- * The sidebar's "Calculators" directory — a curated shortcut into specific
+ * The "Calculators" directory — a curated shortcut into specific
  * structured-input methods (see StructuredInputForm), grouped by subject.
  * Only methods with `fields` belong here; free-text topics are already one
  * search away and don't need a second front door.

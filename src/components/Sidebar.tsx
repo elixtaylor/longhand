@@ -1,19 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Solver } from '../lib/engine/types';
 import type { ThemeId, RevealMode, TextSize, DisplayMode } from '../lib/ui';
-import { CALCULATORS } from '../data/calculators';
 import { importedFor, sourceOf, type ImportedProblem } from '../data/imported';
-import { getSolver } from '../lib/engine/registry';
 import type { HistoryEntry } from '../lib/history';
 import { SettingsPanel } from './SettingsPanel';
-import { AnswerCheckPanel } from './AnswerCheckPanel';
-import { PracticePanel } from './PracticePanel';
-import type { Worked } from '../lib/engine/run';
-import type { Example } from '../data/examples';
 
 /**
- * The collapsible drawer keeps calculators, practice, answer checking,
- * textbook questions, recent work and settings in one compact list.
+ * The collapsible drawer keeps routes, textbook questions, recent work and
+ * settings in one compact list.
  *
  * Mounted only while open (see Workspace), same as the settings modal it
  * replaces — so this owns the scrim, Escape-to-close and focus-on-open it
@@ -21,13 +15,7 @@ import type { Example } from '../data/examples';
  */
 
 type SectionId =
-  | 'graphing'
-  | 'calculators'
-  | 'textbook'
-  | 'recent'
-  | 'check'
-  | 'practice'
-  | 'settings';
+  'graphing' | 'calculators' | 'textbook' | 'recent' | 'settings';
 
 export function Sidebar({
   onClose,
@@ -36,7 +24,6 @@ export function Sidebar({
   history,
   onLoadHistory,
   onClearHistory,
-  onJumpToCalculator,
   theme,
   onTheme,
   revealMode,
@@ -47,9 +34,6 @@ export function Sidebar({
   onTextSize,
   showPalette,
   onShowPalette,
-  input = '',
-  worked = null,
-  onOpenExample = () => undefined,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
   onNavigatePage = () => undefined,
@@ -60,7 +44,6 @@ export function Sidebar({
   history: HistoryEntry[];
   onLoadHistory: (h: HistoryEntry) => void;
   onClearHistory: () => void;
-  onJumpToCalculator: (solverId: string, methodId: string) => void;
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
   revealMode: RevealMode;
@@ -71,18 +54,16 @@ export function Sidebar({
   onTextSize: (s: TextSize) => void;
   showPalette: boolean;
   onShowPalette: (show: boolean) => void;
-  input?: string;
-  worked?: Worked | null;
-  onOpenExample?: (example: Example) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
-  onNavigatePage?: (page: 'home' | 'graphing' | 'settings') => void;
+  onNavigatePage?: (
+    page: 'home' | 'graphing' | 'calculators' | 'settings',
+  ) => void;
 }) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const imported = importedFor(solver.id);
-  const calculators = CALCULATORS.flatMap((group) => group.items);
 
   const sections: Array<{
     id: SectionId;
@@ -106,8 +87,6 @@ export function Sidebar({
       available: history.length > 0,
     },
     { id: 'settings', label: 'Settings', available: true },
-    { id: 'check', label: 'Check my answer', available: true },
-    { id: 'practice', label: 'Practice mode', available: true },
   ];
   const shown = sections.filter((s) => s.available);
 
@@ -148,17 +127,12 @@ export function Sidebar({
   }
 
   function activate(id: SectionId) {
-    if (id === 'graphing' || id === 'settings') {
+    if (id === 'graphing' || id === 'calculators' || id === 'settings') {
       onNavigatePage(id);
       onClose();
       return;
     }
     toggle(id);
-  }
-
-  function jumpToCalculator(solverId: string, methodId: string) {
-    onJumpToCalculator(solverId, methodId);
-    onClose();
   }
 
   function loadImported(p: ImportedProblem) {
@@ -204,12 +178,16 @@ export function Sidebar({
                   type="button"
                   className="accordion-trigger"
                   aria-expanded={
-                    s.id === 'graphing' || s.id === 'settings'
+                    s.id === 'graphing' ||
+                    s.id === 'calculators' ||
+                    s.id === 'settings'
                       ? undefined
                       : openSection === s.id
                   }
                   aria-controls={
-                    s.id === 'graphing' || s.id === 'settings'
+                    s.id === 'graphing' ||
+                    s.id === 'calculators' ||
+                    s.id === 'settings'
                       ? undefined
                       : `sidebar-panel-${s.id}`
                   }
@@ -221,31 +199,6 @@ export function Sidebar({
 
               {openSection === s.id && (
                 <div className="accordion-panel" id={`sidebar-panel-${s.id}`}>
-                  {s.id === 'calculators' && (
-                    <div className="calc-list">
-                      {calculators.map((item) => {
-                        const itemSolver = getSolver(item.solverId)!;
-                        const method = itemSolver.methods.find(
-                          (m) => m.id === item.methodId,
-                        )!;
-                        return (
-                          <button
-                            key={`${item.solverId}-${item.methodId}`}
-                            type="button"
-                            className="calc-item"
-                            onClick={() =>
-                              jumpToCalculator(item.solverId, item.methodId)
-                            }
-                          >
-                            <span className="calc-item-label">
-                              {item.label ?? method.name}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
                   {s.id === 'textbook' && (
                     <>
                       <div className="examples examples-grid">
@@ -327,12 +280,6 @@ export function Sidebar({
                       displayMode={displayMode}
                       onDisplayMode={onDisplayMode}
                     />
-                  )}
-                  {s.id === 'check' && (
-                    <AnswerCheckPanel input={input} worked={worked} />
-                  )}
-                  {s.id === 'practice' && (
-                    <PracticePanel onOpenExample={onOpenExample} />
                   )}
                 </div>
               )}

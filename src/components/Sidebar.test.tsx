@@ -2,8 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { solvers } from '../lib/engine/registry';
 import { Sidebar } from './Sidebar';
 
-describe('Sidebar calculator directory', () => {
-  it('uses compact labelled rows without calculator descriptions', () => {
+describe('Sidebar navigation', () => {
+  it('opens the calculator directory route', () => {
+    const onNavigatePage = vi.fn();
     render(
       <Sidebar
         onClose={vi.fn()}
@@ -12,7 +13,6 @@ describe('Sidebar calculator directory', () => {
         history={[]}
         onLoadHistory={vi.fn()}
         onClearHistory={vi.fn()}
-        onJumpToCalculator={vi.fn()}
         theme="notebook"
         onTheme={vi.fn()}
         revealMode="all"
@@ -23,20 +23,20 @@ describe('Sidebar calculator directory', () => {
         onTextSize={vi.fn()}
         showPalette
         onShowPalette={vi.fn()}
+        onNavigatePage={onNavigatePage}
       />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Calculators/ }));
 
-    expect(screen.queryByText(/Fill in any two/)).toBeNull();
-    expect(
-      screen.getAllByRole('button', { name: 'Right-angled triangle' }),
-    ).toHaveLength(1);
-    expect(document.querySelectorAll('.calc-item').length).toBeGreaterThan(1);
+    expect(onNavigatePage).toHaveBeenCalledWith('calculators');
     expect(document.querySelector('.sidebar-nav-index')).toBeNull();
     expect(document.querySelector('.accordion-chevron')).toBeNull();
     expect(document.querySelector('.ref-count')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Formulas/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Practice mode/ })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /Check my answer/ }),
+    ).toBeNull();
   });
 
   it('shows recent equations without topic labels', () => {
@@ -55,7 +55,6 @@ describe('Sidebar calculator directory', () => {
         ]}
         onLoadHistory={vi.fn()}
         onClearHistory={vi.fn()}
-        onJumpToCalculator={vi.fn()}
         theme="notebook"
         onTheme={vi.fn()}
         revealMode="all"

@@ -32,6 +32,7 @@ import { PartedSolution } from './PartedSolution';
 import { TeX, RichText } from './TeX';
 import { MAX_INPUT_LENGTH } from '../lib/safety';
 import { useLocalStorage } from '../lib/useLocalStorage';
+import type { CalculatorRef } from '../data/calculators';
 
 const Sidebar = lazy(() =>
   import('./Sidebar').then((module) => ({ default: module.Sidebar })),
@@ -84,6 +85,8 @@ export function Workspace({
   showReading = true,
   reduceMotion = false,
   onNavigatePage = () => undefined,
+  pendingCalculator = null,
+  onCalculatorHandled = () => undefined,
   resetKey = 0,
 }: {
   revealMode: RevealMode;
@@ -105,7 +108,11 @@ export function Workspace({
   autoScroll?: boolean;
   showReading?: boolean;
   reduceMotion?: boolean;
-  onNavigatePage?: (page: 'home' | 'graphing' | 'settings') => void;
+  onNavigatePage?: (
+    page: 'home' | 'graphing' | 'calculators' | 'settings',
+  ) => void;
+  pendingCalculator?: CalculatorRef | null;
+  onCalculatorHandled?: () => void;
   resetKey?: number;
 }) {
   const shared =
@@ -349,7 +356,7 @@ export function Workspace({
   }
 
   /**
-   * A calculator picked from the sidebar directory lands on its form empty,
+   * A calculator picked from the directory lands on its form empty,
    * same as switching to a structured method mid-question (see chooseMethod):
    * there is nothing to solve yet, so this clears rather than re-solves.
    */
@@ -363,6 +370,14 @@ export function Workspace({
     hasSolved.current = false;
     onSidebarClose();
   }
+
+  useEffect(() => {
+    if (!pendingCalculator) return;
+    jumpToCalculator(pendingCalculator.solverId, pendingCalculator.methodId);
+    onCalculatorHandled();
+    // The primitive dependencies make this run once for each selected entry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCalculator?.solverId, pendingCalculator?.methodId]);
 
   async function copyLink() {
     try {
@@ -425,7 +440,6 @@ export function Workspace({
             history={history}
             onLoadHistory={loadHistoryEntry}
             onClearHistory={() => setHistory(clearHistory())}
-            onJumpToCalculator={jumpToCalculator}
             theme={theme}
             onTheme={onTheme}
             revealMode={revealMode}
@@ -436,16 +450,6 @@ export function Workspace({
             onTextSize={onTextSize}
             showPalette={showPalette}
             onShowPalette={onShowPalette}
-            input={input}
-            worked={worked}
-            onOpenExample={(example) =>
-              loadImported(
-                example.solverId,
-                example.methodId ??
-                  getSolver(example.solverId)!.defaultMethodId,
-                example.input,
-              )
-            }
             displayMode={displayMode}
             onDisplayMode={onDisplayMode}
             onNavigatePage={onNavigatePage}

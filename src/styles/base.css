@@ -1129,34 +1129,6 @@ button {
   gap: 6px var(--sp-5);
 }
 
-/* The calculator directory, kept as one compact list. */
-.calc-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.calc-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 30px;
-  padding: 6px 0;
-  text-align: left;
-  border-top: 1px solid var(--line);
-  transition: background 0.12s var(--ease);
-}
-.calc-item:first-child {
-  border-top: 0;
-}
-.calc-item:hover {
-  background: var(--bg-tint);
-}
-.calc-item-label {
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--ink);
-}
 .recent-list {
   gap: 0;
 }
@@ -1612,6 +1584,67 @@ button {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
 }
+.calculators-page .page-header {
+  margin-bottom: var(--sp-6);
+}
+.calculator-directory {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-5);
+  width: min(1080px, 100%);
+  margin: 0 auto;
+}
+.calculator-group {
+  min-width: 0;
+}
+.calculator-group h2 {
+  margin: 0 0 var(--sp-3);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  color: var(--ink);
+}
+.calculator-group-list {
+  display: grid;
+  gap: 8px;
+}
+.calculator-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  min-height: 68px;
+  padding: 13px 14px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  box-shadow: var(--shadow-1);
+  transition:
+    background 0.12s var(--ease),
+    border-color 0.12s var(--ease),
+    transform 0.12s var(--ease);
+}
+.calculator-card:hover {
+  background: var(--bg-tint);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+.calculator-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.calculator-card-label {
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.calculator-card-topic {
+  color: var(--ink-3);
+  font-size: 0.72rem;
+}
 .theme-swatch[aria-pressed='true'] {
   border-color: var(--accent);
 }
@@ -1930,68 +1963,6 @@ button {
   .graphing-plot {
     min-height: 260px;
   }
-}
-
-.sidebar-tool {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-.sidebar-tool-input {
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--control-radius);
-  background: var(--surface-raised);
-  color: var(--ink);
-}
-.check-result {
-  margin: 0;
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-.check-correct {
-  color: var(--success, #16734a);
-}
-.check-incorrect {
-  color: var(--danger, #a33a32);
-}
-.check-unrecognised {
-  color: var(--ink-2);
-}
-.practice-subject {
-  color: var(--ink-3);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.practice-prompt {
-  margin: 0;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  font-family: var(--font-mono);
-  color: var(--ink);
-}
-.practice-answer {
-  margin: 0;
-  padding: 8px 10px;
-  background: var(--bg-tint);
-  border-radius: var(--control-radius);
-  text-align: center;
-}
-.practice-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.practice-actions .btn,
-.practice-actions .btn-primary {
-  width: auto;
-  flex: 1 1 0;
-  padding: 8px 9px;
-  font-size: 0.78rem;
 }
 
 /* KaTeX sizing ------------------------------------------------------------ */
