@@ -179,7 +179,7 @@ export function Sidebar({
         </div>
 
         <div className="accordion">
-          {shown.map((s) => (
+          {shown.map((s, index) => (
             <div className="accordion-section" key={s.id}>
               <h3>
                 <button
@@ -189,11 +189,16 @@ export function Sidebar({
                   aria-controls={`sidebar-panel-${s.id}`}
                   onClick={() => toggle(s.id)}
                 >
-                  <span>
-                    {s.label}
-                    {s.count !== undefined && (
-                      <span className="ref-count">{s.count}</span>
-                    )}
+                  <span className="sidebar-nav-label">
+                    <span className="sidebar-nav-index">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span>
+                      {s.label}
+                      {s.count !== undefined && (
+                        <span className="ref-count">{s.count}</span>
+                      )}
+                    </span>
                   </span>
                   <svg
                     className="accordion-chevron"

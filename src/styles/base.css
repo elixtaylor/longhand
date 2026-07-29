@@ -1116,9 +1116,6 @@ button {
 .ref-count {
   font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--bg-tint);
   color: var(--ink-3);
 }
 /* One column at the sidebar's width — the grid still earns its keep should
@@ -1140,7 +1137,7 @@ button {
 .calc-groups {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: var(--sp-4);
 }
 .calc-group .examples {
   display: flex;
@@ -1152,8 +1149,8 @@ button {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 34px;
-  padding: 7px 4px;
+  min-height: 30px;
+  padding: 6px 0;
   text-align: left;
   border-top: 1px solid var(--line);
   transition: background 0.12s var(--ease);
@@ -1165,7 +1162,7 @@ button {
   background: var(--bg-tint);
 }
 .calc-item-label {
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 600;
   color: var(--ink);
 }
@@ -1354,13 +1351,13 @@ button {
   }
 }
 .sidebar-panel {
-  width: min(348px, 92vw);
+  width: min(312px, 90vw);
   height: 100vh;
   overflow-y: auto;
   background: var(--surface);
   border-right: 1px solid var(--line-strong);
   box-shadow: 8px 0 24px -20px rgba(0, 0, 0, 0.5);
-  padding: var(--sp-5) var(--sp-4);
+  padding: var(--sp-4);
   display: flex;
   flex-direction: column;
   gap: var(--sp-5);
@@ -1376,8 +1373,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: var(--sp-4);
-  border-bottom: 2px solid var(--ink);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--line-strong);
 }
 .sidebar-title-group {
   display: flex;
@@ -1394,7 +1391,7 @@ button {
 .sidebar-head h2 {
   font-family: var(--font-display);
   font-weight: var(--display-weight);
-  font-size: 1.55rem;
+  font-size: 1.35rem;
   letter-spacing: var(--display-tracking);
 }
 
@@ -1402,6 +1399,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0;
+  border-top: 1px solid var(--line);
 }
 .accordion-section {
   border-bottom: 1px solid var(--line);
@@ -1415,17 +1413,17 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  padding: var(--sp-3) 4px;
+  padding: 10px 0;
   font-size: 0.76rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--ink-2);
-  background: var(--surface);
-  transition: background 0.12s var(--ease);
+  background: transparent;
+  transition: color 0.12s var(--ease);
 }
 .accordion-trigger:hover {
-  background: var(--bg-tint);
+  color: var(--accent);
 }
 .accordion-trigger[aria-expanded='true'] {
   color: var(--ink);
@@ -1435,7 +1433,19 @@ button {
   background: var(--accent-tint, var(--bg-tint));
   color: var(--accent);
 }
-.accordion-trigger span:first-child {
+.sidebar-nav-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-nav-index {
+  width: 20px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0;
+}
+.sidebar-nav-label > span:last-child {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -1448,7 +1458,7 @@ button {
   transform: rotate(90deg);
 }
 .accordion-panel {
-  padding: var(--sp-2) 0 var(--sp-4);
+  padding: 2px 0 var(--sp-4) 30px;
 }
 
 .settings-fields {
