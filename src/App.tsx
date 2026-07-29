@@ -3,6 +3,7 @@ import { useLocalStorage } from './lib/useLocalStorage';
 import type { ThemeId, RevealMode, TextSize, DisplayMode } from './lib/ui';
 import { Workspace } from './components/Workspace';
 import { DisplayModeContext } from './components/TeX';
+import { GraphingWorkspace } from './components/GraphingWorkspace';
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'mono');
@@ -34,6 +35,7 @@ export default function App() {
     false,
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [graphingOpen, setGraphingOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   function goHome() {
     setSidebarOpen(false);
@@ -139,7 +141,14 @@ export default function App() {
           resetKey={resetKey}
           displayMode={displayMode}
           onDisplayMode={setDisplayMode}
+          onOpenGraphing={() => {
+            setSidebarOpen(false);
+            setGraphingOpen(true);
+          }}
         />
+        {graphingOpen && (
+          <GraphingWorkspace onClose={() => setGraphingOpen(false)} />
+        )}
       </div>
     </DisplayModeContext.Provider>
   );

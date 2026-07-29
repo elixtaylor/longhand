@@ -21,7 +21,13 @@ import type { Example } from '../data/examples';
  */
 
 type SectionId =
-  'calculators' | 'textbook' | 'recent' | 'check' | 'practice' | 'settings';
+  | 'graphing'
+  | 'calculators'
+  | 'textbook'
+  | 'recent'
+  | 'check'
+  | 'practice'
+  | 'settings';
 
 export function Sidebar({
   onClose,
@@ -46,6 +52,7 @@ export function Sidebar({
   onOpenExample = () => undefined,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
+  onOpenGraphing = () => undefined,
 }: {
   onClose: () => void;
   solver: Solver;
@@ -69,6 +76,7 @@ export function Sidebar({
   onOpenExample?: (example: Example) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
+  onOpenGraphing?: () => void;
 }) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -82,6 +90,7 @@ export function Sidebar({
     count?: number;
     available: boolean;
   }> = [
+    { id: 'graphing', label: 'Graphing', available: true },
     {
       id: 'calculators',
       label: 'Calculators',
@@ -240,6 +249,22 @@ export function Sidebar({
                           </button>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {s.id === 'graphing' && (
+                    <div className="sidebar-tool">
+                      <p className="sidebar-tool-hint">
+                        Plot one or more expressions and fill a live x/y table
+                        with labelled points.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={onOpenGraphing}
+                      >
+                        Open graphing workspace
+                      </button>
                     </div>
                   )}
 

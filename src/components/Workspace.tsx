@@ -80,6 +80,7 @@ export function Workspace({
   onShowPalette,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
+  onOpenGraphing = () => undefined,
   resetKey = 0,
 }: {
   revealMode: RevealMode;
@@ -98,6 +99,7 @@ export function Workspace({
   onShowPalette: (show: boolean) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
+  onOpenGraphing?: () => void;
   resetKey?: number;
 }) {
   const shared =
@@ -440,6 +442,7 @@ export function Workspace({
             }
             displayMode={displayMode}
             onDisplayMode={onDisplayMode}
+            onOpenGraphing={onOpenGraphing}
           />
         </Suspense>
       )}

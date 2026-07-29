@@ -60,6 +60,8 @@ own, so the working shows the join: differentiate, solve what you differentiated
   correct linear, square or cubic dimension.
 - **Practice mode and answer checking** — generate a worked example, hide the answer, then
   check your own response against the current solution.
+- **Graphing workspace** — plot multiple `y = f(x)` expressions, add x-coordinates, and see
+  the calculated y-values and labelled table points on the graph.
 - **Shareable links** — every solve updates the URL, so you can send working to a
   classmate or hand it to a teacher.
 - **Recent problems**, kept locally so you can pick up where you left off.
