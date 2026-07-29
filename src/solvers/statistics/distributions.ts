@@ -267,6 +267,7 @@ export const distributionsSolver: Solver = {
             },
           ],
           answerLatex: `\\left(${fmt(mean - margin, 4)},\\; ${fmt(mean + margin, 4)}\\right)`,
+          derivedValues: { confidence: level },
         },
       };
     }

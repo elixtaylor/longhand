@@ -32,6 +32,15 @@ describe('rightTriangleSolver', () => {
       'A = 36.87^{\\circ}',
     );
   });
+  it('returns every derived right-triangle value for calculators', () => {
+    const result = rightTriangleSolver.solve('a=3, b=4', 'pythagoras');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.derivedValues?.c).toBe(5);
+      expect(result.solution.derivedValues?.A).toBeCloseTo(36.8699, 3);
+      expect(result.solution.derivedValues?.B).toBeCloseTo(53.1301, 3);
+    }
+  });
 });
 
 describe('triangleRulesSolver', () => {
@@ -39,6 +48,29 @@ describe('triangleRulesSolver', () => {
     // c² = 49 + 81 − 2·7·9·cos40° = 33.47… → c ≈ 5.79
     const a = ans(triangleRulesSolver, 'a=7, b=9, C=40', 'cosine-rule');
     expect(a).toBe('c = 5.79');
+  });
+  it('keeps the shared calculator usable when the sine tab is selected', () => {
+    const result = triangleRulesSolver.solve('a=7, b=9, C=40', 'sine-rule');
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(result.solution.derivedValues?.c).toBeCloseTo(5.79, 2);
+  });
+  it('keeps every general-triangle calculator tab solvable from SAS values', () => {
+    for (const method of ['sine-rule', 'cosine-rule', 'area']) {
+      const result = triangleRulesSolver.solve('a=7, b=9, C=40', method);
+      expect(result.ok, method).toBe(true);
+      if (result.ok)
+        expect(result.solution.derivedValues?.c).toBeCloseTo(5.79, 2);
+    }
+  });
+  it('can still show working after the calculator has filled every field', () => {
+    for (const method of ['sine-rule', 'cosine-rule', 'area']) {
+      const result = triangleRulesSolver.solve(
+        'a=7, b=9, c=5.79, A=51.05, B=88.95, C=40',
+        method,
+      );
+      expect(result.ok, method).toBe(true);
+    }
   });
   it('finds an angle from three sides (3-4-5 is right-angled)', () => {
     expect(ans(triangleRulesSolver, 'a=3, b=4, c=5', 'cosine-rule')).toBe(
@@ -55,6 +87,15 @@ describe('triangleRulesSolver', () => {
     expect(ans(triangleRulesSolver, 'a=10, A=90, B=30', 'sine-rule')).toBe(
       'b = 5',
     );
+  });
+  it('returns every derived general-triangle value for calculators', () => {
+    const result = triangleRulesSolver.solve('a=7, b=9, C=40', 'cosine-rule');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.derivedValues?.c).toBeCloseTo(5.79, 2);
+      expect(result.solution.derivedValues?.A).toBeDefined();
+      expect(result.solution.derivedValues?.B).toBeDefined();
+    }
   });
   it('finds area from two sides and the included angle', () => {
     // ½·6·8·sin90 = 24

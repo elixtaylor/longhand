@@ -10,6 +10,11 @@ import { CalculatorPreview } from './CalculatorPreview';
 
 type Dims = 2 | 3;
 
+function displayDerived(value: number): string {
+  const rounded = Number(value.toFixed(2));
+  return Object.is(rounded, -0) ? '0' : String(rounded);
+}
+
 function blank(field: FieldSchema): string[] {
   return field.kind === 'number' ? [''] : ['', '', ''];
 }
@@ -111,23 +116,40 @@ export function StructuredInputForm({
     return solver.solve(serialized, method.id);
   }, [method.id, serialized, solver]);
 
-  // Triangle-style calculators accept any sufficient subset of named values.
-  // Feed a single derived answer back only into a blank box, leaving every
-  // value the student typed untouched.
+  // Calculator solvers can return every safely derived field in one pass.
+  // Feed those values back only into blank boxes, leaving everything the
+  // student typed untouched. The answer-text fallback keeps older optional
+  // methods compatible while they are migrated to the richer contract.
   useEffect(() => {
-    if (!allOptional || !liveResult?.ok || !liveResult.solution.answerLatex)
-      return;
-    const match = liveResult.solution.answerLatex.match(
-      /\b([a-zA-Z])\s*=\s*(-?\d+(?:\.\d+)?)/,
-    );
+    if (!liveResult?.ok) return;
+    const derived = liveResult.solution.derivedValues;
+    if (derived) {
+      const updates: Record<string, string[]> = {};
+      for (const field of fields) {
+        const value = derived[field.id];
+        if (
+          field.kind === 'number' &&
+          Number.isFinite(value) &&
+          values[field.id][0].trim() === ''
+        ) {
+          updates[field.id] = [displayDerived(value)];
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        setValues((prev) => ({ ...prev, ...updates }));
+        return;
+      }
+    }
+
+    if (!allOptional) return;
+    const answer = liveResult.solution.answerLatex;
+    if (!answer) return;
+    const match = answer.match(/\b([a-zA-Z])\s*=\s*(-?\d+(?:\.\d+)?)/);
     if (!match) return;
     const field = fields.find((f) => f.id === match[1]);
     if (!field || field.kind !== 'number' || values[field.id][0].trim() !== '')
       return;
-    setValues((prev) => ({
-      ...prev,
-      [field.id]: [match[2]],
-    }));
+    setValues((prev) => ({ ...prev, [field.id]: [match[2]] }));
   }, [allOptional, fields, liveResult, values]);
 
   function submit(e: React.FormEvent) {

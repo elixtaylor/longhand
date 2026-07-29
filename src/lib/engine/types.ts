@@ -40,6 +40,8 @@ export interface Solution {
   steps: Step[];
   /** Final answer, shown highlighted. LaTeX. */
   answerLatex?: string;
+  /** Values a structured calculator can safely write back into blank fields. */
+  derivedValues?: Record<string, number>;
 }
 
 /**

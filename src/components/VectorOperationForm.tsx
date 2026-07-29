@@ -20,7 +20,7 @@ const OPS: Array<{
   { id: 'cross', label: 'Cross product', needsB: true, needsK: false },
   { id: 'magnitude', label: 'Magnitude', needsB: false, needsK: false },
   { id: 'unit', label: 'Unit vector', needsB: false, needsK: false },
-  { id: 'angle', label: 'Angle between', needsB: false, needsK: false },
+  { id: 'angle', label: 'Angle between', needsB: true, needsK: false },
 ];
 
 /** Builds the same text vectors.ts's free-text parser already reads. */

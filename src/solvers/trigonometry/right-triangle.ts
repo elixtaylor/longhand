@@ -44,6 +44,51 @@ function countKnown(rt: RT): number {
   return [rt.a, rt.b, rt.c, rt.A, rt.B].filter((v) => v !== undefined).length;
 }
 
+/** Fill every side and acute angle that follows from a valid right triangle. */
+function completeRightTriangle(rt: RT): Record<string, number> | null {
+  let { a, b, c, A, B } = rt;
+
+  if (a !== undefined && b !== undefined) c = Math.hypot(a, b);
+  else if (a !== undefined && c !== undefined)
+    b = Math.sqrt(Math.max(0, c * c - a * a));
+  else if (b !== undefined && c !== undefined)
+    a = Math.sqrt(Math.max(0, c * c - b * b));
+
+  if (A === undefined && B !== undefined) A = 90 - B;
+  if (A !== undefined) {
+    const angle = deg2rad(A);
+    if (c !== undefined) {
+      a ??= c * Math.sin(angle);
+      b ??= c * Math.cos(angle);
+    } else if (a !== undefined) {
+      c ??= a / Math.sin(angle);
+      b ??= a / Math.tan(angle);
+    } else if (b !== undefined) {
+      a ??= b * Math.tan(angle);
+      c ??= b / Math.cos(angle);
+    }
+  }
+
+  if (A === undefined) {
+    if (a !== undefined && c !== undefined) A = rad2deg(Math.asin(a / c));
+    else if (b !== undefined && c !== undefined) A = rad2deg(Math.acos(b / c));
+    else if (a !== undefined && b !== undefined) A = rad2deg(Math.atan(a / b));
+  }
+  if (B === undefined && A !== undefined) B = 90 - A;
+
+  if ([a, b, c, A, B].every((v) => v !== undefined && Number.isFinite(v)))
+    return { a: a!, b: b!, c: c!, A: A!, B: B! };
+  return null;
+}
+
+function addDerived(result: SolveResult, rt: RT): SolveResult {
+  if (result.ok) {
+    const derived = completeRightTriangle(rt);
+    if (derived) result.solution.derivedValues = derived;
+  }
+  return result;
+}
+
 const DEG = '^{\\circ}';
 
 function finish(
@@ -396,14 +441,14 @@ export const rightTriangleSolver: Solver = {
 
     // Pythagoras needs two sides; fall back sensibly rather than erroring.
     if (methodId === 'pythagoras') {
-      if (sides >= 2) return byPythagoras(rt);
-      if (hasAngle) return byTrigRatio(rt);
+      if (sides >= 2) return addDerived(byPythagoras(rt), rt);
+      if (hasAngle) return addDerived(byTrigRatio(rt), rt);
       return {
         ok: false,
         error: 'Pythagoras needs two side lengths, e.g.  a=3, b=4.',
       };
     }
-    if (sides >= 2 && !hasAngle) return byTrigRatio(rt);
-    return byTrigRatio(rt);
+    if (sides >= 2 && !hasAngle) return addDerived(byTrigRatio(rt), rt);
+    return addDerived(byTrigRatio(rt), rt);
   },
 };

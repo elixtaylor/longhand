@@ -113,10 +113,177 @@ function whyImpossible(t: Tri): string | null {
     .map((k) => t[k])
     .filter((v): v is number => v !== undefined);
   const sum = given.reduce((x, y) => x + y, 0);
-  if (given.length >= 2 && sum >= 180) {
+  if (
+    (given.length === 2 && sum >= 180) ||
+    (given.length === 3 && Math.abs(sum - 180) > 1e-6)
+  ) {
     return `The angles given already add to ${fmt(sum)}°, and a triangle's three angles add to exactly 180°.`;
   }
   return null;
+}
+
+/** Fill every side and angle that follows from a valid triangle. */
+function completeTriangle(t: Tri): Record<string, number> | null {
+  let { a, b, c, A, B, C } = t;
+  const sidesMap: Record<'a' | 'b' | 'c', number | undefined> = { a, b, c };
+  const anglesMap: Record<'A' | 'B' | 'C', number | undefined> = { A, B, C };
+  const sideValues = () =>
+    Object.values(sidesMap).filter((v) => v !== undefined).length;
+  const angleValues = () =>
+    Object.values(anglesMap).filter((v) => v !== undefined).length;
+
+  if (angleValues() === 2) {
+    if (anglesMap.A === undefined)
+      anglesMap.A = 180 - anglesMap.B! - anglesMap.C!;
+    else if (anglesMap.B === undefined)
+      anglesMap.B = 180 - anglesMap.A! - anglesMap.C!;
+    else anglesMap.C = 180 - anglesMap.A! - anglesMap.B!;
+  }
+
+  if (sideValues() === 3) {
+    anglesMap.A ??= rad2deg(
+      Math.acos(
+        (sidesMap.b! * sidesMap.b! +
+          sidesMap.c! * sidesMap.c! -
+          sidesMap.a! * sidesMap.a!) /
+          (2 * sidesMap.b! * sidesMap.c!),
+      ),
+    );
+    anglesMap.B ??= rad2deg(
+      Math.acos(
+        (sidesMap.a! * sidesMap.a! +
+          sidesMap.c! * sidesMap.c! -
+          sidesMap.b! * sidesMap.b!) /
+          (2 * sidesMap.a! * sidesMap.c!),
+      ),
+    );
+    anglesMap.C ??= rad2deg(
+      Math.acos(
+        (sidesMap.a! * sidesMap.a! +
+          sidesMap.b! * sidesMap.b! -
+          sidesMap.c! * sidesMap.c!) /
+          (2 * sidesMap.a! * sidesMap.b!),
+      ),
+    );
+  }
+
+  if (sideValues() === 2) {
+    const missingSide = (['a', 'b', 'c'] as const).find(
+      (key) => sidesMap[key] === undefined,
+    )!;
+    const missingAngle = PAIRS.find(([side]) => side === missingSide)![1];
+    const included = anglesMap[missingAngle];
+    const knownSides = (['a', 'b', 'c'] as const)
+      .filter((key) => key !== missingSide)
+      .map((key) => sidesMap[key]!);
+    if (included !== undefined) {
+      const [x, y] = knownSides;
+      sidesMap[missingSide] = Math.sqrt(
+        x * x + y * y - 2 * x * y * Math.cos(deg2rad(included)),
+      );
+    } else {
+      const anchor = PAIRS.find(
+        ([side, angle]) =>
+          sidesMap[side] !== undefined && anglesMap[angle] !== undefined,
+      );
+      const target = PAIRS.find(
+        ([side, angle]) =>
+          sidesMap[side] !== undefined && anglesMap[angle] === undefined,
+      );
+      if (anchor && target) {
+        const [anchorSide, anchorAngle] = anchor;
+        const [targetSide, targetAngle] = target;
+        const sinTarget =
+          (sidesMap[targetSide]! * Math.sin(deg2rad(anglesMap[anchorAngle]!))) /
+          sidesMap[anchorSide]!;
+        if (sinTarget >= -1 && sinTarget <= 1) {
+          anglesMap[targetAngle] = rad2deg(
+            Math.asin(Math.max(-1, Math.min(1, sinTarget))),
+          );
+          const remaining = PAIRS.map(
+            ([, angle]) => anglesMap[angle] ?? 0,
+          ).reduce((sum, angle) => sum + angle, 0);
+          const finalAngle = PAIRS.find(
+            ([side, angle]) =>
+              sidesMap[side] === undefined && anglesMap[angle] === undefined,
+          )?.[1];
+          if (finalAngle) anglesMap[finalAngle] = 180 - remaining;
+          const sideAngle = PAIRS.find(([side]) => side === missingSide)![1];
+          if (anglesMap[sideAngle] !== undefined)
+            sidesMap[missingSide] =
+              (sidesMap[anchorSide]! *
+                Math.sin(deg2rad(anglesMap[sideAngle]!))) /
+              Math.sin(deg2rad(anglesMap[anchorAngle]!));
+        }
+      }
+    }
+  }
+
+  if (sideValues() === 3) {
+    anglesMap.A ??= rad2deg(
+      Math.acos(
+        (sidesMap.b! * sidesMap.b! +
+          sidesMap.c! * sidesMap.c! -
+          sidesMap.a! * sidesMap.a!) /
+          (2 * sidesMap.b! * sidesMap.c!),
+      ),
+    );
+    anglesMap.B ??= rad2deg(
+      Math.acos(
+        (sidesMap.a! * sidesMap.a! +
+          sidesMap.c! * sidesMap.c! -
+          sidesMap.b! * sidesMap.b!) /
+          (2 * sidesMap.a! * sidesMap.c!),
+      ),
+    );
+    anglesMap.C ??= rad2deg(
+      Math.acos(
+        (sidesMap.a! * sidesMap.a! +
+          sidesMap.b! * sidesMap.b! -
+          sidesMap.c! * sidesMap.c!) /
+          (2 * sidesMap.a! * sidesMap.b!),
+      ),
+    );
+  }
+
+  if (sideValues() === 1 && angleValues() >= 2) {
+    const anchor = PAIRS.find(
+      ([side, angle]) =>
+        sidesMap[side] !== undefined && anglesMap[angle] !== undefined,
+    );
+    if (anchor) {
+      const [anchorSide, anchorAngle] = anchor;
+      for (const [side, angle] of PAIRS) {
+        if (side === anchorSide) continue;
+        sidesMap[side] =
+          (sidesMap[anchorSide]! * Math.sin(deg2rad(anglesMap[angle]!))) /
+          Math.sin(deg2rad(anglesMap[anchorAngle]!));
+      }
+    }
+  }
+
+  if (
+    Object.values({ ...sidesMap, ...anglesMap }).every(
+      (v) => v !== undefined && Number.isFinite(v),
+    )
+  )
+    return {
+      a: sidesMap.a!,
+      b: sidesMap.b!,
+      c: sidesMap.c!,
+      A: anglesMap.A!,
+      B: anglesMap.B!,
+      C: anglesMap.C!,
+    };
+  return null;
+}
+
+function addDerived(result: SolveResult, t: Tri): SolveResult {
+  if (result.ok) {
+    const derived = completeTriangle(t);
+    if (derived) result.solution.derivedValues = derived;
+  }
+  return result;
 }
 
 /* -------------------------------------------------------------- sine rule */
@@ -146,6 +313,11 @@ function bySineRule(t: Tri): SolveResult {
     ([s, ang]) => tri[s] !== undefined && tri[ang] !== undefined,
   );
   if (!anchor) {
+    // A calculator can be switched between methods while its shared fields
+    // still contain an SAS or SSS problem. Use the applicable triangle rule
+    // rather than leaving the student with a dead Solve button.
+    const fallback = byCosineRule(tri);
+    if (fallback.ok) return fallback;
     return {
       ok: false,
       error:
@@ -237,6 +409,19 @@ function bySineRule(t: Tri): SolveResult {
       'Sine rule',
       'Solve the triangle',
       `${ta} = ${fmt(ang)}${DEG}`,
+    );
+  }
+
+  if (
+    PAIRS.every(
+      ([side, angle]) => tri[side] !== undefined && tri[angle] !== undefined,
+    )
+  ) {
+    return finish(
+      steps,
+      'Sine rule',
+      'All triangle measurements are filled in',
+      `a = ${fmt(tri.a!)},\\quad b = ${fmt(tri.b!)},\\quad c = ${fmt(tri.c!)}`,
     );
   }
 
@@ -516,8 +701,12 @@ export const triangleRulesSolver: Solver = {
     const impossible = whyImpossible(t);
     if (impossible) return { ok: false, error: impossible };
 
-    if (/area/i.test(input) || methodId === 'area') return byArea(t);
-    if (methodId === 'sine-rule') return bySineRule(t);
-    return byCosineRule(t);
+    const result =
+      /area/i.test(input) || methodId === 'area'
+        ? byArea(t)
+        : methodId === 'sine-rule'
+          ? bySineRule(t)
+          : byCosineRule(t);
+    return addDerived(result, t);
   },
 };
