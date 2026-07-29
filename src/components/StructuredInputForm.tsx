@@ -1,6 +1,12 @@
-import { useState } from 'react';
-import type { FieldSchema, Method } from '../lib/engine/types';
+import { useEffect, useMemo, useState } from 'react';
+import type {
+  FieldSchema,
+  Method,
+  SolveResult,
+  Solver,
+} from '../lib/engine/types';
 import { MethodDiagram } from './MethodDiagram';
+import { CalculatorPreview } from './CalculatorPreview';
 
 type Dims = 2 | 3;
 
@@ -31,12 +37,14 @@ function blank(field: FieldSchema): string[] {
  */
 export function StructuredInputForm({
   method,
+  solver,
   onSubmit,
 }: {
   method: Method;
+  solver?: Solver;
   onSubmit: (serialized: string) => void;
 }) {
-  const fields = method.fields ?? [];
+  const fields = useMemo(() => method.fields ?? [], [method]);
   const hasPoint = fields.some((f) => f.kind === 'point');
   // A method can mix required and optional fields (e.g. a confidence
   // interval needs the sample stats but defaults the confidence level when
@@ -51,10 +59,6 @@ export function StructuredInputForm({
     Object.fromEntries(fields.map((f) => [f.id, blank(f)])),
   );
 
-  function widthFor(field: FieldSchema): number {
-    return field.kind === 'ratio' ? 2 : field.kind === 'number' ? 1 : dims;
-  }
-
   function setComponent(fieldId: string, index: number, raw: string) {
     setValues((prev) => {
       const next = [...prev[fieldId]];
@@ -63,36 +67,68 @@ export function StructuredInputForm({
     });
   }
 
-  const parsed: Record<string, number[]> = {};
-  let complete = fields.length > 0;
-  for (const f of fields) {
-    const comps = values[f.id].slice(0, widthFor(f));
-    if (f.kind === 'number' && f.optional) {
-      // Blank is a value not given, not a reason to disable submitting.
-      const raw = (comps[0] ?? '').trim();
-      if (raw === '') {
-        parsed[f.id] = [];
+  const { parsed, complete } = useMemo(() => {
+    const nextParsed: Record<string, number[]> = {};
+    let nextComplete = fields.length > 0;
+    for (const f of fields) {
+      const width = f.kind === 'ratio' ? 2 : f.kind === 'number' ? 1 : dims;
+      const comps = values[f.id].slice(0, width);
+      if (f.kind === 'number' && f.optional) {
+        // Blank is a value not given, not a reason to disable submitting.
+        const raw = (comps[0] ?? '').trim();
+        if (raw === '') {
+          nextParsed[f.id] = [];
+          continue;
+        }
+        const n = Number(raw);
+        if (!Number.isFinite(n)) nextComplete = false;
+        nextParsed[f.id] = [n];
         continue;
       }
-      const n = Number(raw);
-      if (!Number.isFinite(n)) complete = false;
-      parsed[f.id] = [n];
-      continue;
+      const nums = comps.map((s) => Number(s.trim()));
+      if (
+        comps.some((s) => s.trim() === '') ||
+        nums.some((n) => !Number.isFinite(n))
+      )
+        nextComplete = false;
+      nextParsed[f.id] = nums;
     }
-    const nums = comps.map((s) => Number(s.trim()));
-    if (
-      comps.some((s) => s.trim() === '') ||
-      nums.some((n) => !Number.isFinite(n))
-    )
-      complete = false;
-    parsed[f.id] = nums;
-  }
-  // "Fill in what you know" needs enough of the optional fields, not all —
-  // but only when every field is optional; a required field already
-  // guarantees there's something to solve.
-  if (allOptional && !fields.some((f) => parsed[f.id].length > 0)) {
-    complete = false;
-  }
+    // "Fill in what you know" needs enough of the optional fields, not all —
+    // but only when every field is optional; a required field already
+    // guarantees there's something to solve.
+    if (allOptional && !fields.some((f) => nextParsed[f.id].length > 0)) {
+      nextComplete = false;
+    }
+    return { parsed: nextParsed, complete: nextComplete };
+  }, [allOptional, dims, fields, values]);
+
+  const serialized = useMemo(
+    () => (method.serialize ? method.serialize(parsed) : ''),
+    [method, parsed],
+  );
+  const liveResult = useMemo<SolveResult | null>(() => {
+    if (!solver || !serialized) return null;
+    return solver.solve(serialized, method.id);
+  }, [method.id, serialized, solver]);
+
+  // Triangle-style calculators accept any sufficient subset of named values.
+  // Feed a single derived answer back only into a blank box, leaving every
+  // value the student typed untouched.
+  useEffect(() => {
+    if (!allOptional || !liveResult?.ok || !liveResult.solution.answerLatex)
+      return;
+    const match = liveResult.solution.answerLatex.match(
+      /\b([a-zA-Z])\s*=\s*(-?\d+(?:\.\d+)?)/,
+    );
+    if (!match) return;
+    const field = fields.find((f) => f.id === match[1]);
+    if (!field || field.kind !== 'number' || values[field.id][0].trim() !== '')
+      return;
+    setValues((prev) => ({
+      ...prev,
+      [field.id]: [match[2]],
+    }));
+  }, [allOptional, fields, liveResult, values]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -132,7 +168,8 @@ export function StructuredInputForm({
 
       {allOptional && (
         <p className="setting-hint">
-          Fill in whatever you know — the rest gets worked out.
+          Fill in what you know — any missing value that can be found is filled
+          in automatically.
         </p>
       )}
 
@@ -204,8 +241,10 @@ export function StructuredInputForm({
         </div>
       )}
 
+      <CalculatorPreview result={liveResult} />
+
       <button type="submit" className="btn-primary" disabled={!complete}>
-        Show the working
+        Solve
       </button>
     </form>
   );

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { MethodDiagram } from './MethodDiagram';
+import { vectorsSolver } from '../solvers/specialist/vectors';
+import { CalculatorPreview } from './CalculatorPreview';
 
 type Dims = 2 | 3;
 type VecOp =
@@ -88,6 +90,17 @@ export function VectorOperationForm({
     aResult.complete &&
     (!current.needsB || bResult.complete) &&
     (!current.needsK || kComplete);
+  const serialized = complete
+    ? serialize(
+        op,
+        aResult.nums,
+        current.needsB ? bResult.nums : null,
+        current.needsK ? kNum : null,
+      )
+    : '';
+  const liveResult = complete
+    ? vectorsSolver.solve(serialized, 'component')
+    : null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -191,8 +204,10 @@ export function VectorOperationForm({
 
       {current.needsB && pointField('Vector b', b, 'b')}
 
+      <CalculatorPreview result={liveResult} />
+
       <button type="submit" className="btn-primary" disabled={!complete}>
-        Show the working
+        Solve
       </button>
     </form>
   );

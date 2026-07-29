@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { complexSolver } from '../solvers/specialist/complex';
+import { CalculatorPreview } from './CalculatorPreview';
 
 type CxOp = '+' | '-' | '*' | '/' | 'modulus' | 'conjugate' | 'polar';
 
@@ -78,6 +80,12 @@ export function ComplexOperationForm({
   const aVal = parsePair(a);
   const bVal = parsePair(b);
   const complete = !!aVal && (!current.needsB || !!bVal);
+  const serialized = complete
+    ? serialize(op, aVal!, current.needsB ? bVal! : null)
+    : '';
+  const liveResult = complete
+    ? complexSolver.solve(serialized, op === 'polar' ? 'polar' : 'rectangular')
+    : null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -151,8 +159,10 @@ export function ComplexOperationForm({
       {complexField(current.needsB ? 'z₁' : 'z', a, 'a')}
       {current.needsB && complexField('z₂', b, 'b')}
 
+      <CalculatorPreview result={liveResult} />
+
       <button type="submit" className="btn-primary" disabled={!complete}>
-        Show the working
+        Solve
       </button>
     </form>
   );

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { probabilitySolver } from '../solvers/statistics/probability';
+import { CalculatorPreview } from './CalculatorPreview';
 
 type ProbOp = 'single' | 'union' | 'intersection' | 'conditional';
 
@@ -57,6 +59,19 @@ export function ProbabilityOperationForm({
         Number.isFinite(paN) &&
         Number.isFinite(pbN) &&
         (pab.trim() === '' || Number.isFinite(pabN));
+
+  const serialized = complete
+    ? op === 'single'
+      ? `${favN} out of ${totalN}`
+      : `${[
+          `P(A)=${paN}`,
+          `P(B)=${pbN}`,
+          ...(op !== 'intersection' && pab.trim() !== ''
+            ? [`P(A and B)=${pabN}`]
+            : []),
+        ].join(', ')} ${OPS.find((o) => o.id === op)!.keyword}`
+    : '';
+  const liveResult = complete ? probabilitySolver.solve(serialized, op) : null;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -132,8 +147,10 @@ export function ProbabilityOperationForm({
         </>
       )}
 
+      <CalculatorPreview result={liveResult} />
+
       <button type="submit" className="btn-primary" disabled={!complete}>
-        Show the working
+        Solve
       </button>
     </form>
   );

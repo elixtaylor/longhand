@@ -358,6 +358,7 @@ export function Workspace({
                 // for why an effect-based reset isn't safe here.
                 key={structuredMethod.fields!.map((f) => f.id).join('|')}
                 method={structuredMethod}
+                solver={solver}
                 onSubmit={(serialized) => {
                   setInput(serialized);
                   commit(serialized, pin);

@@ -345,7 +345,14 @@ button {
 .structured-form {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--sp-3);
+}
+.structured-form > .structured-field,
+.structured-form > .number-fields,
+.structured-form > .setting-hint,
+.structured-form > .calculator-preview {
+  width: min(100%, 540px);
 }
 .structured-form .diagram {
   margin: 0 auto var(--sp-2);
@@ -355,6 +362,7 @@ button {
 .op-picker {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
 }
 .op-picker button {
@@ -378,7 +386,7 @@ button {
 
 .dims-toggle {
   display: inline-flex;
-  align-self: flex-start;
+  align-self: center;
   gap: 4px;
   padding: 4px;
   background: var(--bg-tint);
@@ -441,6 +449,31 @@ button {
 }
 .number-field .num-input {
   text-align: center;
+}
+
+.calculator-preview {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 2.5rem;
+  padding: var(--sp-3) var(--sp-4);
+  color: var(--ink-2);
+  background: var(--bg-tint);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  text-align: center;
+}
+.calculator-preview-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.calculator-preview-value {
+  font-size: 1.05rem;
+  font-weight: 600;
 }
 
 /* Buttons ----------------------------------------------------------------- */
