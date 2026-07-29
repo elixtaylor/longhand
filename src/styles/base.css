@@ -1663,6 +1663,13 @@ button {
 .settings-page .settings-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    'theme theme'
+    'light palette'
+    'number auto'
+    'text reading'
+    'working notes'
+    'reset reset';
   column-gap: clamp(18px, 4vw, 48px);
   row-gap: 2px;
 }
@@ -1690,7 +1697,7 @@ button {
   justify-content: space-between;
 }
 .settings-page .setting-row-theme {
-  grid-column: 1 / -1;
+  grid-area: theme;
   grid-template-columns: 122px minmax(0, 1fr);
   align-items: start;
   padding-bottom: 12px;
@@ -1706,16 +1713,40 @@ button {
 .settings-page .setting-row-number,
 .settings-page .setting-row-text,
 .settings-page .setting-row-working {
-  grid-column: 1;
+  grid-column: auto;
 }
 .settings-page .setting-row-palette,
 .settings-page .setting-row-auto,
 .settings-page .setting-row-reading,
 .settings-page .setting-row-notes {
-  grid-column: 2;
+  grid-column: auto;
+}
+.settings-page .setting-row-light {
+  grid-area: light;
+}
+.settings-page .setting-row-number {
+  grid-area: number;
+}
+.settings-page .setting-row-text {
+  grid-area: text;
+}
+.settings-page .setting-row-working {
+  grid-area: working;
+}
+.settings-page .setting-row-palette {
+  grid-area: palette;
+}
+.settings-page .setting-row-auto {
+  grid-area: auto;
+}
+.settings-page .setting-row-reading {
+  grid-area: reading;
+}
+.settings-page .setting-row-notes {
+  grid-area: notes;
 }
 .settings-page .setting-reset-row {
-  grid-column: 1 / -1;
+  grid-area: reset;
   min-height: 30px;
   padding: 10px 0 0;
   border-top: 1px solid var(--line);
@@ -2176,6 +2207,17 @@ button {
 @media (max-width: 640px) {
   .settings-page .settings-fields {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'theme'
+      'light'
+      'number'
+      'text'
+      'working'
+      'palette'
+      'auto'
+      'reading'
+      'notes'
+      'reset';
   }
   .settings-page .setting-row {
     grid-column: 1;
