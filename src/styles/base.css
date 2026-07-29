@@ -397,26 +397,31 @@ button {
   white-space: nowrap;
   transition:
     background 0.12s var(--ease),
-    color 0.12s var(--ease);
+    color 0.12s var(--ease),
+    box-shadow 0.12s var(--ease);
+}
+.method-tab:hover:not([aria-selected='true']) {
+  color: var(--ink);
+  background: var(--surface-raised);
 }
 .method-tab[aria-selected='true'] {
   background: var(--surface-raised);
-  color: var(--accent);
-  box-shadow: var(--shadow-1);
+  color: var(--marker);
+  box-shadow: inset 0 -2px 0 var(--marker);
 }
 .method-tab--changed {
   animation: methodChanged 1.4s var(--ease) both;
 }
 @keyframes methodChanged {
   0% {
-    background: var(--accent-soft);
-    color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
+    background: var(--surface-raised);
+    color: var(--marker);
+    box-shadow: inset 0 -3px 0 var(--marker);
   }
   100% {
     background: var(--surface-raised);
-    color: var(--accent);
-    box-shadow: var(--shadow-1);
+    color: var(--marker);
+    box-shadow: inset 0 -2px 0 var(--marker);
   }
 }
 
@@ -739,7 +744,7 @@ button {
   margin-top: 2px;
 }
 .solution-sub em {
-  color: var(--accent);
+  color: var(--ink-2);
   font-style: normal;
   font-weight: 600;
 }
@@ -750,7 +755,9 @@ button {
   align-items: flex-end;
   min-width: 0;
   padding: 10px 16px;
-  background: var(--accent-soft);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--marker);
   border-radius: var(--control-radius);
 }
 .answer-label {
@@ -758,7 +765,7 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--marker);
 }
 .answer-value {
   min-width: 0;
@@ -819,9 +826,9 @@ button {
   font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--ink-3);
   background: var(--surface);
-  border: 1.5px solid var(--accent-soft);
+  border: 1.5px solid var(--line);
   border-radius: 50%;
 }
 .step-body {
@@ -829,6 +836,8 @@ button {
   min-width: 0;
 }
 .step-note {
+  padding-left: 10px;
+  border-left: 2px solid var(--marker);
   font-size: 0.9rem;
   color: var(--ink-2);
   margin-bottom: 6px;
@@ -883,8 +892,8 @@ button {
   color: var(--ink);
 }
 .notes-toggle[aria-pressed='true'] {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--ink);
+  border-color: var(--line-strong);
   background: var(--surface);
 }
 /* The answer card would otherwise sit under it. */
@@ -1594,10 +1603,18 @@ button {
   font-weight: 600;
   color: var(--ink-2);
   border-radius: calc(var(--control-radius) - 2px);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease),
+    box-shadow 0.12s var(--ease);
+}
+.segmented button:hover:not([aria-pressed='true']) {
+  color: var(--ink);
+  background: var(--surface-raised);
 }
 .segmented button[aria-pressed='true'] {
   background: var(--surface-raised);
-  color: var(--accent);
+  color: var(--ink);
   box-shadow: var(--shadow-1);
 }
 .setting-switch {
@@ -1614,8 +1631,8 @@ button {
   font-weight: 600;
 }
 .setting-switch:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--ink);
+  border-color: var(--line-strong);
 }
 .setting-switch-track {
   display: inline-flex;
@@ -1637,7 +1654,7 @@ button {
   transition: transform 0.12s var(--ease);
 }
 .setting-switch[aria-checked='true'] .setting-switch-track {
-  background: var(--accent);
+  background: var(--ink);
 }
 .setting-switch[aria-checked='true'] .setting-switch-thumb {
   transform: translateX(12px);
@@ -1659,6 +1676,7 @@ button {
 }
 .settings-page .page-card {
   width: min(1040px, 100%);
+  padding: var(--sp-4) var(--sp-6);
 }
 .settings-page .settings-fields {
   display: grid;
@@ -1685,7 +1703,11 @@ button {
 .settings-page .setting-row > .field-label {
   width: auto;
   text-align: left;
-  font-size: 0.84rem;
+  color: var(--ink-3);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .settings-page .setting-row > .segmented {
   width: 100%;
@@ -1771,6 +1793,7 @@ button {
 }
 .return-btn {
   flex: 0 0 auto;
+  min-height: 32px;
   padding: 7px 10px;
   border: 1px solid var(--line-strong);
   border-radius: var(--control-radius);
@@ -1778,13 +1801,15 @@ button {
   background: var(--surface);
   font-size: 0.78rem;
   font-weight: 700;
+  line-height: 1;
   transition:
     border-color 0.12s var(--ease),
     color 0.12s var(--ease);
 }
 .return-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--bg-tint);
 }
 .page-card {
   width: min(920px, 100%);
@@ -1796,14 +1821,14 @@ button {
   box-shadow: var(--shadow-1);
 }
 .settings-page .page-card {
-  margin-top: var(--sp-5);
+  margin-top: var(--sp-4);
 }
 .calculator-directory {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
   width: min(1240px, 100%);
-  margin: var(--sp-5) auto 0;
+  margin: var(--sp-4) auto 0;
 }
 .calculator-card {
   display: flex;
@@ -1897,14 +1922,16 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-6);
+  min-height: 64px;
+  padding: 14px var(--sp-6);
   background: var(--surface);
   border-bottom: 1px solid var(--line-strong);
 }
 .graphing-header-left {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+  min-height: 32px;
+  gap: var(--sp-3);
 }
 .graphing-kicker {
   color: var(--ink-3);
@@ -1912,14 +1939,15 @@ button {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  line-height: 1;
 }
 .graphing-layout {
   display: grid;
   grid-template-columns: minmax(270px, 330px) minmax(0, 1fr);
-  gap: var(--sp-5);
+  gap: var(--sp-4);
   width: min(1440px, 100%);
   margin: 0 auto;
-  padding: var(--sp-5) var(--sp-6) var(--sp-7);
+  padding: var(--sp-4) var(--sp-6) var(--sp-5);
 }
 .graphing-inspector,
 .graphing-canvas {
@@ -1930,11 +1958,11 @@ button {
   box-shadow: var(--shadow-1);
 }
 .graphing-inspector {
-  padding: var(--sp-4);
+  padding: var(--sp-3);
 }
 .graphing-canvas {
   position: relative;
-  padding: var(--sp-4);
+  padding: var(--sp-3);
 }
 .graphing-section-head,
 .graphing-canvas-head {
@@ -1945,8 +1973,12 @@ button {
 }
 .graphing-section-head h2,
 .graphing-canvas-head h2 {
-  font-size: 1.05rem;
-  font-weight: 750;
+  color: var(--ink-3);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 .graphing-canvas-actions {
   display: flex;
@@ -1964,7 +1996,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-3);
 }
 .graph-expression-row {
   position: relative;
@@ -1997,7 +2029,7 @@ button {
   line-height: 1;
 }
 .graph-remove:hover {
-  color: var(--accent);
+  color: var(--ink);
   background: var(--bg-tint);
 }
 .graph-expression-error {
@@ -2006,8 +2038,8 @@ button {
   font-size: 0.72rem;
 }
 .graph-table-section {
-  margin-top: var(--sp-6);
-  padding-top: var(--sp-4);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
   border-top: 1px solid var(--line);
 }
 .graph-table {
@@ -2046,14 +2078,14 @@ button {
 .graphing-status {
   padding: 4px 8px;
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--bg-tint);
+  color: var(--ink-2);
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
 }
 .graphing-plot-wrap {
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-3);
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
@@ -2165,6 +2197,13 @@ button {
   justify-content: space-between;
   gap: var(--sp-2);
 }
+.graph-settings-head strong {
+  color: var(--ink-3);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
 .graph-settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2178,6 +2217,7 @@ button {
   color: var(--ink-2);
   font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .graph-settings-grid input {
