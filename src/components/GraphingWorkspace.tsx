@@ -110,11 +110,13 @@ function GraphPlot({
   points,
   bounds,
   axisSteps,
+  zoomLevel,
 }: {
   expressions: GraphExpression[];
   points: TablePoint[];
   bounds: GraphBounds;
   axisSteps: AxisSteps;
+  zoomLevel: number;
 }) {
   const [activePoint, setActivePoint] = useState<string | null>(null);
   const finitePoints = points.filter(
@@ -129,12 +131,12 @@ function GraphPlot({
     10,
     ...(xValues.length ? [Math.max(...xValues) + 1] : []),
   );
-  const xMin = bounds.xMin ?? autoXMin;
-  const xMax = bounds.xMax ?? autoXMax;
+  const baseXMin = bounds.xMin ?? autoXMin;
+  const baseXMax = bounds.xMax ?? autoXMax;
   const sampled: number[] = [];
   for (const expression of expressions) {
     for (let i = 0; i <= 120; i++) {
-      const x = xMin + ((xMax - xMin) * i) / 120;
+      const x = baseXMin + ((baseXMax - baseXMin) * i) / 120;
       try {
         const y = evaluateGraphExpression(expression.text, x);
         if (Number.isFinite(y) && Math.abs(y) < 1e6) sampled.push(y);
@@ -152,8 +154,17 @@ function GraphPlot({
     ...(sampled.length ? [Math.max(...sampled)] : []),
   );
   const yPadding = Math.max((autoYMax - autoYMin) * 0.12, 1);
-  const yMin = bounds.yMin ?? autoYMin - yPadding;
-  const yMax = bounds.yMax ?? autoYMax + yPadding;
+  const baseYMin = bounds.yMin ?? autoYMin - yPadding;
+  const baseYMax = bounds.yMax ?? autoYMax + yPadding;
+  const safeZoom = Math.max(0.25, Math.min(16, zoomLevel));
+  const xCentre = (baseXMin + baseXMax) / 2;
+  const yCentre = (baseYMin + baseYMax) / 2;
+  const xHalfSpan = (baseXMax - baseXMin) / (2 * safeZoom);
+  const yHalfSpan = (baseYMax - baseYMin) / (2 * safeZoom);
+  const xMin = xCentre - xHalfSpan;
+  const xMax = xCentre + xHalfSpan;
+  const yMin = yCentre - yHalfSpan;
+  const yMax = yCentre + yHalfSpan;
   const width = 860;
   const height = 470;
   const pad = { left: 50, right: 18, top: 18, bottom: 38 };
@@ -332,6 +343,8 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
   const [nextId, setNextId] = useState(2);
   const [bounds, setBounds] = useState<GraphBounds>({});
   const [axisSteps, setAxisSteps] = useState<AxisSteps>({});
+  const [zoomEnabled, setZoomEnabled] = useState(true);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [draftBounds, setDraftBounds] = useState({
     xMin: '',
     xMax: '',
@@ -423,7 +436,17 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
       return;
     setBounds(values);
     setAxisSteps(steps);
+    setZoomLevel(1);
     setSettingsOpen(false);
+  }
+
+  function handleGraphWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (!zoomEnabled) return;
+    event.preventDefault();
+    const delta = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
+    setZoomLevel((current) =>
+      Math.max(0.25, Math.min(16, current * Math.exp(-delta * 0.002))),
+    );
   }
 
   return (
@@ -636,6 +659,15 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
                   />
                 </label>
               </div>
+              <label className="graph-zoom-setting">
+                <input
+                  type="checkbox"
+                  checked={zoomEnabled}
+                  aria-label="Enable trackpad zoom"
+                  onChange={(event) => setZoomEnabled(event.target.checked)}
+                />
+                <span>Trackpad zoom</span>
+              </label>
               <div className="graph-settings-actions">
                 <button
                   type="button"
@@ -643,6 +675,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
                   onClick={() => {
                     setBounds({});
                     setAxisSteps({});
+                    setZoomLevel(1);
                     setSettingsOpen(false);
                   }}
                 >
@@ -658,12 +691,13 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           )}
-          <div className="graphing-plot-wrap">
+          <div className="graphing-plot-wrap" onWheel={handleGraphWheel}>
             <GraphPlot
               expressions={expressions}
               points={table}
               bounds={bounds}
               axisSteps={axisSteps}
+              zoomLevel={zoomLevel}
             />
           </div>
         </section>

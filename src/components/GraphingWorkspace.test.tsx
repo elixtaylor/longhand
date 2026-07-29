@@ -29,6 +29,25 @@ describe('graphing expression table', () => {
     expect(screen.getByLabelText('x min')).toBeTruthy();
     expect(screen.getByLabelText('x axis increment')).toBeTruthy();
     expect(screen.getByLabelText('y axis increment')).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', { name: 'Enable trackpad zoom' }),
+    ).toBeTruthy();
+  });
+
+  it('zooms the graph with the trackpad setting enabled', () => {
+    render(<GraphingWorkspace onClose={vi.fn()} />);
+    const plot = document.querySelector('.graphing-plot-wrap');
+    const gridLines = () =>
+      Array.from(document.querySelectorAll('.graph-grid-line'))
+        .map((line) => `${line.getAttribute('x1')}:${line.getAttribute('y1')}`)
+        .join('|');
+    expect(plot).toBeTruthy();
+    expect(document.querySelector('.graph-grid-line')).toBeTruthy();
+    const before = gridLines();
+
+    fireEvent.wheel(plot!, { deltaY: -120 });
+
+    expect(gridLines()).not.toBe(before);
   });
 
   it('keeps editing focus on the nearest row after deleting a table row', () => {
