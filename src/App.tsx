@@ -4,10 +4,7 @@ import type { ThemeId, RevealMode, TextSize } from './lib/ui';
 import { Workspace } from './components/Workspace';
 
 export default function App() {
-  const [theme, setTheme] = useLocalStorage<ThemeId>(
-    'longhand.theme',
-    'notebook',
-  );
+  const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'mono');
   const [revealMode, setRevealMode] = useLocalStorage<RevealMode>(
     'longhand.reveal',
     'all',

@@ -164,7 +164,10 @@ export function Sidebar({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="sidebar-head">
-          <h2>Menu</h2>
+          <div className="sidebar-title-group">
+            <span className="sidebar-kicker">Longhand</span>
+            <h2>Reference</h2>
+          </div>
           <button
             type="button"
             className="icon-btn"

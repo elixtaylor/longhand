@@ -5,6 +5,7 @@ describe('home reset', () => {
   it('makes the wordmark return to a blank equation input', async () => {
     window.localStorage.clear();
     render(<App />);
+    expect(document.documentElement.dataset.theme).toBe('mono');
     fireEvent.change(screen.getByLabelText('Your problem'), {
       target: { value: '2x + 3 = 9' },
     });

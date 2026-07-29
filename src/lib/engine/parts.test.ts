@@ -96,6 +96,17 @@ describe('questions that only look like two topics', () => {
     expect(w.split).toBe(false);
     expect(w.parts[0].solver.id).toBe('differentiate');
   });
+
+  it('allows a method choice to apply to one topic in a mixed question', () => {
+    const w = runWorked('x^2 - 4 = 0 then d/dx x^3 - 4x^2', undefined, {
+      quadratics: 'formula',
+      differentiate: 'first-principles',
+    });
+    expect(w.parts.map((p) => p.methodId)).toEqual([
+      'formula',
+      'first-principles',
+    ]);
+  });
 });
 
 describe('a later part referring to an earlier one', () => {

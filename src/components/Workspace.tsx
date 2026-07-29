@@ -98,6 +98,9 @@ export function Workspace({
     shared?.input ?? '',
   );
   const [worked, setWorked] = useState<Worked | null>(null);
+  const [partMethodOverrides, setPartMethodOverrides] = useState<
+    Record<string, string>
+  >({});
   const [detected, setDetected] = useState<Solver | null>(null);
   /** The canonical rewrite of what was typed, shown when it differs. */
   const [reading, setReading] = useState<string | null>(null);
@@ -118,6 +121,7 @@ export function Workspace({
     setMethodId(solvers[0].defaultMethodId);
     setInput('');
     setWorked(null);
+    setPartMethodOverrides({});
     setDetected(null);
     setReading(null);
     setComparing(false);
@@ -132,27 +136,31 @@ export function Workspace({
    * split the question across the topics it spans; a pin says "this topic,
    * this method", which also means there is nothing to go looking for.
    */
-  const solveWith = useCallback((value: string, pinned: Pin) => {
-    if (value.length > MAX_INPUT_LENGTH) {
-      setWorked({ parts: [], split: false });
-      return;
-    }
-    if (value.trim() === '') {
-      setWorked(null);
-      hasSolved.current = false;
-      return;
-    }
-    const solver = pinned ? getSolver(pinned.solverId) : undefined;
-    setWorked(
-      runWorked(
-        value,
-        solver
-          ? { solver, methodId: pinned!.methodId || solver.defaultMethodId }
-          : undefined,
-      ),
-    );
-    hasSolved.current = true;
-  }, []);
+  const solveWith = useCallback(
+    (value: string, pinned: Pin, methodOverrides = partMethodOverrides) => {
+      if (value.length > MAX_INPUT_LENGTH) {
+        setWorked({ parts: [], split: false });
+        return;
+      }
+      if (value.trim() === '') {
+        setWorked(null);
+        hasSolved.current = false;
+        return;
+      }
+      const solver = pinned ? getSolver(pinned.solverId) : undefined;
+      setWorked(
+        runWorked(
+          value,
+          solver
+            ? { solver, methodId: pinned!.methodId || solver.defaultMethodId }
+            : undefined,
+          methodOverrides,
+        ),
+      );
+      hasSolved.current = true;
+    },
+    [partMethodOverrides],
+  );
 
   /** Solving is the moment worth recording and worth making shareable. */
   const commit = useCallback(
@@ -272,6 +280,7 @@ export function Workspace({
    * that has nothing to do with what the student is about to fill in.
    */
   function chooseMethod(id: string) {
+    setPartMethodOverrides({});
     const prevMethod = solver.methods.find((m) => m.id === methodId);
     const nextMethod = solver.methods.find((m) => m.id === id);
     setMethodId(id);
@@ -289,6 +298,7 @@ export function Workspace({
   }
 
   function loadImported(solverIdIn: string, methodIdIn: string, value: string) {
+    setPartMethodOverrides({});
     const pinned: Pin = { solverId: solverIdIn, methodId: methodIdIn };
     setSolverId(solverIdIn);
     setMethodId(methodIdIn);
@@ -308,6 +318,7 @@ export function Workspace({
    * there is nothing to solve yet, so this clears rather than re-solves.
    */
   function jumpToCalculator(solverIdIn: string, methodIdIn: string) {
+    setPartMethodOverrides({});
     setSolverId(solverIdIn);
     setMethodId(methodIdIn);
     setPin({ solverId: solverIdIn, methodId: methodIdIn });
@@ -450,6 +461,7 @@ export function Workspace({
                     // method that were chosen for the last one.
                     setInput(v.slice(0, MAX_INPUT_LENGTH));
                     setPin(null);
+                    setPartMethodOverrides({});
                   }}
                   placeholder="e.g. x^2 + 5x + 6 = 0"
                   preview={reading}
@@ -551,6 +563,14 @@ export function Workspace({
                 // choices and the comparison for just that topic.
                 loadImported(part.solver.id, part.methodId, part.text)
               }
+              onSelectPartMethod={(part, nextMethodId) => {
+                const nextOverrides = {
+                  ...partMethodOverrides,
+                  [part.solver.id]: nextMethodId,
+                };
+                setPartMethodOverrides(nextOverrides);
+                solveWith(input, null, nextOverrides);
+              }}
             />
           ) : (
             <SolutionView
@@ -630,6 +650,7 @@ function SolutionView({
         methodId={methodId}
         onSelectMethod={onSelectMethod}
         forceAll={hasStructuredMethod}
+        showDescription={showNotes}
       />
     </div>
   );

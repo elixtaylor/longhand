@@ -33,7 +33,7 @@ export function SettingsPanel({
       <div className="setting-row">
         <span className="field-label">Theme</span>
         <span className="setting-hint">
-          Three complete looks — pick whichever suits you.
+          Four complete looks — pick whichever suits you.
         </span>
         <div className="theme-swatches">
           {THEMES.map((t) => (

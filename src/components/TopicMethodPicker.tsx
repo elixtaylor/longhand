@@ -15,6 +15,7 @@ export function TopicMethodPicker({
   methodId,
   onSelectMethod,
   forceAll,
+  showDescription = true,
 }: {
   solverId: string;
   input: string;
@@ -30,6 +31,8 @@ export function TopicMethodPicker({
    * of question.
    */
   forceAll?: boolean;
+  /** Hide the prose explanation while keeping the method choices available. */
+  showDescription?: boolean;
 }) {
   const solver = getSolver(solverId)!;
   const methods = useMemo(
@@ -73,10 +76,10 @@ export function TopicMethodPicker({
               </button>
             ))}
           </div>
-          <p className="method-blurb">{current?.blurb}</p>
+          {showDescription && <p className="method-blurb">{current?.blurb}</p>}
         </>
       ) : (
-        <p className="method-blurb">{current?.blurb}</p>
+        showDescription && <p className="method-blurb">{current?.blurb}</p>
       )}
     </div>
   );

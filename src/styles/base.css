@@ -73,6 +73,10 @@ button {
   letter-spacing: var(--display-tracking);
   font-size: 1.5rem;
   color: var(--ink);
+  transition: filter 0.16s var(--ease);
+}
+.wordmark:hover {
+  filter: drop-shadow(0 3px 5px rgba(17, 17, 17, 0.2));
 }
 .wordmark:hover .wordmark-mark {
   background: var(--accent-tint, var(--bg-tint));
@@ -1350,13 +1354,13 @@ button {
   }
 }
 .sidebar-panel {
-  width: min(380px, 92vw);
+  width: min(348px, 92vw);
   height: 100vh;
   overflow-y: auto;
   background: var(--surface);
   border-right: 1px solid var(--line-strong);
-  box-shadow: var(--shadow-2);
-  padding: var(--sp-6);
+  box-shadow: 8px 0 24px -20px rgba(0, 0, 0, 0.5);
+  padding: var(--sp-5) var(--sp-4);
   display: flex;
   flex-direction: column;
   gap: var(--sp-5);
@@ -1372,11 +1376,26 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: var(--sp-4);
+  border-bottom: 2px solid var(--ink);
+}
+.sidebar-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-kicker {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
 .sidebar-head h2 {
   font-family: var(--font-display);
   font-weight: var(--display-weight);
-  font-size: 1.3rem;
+  font-size: 1.55rem;
+  letter-spacing: var(--display-tracking);
 }
 
 .accordion {
@@ -1397,8 +1416,10 @@ button {
   justify-content: space-between;
   gap: var(--sp-3);
   padding: var(--sp-3) 4px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink-2);
   background: var(--surface);
   transition: background 0.12s var(--ease);
@@ -1407,8 +1428,8 @@ button {
   background: var(--bg-tint);
 }
 .accordion-trigger[aria-expanded='true'] {
-  color: var(--accent);
-  background: var(--bg-tint);
+  color: var(--ink);
+  background: transparent;
 }
 .accordion-trigger[aria-expanded='true'] .ref-count {
   background: var(--accent-tint, var(--bg-tint));
@@ -1427,8 +1448,7 @@ button {
   transform: rotate(90deg);
 }
 .accordion-panel {
-  padding: var(--sp-4);
-  border-top: 1px solid var(--line);
+  padding: var(--sp-2) 0 var(--sp-4);
 }
 
 .settings-fields {

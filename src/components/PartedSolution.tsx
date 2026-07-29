@@ -2,6 +2,7 @@ import type { Worked, WorkedPart } from '../lib/engine/run';
 import type { RevealMode } from '../lib/ui';
 import { StepList } from './StepList';
 import { TeX, RichText } from './TeX';
+import { TopicMethodPicker } from './TopicMethodPicker';
 
 /**
  * A question worked across the topics it actually spans.
@@ -16,11 +17,13 @@ export function PartedSolution({
   revealMode,
   showNotes,
   onFocusPart,
+  onSelectPartMethod,
 }: {
   worked: Worked;
   revealMode: RevealMode;
   showNotes: boolean;
   onFocusPart?: (part: WorkedPart) => void;
+  onSelectPartMethod?: (part: WorkedPart, methodId: string) => void;
 }) {
   return (
     <div className="parts">
@@ -49,7 +52,6 @@ export function PartedSolution({
               </div>
               <div className="part-sub">
                 <span className="part-topic">{part.solver.title}</span>
-                {part.result.ok && <> · {part.result.solution.methodName}</>}
               </div>
               {part.carried && (
                 // Show the substitution itself rather than describing it: the
@@ -71,6 +73,16 @@ export function PartedSolution({
               </div>
             )}
           </header>
+
+          {onSelectPartMethod && part.solver.methods.length > 1 && (
+            <TopicMethodPicker
+              solverId={part.solver.id}
+              input={part.text}
+              methodId={part.methodId}
+              onSelectMethod={(methodId) => onSelectPartMethod(part, methodId)}
+              showDescription={showNotes}
+            />
+          )}
 
           {part.result.ok ? (
             <StepList

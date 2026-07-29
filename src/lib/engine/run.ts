@@ -58,6 +58,7 @@ export function runSolve(
 export function runWorked(
   raw: string,
   preferred?: { solver: Solver; methodId: string },
+  methodOverrides: Record<string, string> = {},
 ): Worked {
-  return work(raw, runSolve, preferred);
+  return work(raw, runSolve, preferred, methodOverrides);
 }

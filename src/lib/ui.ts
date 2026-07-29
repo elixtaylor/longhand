@@ -1,6 +1,6 @@
 /** Shared UI types + theme metadata for the settings panel. */
 
-export type ThemeId = 'editorial' | 'notebook' | 'warm';
+export type ThemeId = 'mono' | 'editorial' | 'notebook' | 'warm';
 export type RevealMode = 'all' | 'step';
 export type TextSize = 'sm' | 'md' | 'lg';
 
@@ -12,6 +12,12 @@ export interface ThemeMeta {
 }
 
 export const THEMES: ThemeMeta[] = [
+  {
+    id: 'mono',
+    name: 'Mono',
+    note: 'Black and white',
+    swatch: { bg: '#f4f4f2', accent: '#111111', ink: '#111111' },
+  },
   {
     id: 'editorial',
     name: 'Editorial',

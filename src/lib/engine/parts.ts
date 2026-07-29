@@ -124,9 +124,10 @@ function cut(text: string, re: RegExp): [string, string] | null {
 function solveFragment(
   text: string,
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
+  methodOverrides: Record<string, string> = {},
 ): { solver: Solver; methodId: string; result: SolveResult } | null {
   // Read it as written first.
-  const asWritten = attempt(text, solveOne);
+  const asWritten = attempt(text, solveOne, methodOverrides);
   // Any successful reading of the question as asked wins outright — including
   // one that reaches a conclusion rather than a value, like "no real
   // solutions". Rewriting the question because it produced no `answerLatex`
@@ -138,7 +139,7 @@ function solveFragment(
   // underneath the student.
   const folded = foldArithmetic(text);
   if (folded !== text) {
-    const got = attempt(folded, solveOne);
+    const got = attempt(folded, solveOne, methodOverrides);
     if (got?.result.ok) return got;
   }
   return asWritten;
@@ -148,6 +149,7 @@ function solveFragment(
 function attempt(
   text: string,
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
+  methodOverrides: Record<string, string> = {},
 ): { solver: Solver; methodId: string; result: SolveResult } | null {
   const detected = [
     ...detectSolvers(normalise(text).text),
@@ -170,10 +172,14 @@ function attempt(
     result: SolveResult;
   } | null = null;
   for (const { solver } of candidates) {
-    const first = solveOne(solver, text, solver.defaultMethodId);
-    fallback ??= { solver, methodId: solver.defaultMethodId, result: first };
+    const selectedMethod =
+      solver.methods.find((m) => m.id === methodOverrides[solver.id]) ??
+      solver.methods.find((m) => m.id === solver.defaultMethodId) ??
+      solver.methods[0];
+    const first = solveOne(solver, text, selectedMethod.id);
+    fallback ??= { solver, methodId: selectedMethod.id, result: first };
     if (first.ok && first.solution.answerLatex) {
-      return { solver, methodId: solver.defaultMethodId, result: first };
+      return { solver, methodId: selectedMethod.id, result: first };
     }
     // A method that reaches a conclusion without a value is still useful. It
     // belongs to this topic, so keep it ahead of a broad neighbour's summary.
@@ -182,11 +188,11 @@ function attempt(
       methodId: string;
       result: SolveResult;
     } | null = first.ok
-      ? { solver, methodId: solver.defaultMethodId, result: first }
+      ? { solver, methodId: selectedMethod.id, result: first }
       : null;
 
     for (const method of solver.methods) {
-      if (method.id === solver.defaultMethodId) continue;
+      if (method.id === selectedMethod.id) continue;
       const alt = solveOne(solver, text, method.id);
       if (alt.ok && alt.solution.answerLatex)
         return { solver, methodId: method.id, result: alt };
@@ -313,12 +319,13 @@ function trySplit(
   re: RegExp,
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
   depth: number,
+  methodOverrides: Record<string, string>,
 ): WorkedPart[] | null {
   const halves = cut(text, re);
   if (!halves) return null;
   const [leftText, rightText] = halves;
 
-  const left = solveFragment(leftText, solveOne);
+  const left = solveFragment(leftText, solveOne, methodOverrides);
   if (!left || !left.result.ok) return null;
 
   const first: WorkedPart = { label: 'a', text: leftText, ...left };
@@ -326,7 +333,9 @@ function trySplit(
   // The tail may itself be several parts ("solve … then differentiate … then
   // integrate …"), so recurse before treating it as a single piece.
   const deeper =
-    depth > 0 ? trySplit(rightText, re, solveOne, depth - 1) : null;
+    depth > 0
+      ? trySplit(rightText, re, solveOne, depth - 1, methodOverrides)
+      : null;
   const tails = deeper ?? [];
   if (tails.length > 0) {
     // Each tail part still has to resolve references against what precedes it.
@@ -334,7 +343,7 @@ function trySplit(
   }
 
   for (const reading of readings(rightText, first)) {
-    const right = solveFragment(reading, solveOne);
+    const right = solveFragment(reading, solveOne, methodOverrides);
     if (right && right.result.ok) {
       return relabel([
         first,
@@ -364,6 +373,7 @@ export function work(
   raw: string,
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
   preferred?: { solver: Solver; methodId: string },
+  methodOverrides: Record<string, string> = {},
 ): Worked {
   const whole = (): Worked | null => {
     if (preferred) {
@@ -378,13 +388,13 @@ export function work(
       }
       return null;
     }
-    const chosen = solveFragment(raw, solveOne);
+    const chosen = solveFragment(raw, solveOne, methodOverrides);
     if (!chosen || !chosen.result.ok) return null;
     return { parts: [{ label: 'a', text: raw, ...chosen }], split: false };
   };
 
-  const strong = () => trySplit(raw, STRONG, solveOne, 3);
-  const weak = () => trySplit(raw, WEAK, solveOne, 3);
+  const strong = () => trySplit(raw, STRONG, solveOne, 3, methodOverrides);
+  const weak = () => trySplit(raw, WEAK, solveOne, 3, methodOverrides);
 
   // An explicit separator outranks solving the question whole; a bare "and"
   // does not. When the student picked the topic themselves, respect that and
@@ -402,7 +412,7 @@ export function work(
 
   // Nothing worked. Report the whole-question failure rather than a split that
   // half-succeeded — the error from the question as asked is the useful one.
-  const fallback = preferred ?? solveFragment(raw, solveOne);
+  const fallback = preferred ?? solveFragment(raw, solveOne, methodOverrides);
   if (!fallback) return { parts: [], split: false };
   return {
     parts: [
