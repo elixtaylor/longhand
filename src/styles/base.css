@@ -118,7 +118,11 @@ button {
    needed for that alone. */
 .worksheet {
   width: 100%;
-  max-width: 860px;
+  min-width: 0;
+  /* Give worked equations a real reading measure on larger screens. The
+     previous 860px cap forced long lines into a nested horizontal scrollbar
+     even when the viewport had plenty of unused width. */
+  max-width: 1280px;
   margin: 0 auto;
   padding: var(--sp-6);
   display: flex;
@@ -148,6 +152,7 @@ button {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
   padding: var(--sp-4);
+  min-width: 0;
 }
 .panel-title {
   font-family: var(--font-ui);
@@ -226,7 +231,8 @@ button {
 .preview-body {
   font-size: 1.15rem;
   color: var(--ink);
-  overflow-x: auto;
+  min-width: 0;
+  overflow: hidden;
   text-align: center;
   width: 100%;
 }
@@ -555,6 +561,8 @@ button {
      sense stretched the full height of a side column, less so stacked
      under the problem box. */
   min-height: 380px;
+  min-width: 0;
+  overflow: hidden;
 }
 @media (max-width: 600px) {
   .solution {
@@ -567,6 +575,7 @@ button {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-4);
+  min-width: 0;
   padding-bottom: var(--sp-4);
   margin-bottom: var(--sp-4);
   border-bottom: 2px solid var(--line-strong);
@@ -593,6 +602,7 @@ button {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
+  min-width: 0;
   padding: 10px 16px;
   background: var(--accent-soft);
   border-radius: var(--control-radius);
@@ -605,8 +615,27 @@ button {
   color: var(--accent);
 }
 .answer-value {
+  min-width: 0;
   font-size: 1.2rem;
   color: var(--ink);
+}
+@media (max-width: 600px) {
+  .solution-head {
+    flex-direction: column;
+    align-items: stretch;
+    padding-right: 0;
+  }
+  .answer-card {
+    align-self: stretch;
+    align-items: flex-start;
+    max-width: 100%;
+    width: 100%;
+  }
+  .answer-value {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.9rem;
+  }
 }
 
 /* Steps ------------------------------------------------------------------- */
@@ -615,6 +644,7 @@ button {
   counter-reset: step;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .step {
   /* One number drives the badge and the column it sits in — they used to
@@ -628,6 +658,7 @@ button {
   position: relative;
   display: grid;
   grid-template-columns: var(--badge) 1fr;
+  min-width: 0;
   gap: var(--sp-4);
   padding: var(--step-pad) 0;
 }
@@ -662,20 +693,22 @@ button {
    the annotation to the equation row makes its marker line share the same
    vertical extent as the working, while its text remains bottom-aligned.
    The notebook theme replaces that height with its ruled-square measurement
-   below. A wrapped annotation still stays on one row: the equation absorbs
-   the squeeze instead — see .step-expr's own overflow-x below.
+   below. The equation takes the remaining row width, with no nested scrolling
+   surface competing with the page itself.
    */
 .step-line {
   display: flex;
   align-items: stretch;
   gap: var(--sp-3);
+  min-width: 0;
 }
 .step-expr {
+  flex: 1 1 0;
+  width: 100%;
   min-width: 0;
-  font-size: calc(1.28rem * var(--text-scale));
+  font-size: clamp(0.95rem, 1.6vw, calc(1.28rem * var(--text-scale)));
   color: var(--ink);
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   padding: 4px 0;
 }
 .step-annotation {
@@ -683,12 +716,14 @@ button {
   display: flex;
   align-items: flex-end;
   flex-shrink: 0;
+  max-width: min(260px, 36%);
   padding-left: 10px;
   padding-bottom: 4px;
   font-family: var(--font-annotation);
   font-size: 1rem;
   color: var(--marker);
   border-left: 2px solid var(--marker);
+  overflow-wrap: anywhere;
 }
 :root[data-theme='notebook'] .step-annotation {
   /* One ruled square, not a text-height sliver, so the red border-left
@@ -765,6 +800,11 @@ button {
 .solution-head,
 .parts-head {
   padding-right: 5.5rem;
+}
+@media (max-width: 600px) {
+  .solution-head {
+    padding-right: 0;
+  }
 }
 @media print {
   .notes-toggle {
@@ -860,10 +900,9 @@ button {
    * it, pins the baseline just as exactly, for any content.
    *
    * This takes the element out of flow, so it contributes nothing to
-   * .step-expr's own width — .step-expr is a flex item now (see
-   * .step-line), and needs a real width to offer that row. StepList sets
-   * one inline after measuring this element's own rendered width (its
-   * measureWidths effect), which is unaffected by being taken out of flow.
+   * .step-expr's own width. The flex item takes the available row width from
+   * CSS, which keeps long equations on the page rather than in a nested
+   * horizontal scrolling surface.
    */
   position: absolute;
   left: 0;
@@ -1206,7 +1245,7 @@ button {
   margin: 0;
   font-size: 0.9rem;
   color: var(--ink);
-  overflow-x: auto;
+  overflow-wrap: anywhere;
 }
 
 .panel-title-row {
@@ -1294,7 +1333,7 @@ button {
   background: var(--accent-soft);
   border-radius: 5px;
   font-size: 1rem;
-  overflow-x: auto;
+  overflow-wrap: anywhere;
 }
 .compare-na {
   font-size: 0.85rem;
@@ -1336,7 +1375,7 @@ button {
 }
 .compare-expr {
   font-size: calc(0.95rem * var(--text-scale));
-  overflow-x: auto;
+  overflow-wrap: anywhere;
 }
 
 /* Sidebar ------------------------------------------------------------------ */
@@ -1624,7 +1663,7 @@ button {
 
 /* Step visuals ------------------------------------------------------------ */
 .viz-scroll {
-  overflow-x: auto;
+  overflow: visible;
   padding: 6px 2px 10px;
 }
 
@@ -1632,6 +1671,8 @@ button {
   border-collapse: collapse;
   font-family: var(--font-mono);
   font-size: 1.02rem;
+  width: 100%;
+  table-layout: fixed;
 }
 .grid-multiply th,
 .grid-multiply td {
@@ -1657,9 +1698,10 @@ button {
 
 .bus-stop {
   display: inline-flex;
+  max-width: 100%;
   align-items: flex-end;
   font-family: var(--font-mono);
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 4vw, 1.5rem);
   color: var(--ink);
   padding: 8px 4px;
 }

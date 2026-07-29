@@ -37,66 +37,12 @@ export function StepList({
   }, [solution, revealMode, total]);
 
   /**
-   * .step-expr now shares a flex row with .step-annotation (see .step-line
-   * in base.css), so it needs a real width to offer that row. In the
-   * notebook theme its content is taken out of flow by position:absolute
-   * (an annotation sitting beside a *content-independent, bottom-anchored*
-   * line of maths, rather than below it, needs that positioning — see
-   * base.css for why), and out-of-flow content never contributes to a
-   * parent's size — .step-expr collapsed to zero width and its maths
-   * vanished entirely.
-   *
-   * The obvious fix — measure the katex-display's own rendered width — does
-   * not work: KaTeX's own stylesheet makes display-mode .katex itself
-   * `display: block`, sized to *its* container in exactly the same way,
-   * rather than to its content. Every element in this chain fills its
-   * parent; none of them shrink-wraps, so getBoundingClientRect().width is
-   * 0 all the way down. scrollWidth is different — with white-space:nowrap
-   * (which KaTeX sets) it reports the width the unwrapped content actually
-   * needs regardless of how narrow the box computed itself to be, which is
-   * exactly the real content width this needs.
-   *
-   * Scoped to the notebook theme by checking the theme directly (matching
-   * measureGrid below) rather than the shape of the box: elsewhere
-   * .katex-display is a normal in-flow block and flexbox's own auto-sizing
-   * already measures it correctly, and a switch away from notebook has to
-   * let go of its measured width rather than leave it behind to override
-   * the next theme's own sizing.
-   *
-   * Also depends on `revealed`, not just `solution`: a step past the old
-   * solution's step count starts out `is-hidden` (display:none) for one
-   * render, because the effect below that grows `revealed` back up to the
-   * new total fires *after* this one and only takes effect next paint.
-   * scrollWidth on a display:none subtree is 0, so measuring on the
-   * `solution`-only commit permanently baked in a 0px width for every step
-   * beyond the previous solution's length — the maths was there, just
-   * zero-width. Re-running once `revealed` actually reaches that step
-   * re-measures it while it's genuinely visible.
-   *
-   * KaTeX's own delimiter fonts (KaTeX_Size1-4 — the big parentheses in a
-   * \binom, a determinant's bars, a tall radical) are a second, independent
-   * reason a first measurement can be wrong, and one no amount of retriggering
-   * on `solution`/`revealed` catches: those fonts aren't in the theme's own
-   * handwriting override (only the letter/digit faces are, see themes.css),
-   * and the browser only *starts* fetching each one the first time a glyph
-   * needs it — typically after this effect's synchronous measurement has
-   * already run and returned a width measured against a fallback glyph.
-   * Nothing about the page visibly changes when that fetch completes, so
-   * nothing else would ever prompt a re-measure — the box just quietly kept
-   * the wrong, too-narrow number for the rest of the session. Re-running
-   * once those fonts actually finish loading is the only way to catch it.
-   *
-   * Height is measured here too, and for the same reason width is: a plain
-   * line and a 3×3 determinant both need to sit in a box quantised to whole
-   * --rule squares (see base.css), but they don't need the *same* box — a
-   * fixed guess is always either wasted space on short lines or a clipped
-   * determinant. base.css's own min-height covers the ordinary case (two
-   * squares) as the default this falls back to before the first measurement
-   * and if this ever measures zero; scrollHeight (unlike scrollWidth, this
-   * one isn't fighting a stretched box — .katex-display's height was never
-   * the problem, only its width was) reports what the content actually
-   * needs, rounded up to the next whole square so the ruling still lands
-   * under the maths.
+   * The notebook theme still needs to measure each line's height so its
+   * squared-paper ruling stays aligned. Width is deliberately left to CSS:
+   * the working area now grows on wide screens and equations share the full
+   * available row instead of creating an inner horizontal scrollbar. If a
+   * very long line still exceeds a narrow viewport, the rendered maths is
+   * scaled to fit rather than making the page scroll sideways.
    */
   useEffect(() => {
     const list = listRef.current;
@@ -104,20 +50,27 @@ export function StepList({
 
     function measure() {
       const exprs = list!.querySelectorAll<HTMLElement>('.step-expr');
-      if (document.documentElement.dataset.theme !== 'notebook') {
-        exprs.forEach((exprEl) => {
-          exprEl.style.removeProperty('width');
-          exprEl.style.removeProperty('height');
-        });
-        return;
-      }
+      const notebook = document.documentElement.dataset.theme === 'notebook';
       exprs.forEach((exprEl) => {
         const katex = exprEl.querySelector<HTMLElement>(
           '.katex-display > .katex',
         );
-        if (!katex) return;
-        exprEl.style.width = `${katex.scrollWidth}px`;
-        if (katex.scrollHeight > 0) {
+        if (!katex) {
+          exprEl.style.removeProperty('height');
+          return;
+        }
+        katex.style.removeProperty('transform');
+        katex.style.removeProperty('transform-origin');
+        const availableWidth = exprEl.clientWidth;
+        const naturalWidth = katex.scrollWidth;
+        if (availableWidth > 0 && naturalWidth > availableWidth) {
+          const scale = availableWidth / naturalWidth;
+          katex.style.transformOrigin = 'left bottom';
+          katex.style.transform = `scale(${scale})`;
+        }
+        if (!notebook) {
+          exprEl.style.removeProperty('height');
+        } else if (katex.scrollHeight > 0) {
           const squares = Math.max(2, Math.ceil(katex.scrollHeight / RULE));
           exprEl.style.height = `${squares * RULE}px`;
         }
@@ -125,6 +78,8 @@ export function StepList({
     }
 
     measure();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(list);
     document.fonts.ready.then(measure);
     document.fonts.addEventListener('loadingdone', measure);
     const themeObserver = new MutationObserver(measure);
@@ -133,6 +88,7 @@ export function StepList({
       attributeFilter: ['data-theme'],
     });
     return () => {
+      resizeObserver.disconnect();
       document.fonts.removeEventListener('loadingdone', measure);
       themeObserver.disconnect();
     };
