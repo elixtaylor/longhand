@@ -707,6 +707,17 @@ button {
 .step.is-hidden {
   display: none;
 }
+.step-operation .step-expr {
+  padding: 7px 12px;
+  margin-left: -12px;
+  border-left: 3px solid var(--marker);
+  border-radius: 0 var(--control-radius) var(--control-radius) 0;
+  background: var(--marker-soft, var(--bg-tint));
+}
+.step-operation .step-annotation {
+  color: var(--marker);
+  font-weight: 700;
+}
 
 /* Why? toggle ------------------------------------------------------------- */
 /* Sits in the top-right corner of the working, out of the way of the maths
