@@ -58,6 +58,32 @@ describe('StructuredInputForm calculators', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('clears calculator values without submitting working', async () => {
+    const method = rightTriangleSolver.methods.find(
+      (candidate) => candidate.id === 'pythagoras',
+    )!;
+    const onSubmit = vi.fn();
+    render(
+      <StructuredInputForm
+        method={method}
+        solver={rightTriangleSolver}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('a'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('b'), { target: { value: '4' } });
+    await waitFor(() =>
+      expect((screen.getByLabelText('c') as HTMLInputElement).value).toBe('5'),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+
+    expect((screen.getByLabelText('a') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('c') as HTMLInputElement).value).toBe('');
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('fills all derivable sides and angles for a general triangle', async () => {
     const method = triangleRulesSolver.methods.find(
       (candidate) => candidate.id === 'cosine-rule',

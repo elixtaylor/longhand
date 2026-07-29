@@ -161,107 +161,151 @@ export function StructuredInputForm({
 
   const fixedFields = fields.filter((f) => f.kind !== 'number');
   const numberFields = fields.filter((f) => f.kind === 'number');
+  const hasDiagram = [
+    'collinear',
+    'ratio',
+    'pythagoras',
+    'trig-ratio',
+    'sine-rule',
+    'cosine-rule',
+    'area',
+  ].includes(method.id);
+  const isTriangle = [
+    'pythagoras',
+    'trig-ratio',
+    'sine-rule',
+    'cosine-rule',
+    'area',
+  ].includes(method.id);
+
+  function clearValues() {
+    setDims(2);
+    setValues(Object.fromEntries(fields.map((f) => [f.id, blank(f)])));
+  }
+
+  function fieldLabel(field: FieldSchema): string {
+    if (!isTriangle) return field.label;
+    if (/^[abc]$/.test(field.id)) return `Side ${field.label}`;
+    if (/^[ABC]$/.test(field.id)) return `Angle ${field.label}°`;
+    return field.label;
+  }
 
   return (
-    <form className="structured-form" onSubmit={submit}>
-      <MethodDiagram methodId={method.id} />
+    <form
+      className={`structured-form${hasDiagram ? ' structured-form--diagram' : ''}${isTriangle ? ' structured-form--triangle' : ''}`}
+      onSubmit={submit}
+    >
+      <div className="calculator-layout">
+        {hasDiagram && (
+          <div className="calculator-reference">
+            <MethodDiagram methodId={method.id} />
+          </div>
+        )}
 
-      {hasPoint && (
-        <div
-          className="dims-toggle"
-          role="radiogroup"
-          aria-label="Number of dimensions"
-        >
-          <button
-            type="button"
-            aria-pressed={dims === 2}
-            onClick={() => setDims(2)}
-          >
-            2D
-          </button>
-          <button
-            type="button"
-            aria-pressed={dims === 3}
-            onClick={() => setDims(3)}
-          >
-            3D
-          </button>
-        </div>
-      )}
-
-      {fixedFields.map((f) => (
-        <div className="structured-field" key={f.id}>
-          <label className="field-label">{f.label}</label>
-          {f.kind === 'point' ? (
-            <div className="point-inputs">
-              {values[f.id].slice(0, dims).map((v, i) => (
-                <input
-                  key={i}
-                  className="expr-input num-input"
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  placeholder={['x', 'y', 'z'][i]}
-                  aria-label={`${f.label} — ${['x', 'y', 'z'][i]}`}
-                  value={v}
-                  onChange={(e) => setComponent(f.id, i, e.target.value)}
-                />
-              ))}
+        <div className="calculator-fields">
+          {hasPoint && (
+            <div
+              className="dims-toggle"
+              role="radiogroup"
+              aria-label="Number of dimensions"
+            >
+              <button
+                type="button"
+                aria-pressed={dims === 2}
+                onClick={() => setDims(2)}
+              >
+                2D
+              </button>
+              <button
+                type="button"
+                aria-pressed={dims === 3}
+                onClick={() => setDims(3)}
+              >
+                3D
+              </button>
             </div>
-          ) : (
-            <div className="ratio-inputs">
-              <input
-                className="expr-input num-input"
-                type="text"
-                inputMode="decimal"
-                autoComplete="off"
-                placeholder="m"
-                aria-label={`${f.label} — m`}
-                value={values[f.id][0]}
-                onChange={(e) => setComponent(f.id, 0, e.target.value)}
-              />
-              <span className="ratio-colon" aria-hidden="true">
-                :
-              </span>
-              <input
-                className="expr-input num-input"
-                type="text"
-                inputMode="decimal"
-                autoComplete="off"
-                placeholder="n"
-                aria-label={`${f.label} — n`}
-                value={values[f.id][1]}
-                onChange={(e) => setComponent(f.id, 1, e.target.value)}
-              />
+          )}
+
+          {fixedFields.map((f) => (
+            <div className="structured-field" key={f.id}>
+              <label className="field-label">{fieldLabel(f)}</label>
+              {f.kind === 'point' ? (
+                <div className="point-inputs">
+                  {values[f.id].slice(0, dims).map((v, i) => (
+                    <input
+                      key={i}
+                      className="expr-input num-input"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      placeholder={['x', 'y', 'z'][i]}
+                      aria-label={`${f.label} — ${['x', 'y', 'z'][i]}`}
+                      value={v}
+                      onChange={(e) => setComponent(f.id, i, e.target.value)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="ratio-inputs">
+                  <input
+                    className="expr-input num-input"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="m"
+                    aria-label={`${f.label} — m`}
+                    value={values[f.id][0]}
+                    onChange={(e) => setComponent(f.id, 0, e.target.value)}
+                  />
+                  <span className="ratio-colon" aria-hidden="true">
+                    :
+                  </span>
+                  <input
+                    className="expr-input num-input"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="n"
+                    aria-label={`${f.label} — n`}
+                    value={values[f.id][1]}
+                    onChange={(e) => setComponent(f.id, 1, e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {numberFields.length > 0 && (
+            <div className="number-fields">
+              {numberFields.map((f) => (
+                <div className="number-field" key={f.id}>
+                  <label className="field-label">{fieldLabel(f)}</label>
+                  <input
+                    className="expr-input num-input"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    aria-label={f.label}
+                    value={values[f.id][0]}
+                    onChange={(e) => setComponent(f.id, 0, e.target.value)}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </div>
-      ))}
-
-      {numberFields.length > 0 && (
-        <div className="number-fields">
-          {numberFields.map((f) => (
-            <div className="number-field" key={f.id}>
-              <label className="field-label">{f.label}</label>
-              <input
-                className="expr-input num-input"
-                type="text"
-                inputMode="decimal"
-                autoComplete="off"
-                aria-label={f.label}
-                value={values[f.id][0]}
-                onChange={(e) => setComponent(f.id, 0, e.target.value)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      </div>
 
       <CalculatorPreview result={liveResult} />
 
-      <button type="submit" className="btn-primary" disabled={!complete}>
-        Solve
-      </button>
+      <div className="calculator-actions">
+        <button type="submit" className="btn-primary" disabled={!complete}>
+          Solve
+        </button>
+        <button type="button" className="btn-secondary" onClick={clearValues}>
+          Clear
+        </button>
+      </div>
     </form>
   );
 }
