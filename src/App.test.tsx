@@ -21,15 +21,13 @@ describe('home reset', () => {
     );
   });
 
-  it('keeps the menu control beside the equation input', () => {
+  it('keeps the menu control directly below the wordmark', () => {
     window.localStorage.clear();
     render(<App />);
     const masthead = document.querySelector('.masthead');
     expect(masthead?.querySelector('.masthead-top .wordmark')).not.toBeNull();
     expect(
-      document.querySelector(
-        '.worksheet-input-row .worksheet-menu[aria-label="Open menu"]',
-      ),
+      masthead?.querySelector('.masthead-menu [aria-label="Open menu"]'),
     ).not.toBeNull();
   });
 });

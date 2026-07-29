@@ -71,6 +71,12 @@ button {
   min-height: 54px;
   padding: 0 var(--sp-4);
 }
+.masthead-menu {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--sp-4) 2px;
+}
 .wordmark {
   display: flex;
   align-items: baseline;
@@ -139,15 +145,6 @@ button {
    worksheet into the wider reading measure only when it actually needs it. */
 .worksheet:has(.steps-wide) {
   max-width: 1280px;
-}
-.worksheet-input-row {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: start;
-  gap: var(--sp-3);
-}
-.worksheet-menu {
-  margin-top: var(--sp-2);
 }
 @media (max-width: 600px) {
   .worksheet {
