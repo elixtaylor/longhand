@@ -429,6 +429,10 @@ button {
 .structured-form--diagram .calculator-layout {
   grid-template-columns: minmax(150px, 0.55fr) minmax(0, 1fr);
 }
+.structured-form--triangle .calculator-layout {
+  grid-template-columns: 1fr;
+  gap: var(--sp-2);
+}
 .calculator-reference {
   display: grid;
   place-items: center;
@@ -442,6 +446,16 @@ button {
 .calculator-reference .diagram {
   width: min(100%, 220px);
   height: auto;
+}
+.structured-form--triangle .calculator-reference {
+  min-height: 126px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.structured-form--triangle .calculator-reference .diagram {
+  width: min(100%, 190px);
 }
 .calculator-fields {
   display: flex;
@@ -543,13 +557,17 @@ button {
   text-align: left;
 }
 .structured-form--triangle .number-fields {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 6px;
+  width: 100%;
 }
 .structured-form--triangle .number-field .num-input {
   text-align: center;
+  padding: 8px 4px;
 }
 .structured-form--triangle .number-field .field-label {
   text-align: center;
+  font-size: 0.74rem;
 }
 
 .calculator-preview {
@@ -607,6 +625,9 @@ button {
   }
   .calculator-reference .diagram {
     width: min(100%, 190px);
+  }
+  .structured-form--triangle .number-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
