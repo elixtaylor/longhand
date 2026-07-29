@@ -87,26 +87,22 @@ export function Sidebar({
   const sections: Array<{
     id: SectionId;
     label: string;
-    count?: number;
     available: boolean;
   }> = [
     { id: 'graphing', label: 'Graphing', available: true },
     {
       id: 'calculators',
       label: 'Calculators',
-      count: calculators.length,
       available: true,
     },
     {
       id: 'textbook',
       label: 'Textbook questions',
-      count: imported.length,
       available: imported.length > 0,
     },
     {
       id: 'recent',
       label: 'Recent',
-      count: history.length,
       available: history.length > 0,
     },
     { id: 'settings', label: 'Settings', available: true },
@@ -219,26 +215,7 @@ export function Sidebar({
                   }
                   onClick={() => activate(s.id)}
                 >
-                  <span className="sidebar-nav-label">
-                    {s.label}
-                    {s.count !== undefined && (
-                      <span className="ref-count">{s.count}</span>
-                    )}
-                  </span>
-                  <svg
-                    className="accordion-chevron"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M9 6l6 6-6 6" />
-                  </svg>
+                  {s.label}
                 </button>
               </h3>
 

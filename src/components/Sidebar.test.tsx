@@ -34,6 +34,8 @@ describe('Sidebar calculator directory', () => {
     ).toHaveLength(1);
     expect(document.querySelectorAll('.calc-item').length).toBeGreaterThan(1);
     expect(document.querySelector('.sidebar-nav-index')).toBeNull();
+    expect(document.querySelector('.accordion-chevron')).toBeNull();
+    expect(document.querySelector('.ref-count')).toBeNull();
     expect(screen.queryByRole('button', { name: /Formulas/ })).toBeNull();
   });
 
