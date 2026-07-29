@@ -423,45 +423,41 @@ button {
 .calculator-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--sp-4);
+  gap: var(--sp-2);
   align-items: center;
 }
 .structured-form--diagram .calculator-layout {
-  grid-template-columns: minmax(150px, 0.55fr) minmax(0, 1fr);
-}
-.structured-form--triangle .calculator-layout {
   grid-template-columns: 1fr;
-  gap: var(--sp-2);
 }
 .calculator-reference {
   display: grid;
   place-items: center;
   align-self: stretch;
-  min-height: 176px;
-  padding: var(--sp-3);
-  background: var(--bg-tint);
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-}
-.calculator-reference .diagram {
-  width: min(100%, 220px);
-  height: auto;
-}
-.structured-form--triangle .calculator-reference {
   min-height: 126px;
   padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
 }
-.structured-form--triangle .calculator-reference .diagram {
+.calculator-reference .diagram {
   width: min(100%, 190px);
+  height: auto;
 }
 .calculator-fields {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
   min-width: 0;
+  width: 100%;
+}
+.calculator-fields--multiple {
+  display: grid;
+  align-items: end;
+  gap: var(--sp-2);
+}
+.calculator-fields--fixed-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.calculator-fields--multiple .dims-toggle {
+  grid-column: 1 / -1;
+  justify-self: center;
 }
 /* A solver whose free-text grammar picks between several operations first
    (see VectorOperationForm) rather than one fixed set of fields. */
@@ -617,9 +613,6 @@ button {
   background: var(--bg-tint);
 }
 @media (max-width: 600px) {
-  .structured-form--diagram .calculator-layout {
-    grid-template-columns: 1fr;
-  }
   .calculator-reference {
     min-height: 124px;
   }
@@ -628,6 +621,9 @@ button {
   }
   .structured-form--triangle .number-fields {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .calculator-fields--fixed-3 {
+    grid-template-columns: 1fr;
   }
 }
 

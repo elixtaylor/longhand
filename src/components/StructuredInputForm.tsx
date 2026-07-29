@@ -202,7 +202,9 @@ export function StructuredInputForm({
           </div>
         )}
 
-        <div className="calculator-fields">
+        <div
+          className={`calculator-fields${fixedFields.length > 1 ? ` calculator-fields--multiple calculator-fields--fixed-${fixedFields.length}` : ''}`}
+        >
           {hasPoint && (
             <div
               className="dims-toggle"
