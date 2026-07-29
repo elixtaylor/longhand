@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { evaluateExpr, parseExpr } from '../lib/math/expr';
 import { fmt } from '../lib/math/num';
 
@@ -340,6 +340,8 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
   });
   const [draftSteps, setDraftSteps] = useState({ x: '', y: '' });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [focusTableRow, setFocusTableRow] = useState<number | null>(null);
+  const tableInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const table = useMemo(() => {
     try {
       return tableFor(expressions[0]?.text ?? '', xValues);
@@ -347,6 +349,12 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
       return [];
     }
   }, [expressions, xValues]);
+
+  useEffect(() => {
+    if (focusTableRow === null) return;
+    tableInputRefs.current[focusTableRow]?.focus();
+    setFocusTableRow(null);
+  }, [focusTableRow, xValues.length]);
 
   function updateExpression(id: number, text: string) {
     setExpressions((rows) =>
@@ -359,6 +367,14 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
       { id: nextId, text: '', colour: COLOURS[nextId % COLOURS.length] },
     ]);
     setNextId((value) => value + 1);
+  }
+
+  function removeTableRow(index: number) {
+    const next = xValues.filter((_, rowIndex) => rowIndex !== index);
+    setXValues(next);
+    if (next.length > 0) {
+      setFocusTableRow(Math.min(index, next.length - 1));
+    }
   }
 
   function openSettings() {
@@ -519,6 +535,9 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
                   >
                     <input
                       aria-label={`x value ${index + 1}`}
+                      ref={(element) => {
+                        tableInputRefs.current[index] = element;
+                      }}
                       value={value}
                       onChange={(event) =>
                         setXValues((values) =>
@@ -535,11 +554,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
                       type="button"
                       className="graph-remove"
                       aria-label={`Remove table row ${index + 1}`}
-                      onClick={() =>
-                        setXValues((values) =>
-                          values.filter((_, i) => i !== index),
-                        )
-                      }
+                      onClick={() => removeTableRow(index)}
                     >
                       ×
                     </button>

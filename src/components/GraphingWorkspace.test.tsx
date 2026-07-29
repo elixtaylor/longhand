@@ -30,4 +30,12 @@ describe('graphing expression table', () => {
     expect(screen.getByLabelText('x axis increment')).toBeTruthy();
     expect(screen.getByLabelText('y axis increment')).toBeTruthy();
   });
+
+  it('keeps editing focus on the nearest row after deleting a table row', () => {
+    render(<GraphingWorkspace onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove table row 5' }));
+
+    expect(document.activeElement).toBe(screen.getByLabelText('x value 4'));
+  });
 });
