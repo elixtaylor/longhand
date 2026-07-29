@@ -158,6 +158,9 @@ export function Sidebar({
       >
         <div className="sidebar-head">
           <div className="sidebar-title-group">
+            <span className="sidebar-brand-mark" aria-hidden="true">
+              L
+            </span>
             <span className="sidebar-kicker">Longhand</span>
           </div>
           <button
