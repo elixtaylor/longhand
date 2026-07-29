@@ -32,9 +32,6 @@ export function SettingsPanel({
     <div className="settings-fields">
       <div className="setting-row">
         <span className="field-label">Theme</span>
-        <span className="setting-hint">
-          Four complete looks — pick whichever suits you.
-        </span>
         <div className="theme-swatches">
           {THEMES.map((t) => (
             <button
@@ -52,9 +49,6 @@ export function SettingsPanel({
                 }}
               />
               <span>{t.name}</span>
-              <span className="setting-hint" style={{ fontSize: '0.7rem' }}>
-                {t.note}
-              </span>
             </button>
           ))}
         </div>
@@ -62,9 +56,6 @@ export function SettingsPanel({
 
       <div className="setting-row">
         <span className="field-label">Light or dark</span>
-        <span className="setting-hint">
-          Each theme keeps its own character after dark.
-        </span>
         <div className="segmented" role="group" aria-label="Light or dark">
           <button
             type="button"
@@ -85,9 +76,6 @@ export function SettingsPanel({
 
       <div className="setting-row">
         <span className="field-label">Text size</span>
-        <span className="setting-hint">
-          How large the working itself renders.
-        </span>
         <div className="segmented" role="group" aria-label="Text size">
           <button
             type="button"
@@ -115,9 +103,6 @@ export function SettingsPanel({
 
       <div className="setting-row">
         <span className="field-label">Working out</span>
-        <span className="setting-hint">
-          Show every line at once, or reveal one step at a time.
-        </span>
         <div className="segmented" role="group" aria-label="Reveal mode">
           <button
             type="button"
@@ -135,11 +120,6 @@ export function SettingsPanel({
           </button>
         </div>
       </div>
-
-      <p className="setting-hint">
-        Longhand works out every problem itself — no AI, no guessing. Every line
-        is exact.
-      </p>
     </div>
   );
 }

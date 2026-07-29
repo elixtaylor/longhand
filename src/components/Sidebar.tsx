@@ -3,26 +3,22 @@ import type { Solver } from '../lib/engine/types';
 import type { ThemeId, RevealMode, TextSize } from '../lib/ui';
 import { CALCULATORS } from '../data/calculators';
 import { importedFor, sourceOf, type ImportedProblem } from '../data/imported';
-import { formulasFor } from '../data/formulas';
 import { getSolver } from '../lib/engine/registry';
 import type { HistoryEntry } from '../lib/history';
 import { SettingsPanel } from './SettingsPanel';
-import { TeX } from './TeX';
 
 /**
  * The collapsible drawer that used to be the top ReferenceTabs strip plus the
  * gear-icon settings modal — now one place, opened from the masthead. An
- * accordion rather than tabs because a directory of calculators sits above
- * formulas/textbook/recent here, and those two shapes of content don't read
- * well side by side in a horizontal strip.
+ * compact utility sections keep calculators, textbook questions, recent work
+ * and settings in one predictable vertical list.
  *
  * Mounted only while open (see Workspace), same as the settings modal it
  * replaces — so this owns the scrim, Escape-to-close and focus-on-open it
  * used to own, and `onClose` is its only way out.
  */
 
-type SectionId =
-  'calculators' | 'formulas' | 'textbook' | 'recent' | 'settings';
+type SectionId = 'calculators' | 'textbook' | 'recent' | 'settings';
 
 export function Sidebar({
   onClose,
@@ -60,8 +56,8 @@ export function Sidebar({
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const formulas = formulasFor(solver.id);
   const imported = importedFor(solver.id);
+  const calculators = CALCULATORS.flatMap((group) => group.items);
 
   const sections: Array<{
     id: SectionId;
@@ -72,17 +68,8 @@ export function Sidebar({
     {
       id: 'calculators',
       label: 'Calculators',
-      count: CALCULATORS.reduce(
-        (total, group) => total + group.items.length,
-        0,
-      ),
+      count: calculators.length,
       available: true,
-    },
-    {
-      id: 'formulas',
-      label: 'Formulas',
-      count: formulas.length,
-      available: formulas.length > 0,
     },
     {
       id: 'textbook',
@@ -100,8 +87,7 @@ export function Sidebar({
   ];
   const shown = sections.filter((s) => s.available);
 
-  // Changing topic can pull the open formulas/textbook tab out from under the
-  // student, same as ReferenceTabs used to guard against.
+  // Changing topic can pull the open textbook tab out from under the student.
   useEffect(() => {
     if (openSection && !shown.some((s) => s.id === openSection))
       setOpenSection(null);
@@ -179,7 +165,7 @@ export function Sidebar({
         </div>
 
         <div className="accordion">
-          {shown.map((s, index) => (
+          {shown.map((s) => (
             <div className="accordion-section" key={s.id}>
               <h3>
                 <button
@@ -190,15 +176,10 @@ export function Sidebar({
                   onClick={() => toggle(s.id)}
                 >
                   <span className="sidebar-nav-label">
-                    <span className="sidebar-nav-index">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <span>
-                      {s.label}
-                      {s.count !== undefined && (
-                        <span className="ref-count">{s.count}</span>
-                      )}
-                    </span>
+                    {s.label}
+                    {s.count !== undefined && (
+                      <span className="ref-count">{s.count}</span>
+                    )}
                   </span>
                   <svg
                     className="accordion-chevron"
@@ -220,54 +201,28 @@ export function Sidebar({
               {openSection === s.id && (
                 <div className="accordion-panel" id={`sidebar-panel-${s.id}`}>
                   {s.id === 'calculators' && (
-                    <div className="calc-groups">
-                      {CALCULATORS.map((group) => (
-                        <div className="calc-group" key={group.heading}>
-                          <div className="ref-panel-title">{group.heading}</div>
-                          <div className="examples">
-                            {group.items.map((item) => {
-                              const itemSolver = getSolver(item.solverId)!;
-                              const method = itemSolver.methods.find(
-                                (m) => m.id === item.methodId,
-                              )!;
-                              return (
-                                <button
-                                  key={`${item.solverId}-${item.methodId}`}
-                                  type="button"
-                                  className="calc-item"
-                                  onClick={() =>
-                                    jumpToCalculator(
-                                      item.solverId,
-                                      item.methodId,
-                                    )
-                                  }
-                                >
-                                  <span className="calc-item-label">
-                                    {item.label ?? method.name}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="calc-list">
+                      {calculators.map((item) => {
+                        const itemSolver = getSolver(item.solverId)!;
+                        const method = itemSolver.methods.find(
+                          (m) => m.id === item.methodId,
+                        )!;
+                        return (
+                          <button
+                            key={`${item.solverId}-${item.methodId}`}
+                            type="button"
+                            className="calc-item"
+                            onClick={() =>
+                              jumpToCalculator(item.solverId, item.methodId)
+                            }
+                          >
+                            <span className="calc-item-label">
+                              {item.label ?? method.name}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
-
-                  {s.id === 'formulas' && (
-                    <>
-                      <div className="ref-panel-title">{solver.title}</div>
-                      <dl className="formula-grid">
-                        {formulas.map((f) => (
-                          <div key={f.name} className="formula-row">
-                            <dt>{f.name}</dt>
-                            <dd>
-                              <TeX tex={f.latex} />
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </>
                   )}
 
                   {s.id === 'textbook' && (
@@ -309,7 +264,7 @@ export function Sidebar({
 
                   {s.id === 'recent' && (
                     <>
-                      <div className="examples examples-grid">
+                      <div className="examples examples-grid recent-list">
                         {history.slice(0, 12).map((h) => (
                           <button
                             key={`${h.at}-${h.input}`}
@@ -320,9 +275,6 @@ export function Sidebar({
                           >
                             <span className="example-expr">
                               {truncate(h.input, 34)}
-                            </span>
-                            <span className="example-tag">
-                              {getSolver(h.solverId)?.title ?? ''}
                             </span>
                           </button>
                         ))}

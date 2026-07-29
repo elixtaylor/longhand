@@ -1102,8 +1102,7 @@ button {
 }
 
 /* Sidebar content ---------------------------------------------------------- */
-/* Shared by several of the sidebar's accordion sections (see Sidebar):
-   formulas, textbook questions, recent work and the calculator directory. */
+/* Shared by the sidebar's reference sections (see Sidebar). */
 .ref-panel-title {
   font-family: var(--font-ui);
   font-size: 0.74rem;
@@ -1133,13 +1132,8 @@ button {
   align-items: start;
 }
 
-/* The calculator directory, grouped by subject heading. */
-.calc-groups {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
-.calc-group .examples {
+/* The calculator directory, kept as one compact list. */
+.calc-list {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1165,6 +1159,18 @@ button {
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--ink);
+}
+.recent-list {
+  gap: 0;
+}
+.recent-list .example-row {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: 8px 0;
+}
+.recent-list .example-row:first-child {
+  border-top: 0;
 }
 
 /* Imported question attribution ------------------------------------------- */
@@ -1334,8 +1340,8 @@ button {
 }
 
 /* Sidebar ------------------------------------------------------------------ */
-/* The collapsible drawer — calculators, formulas, textbook questions, recent
-   work and settings, one accordion section open at a time (see Sidebar). */
+/* The collapsible drawer — calculators, textbook questions, recent work and
+   settings, one accordion section open at a time (see Sidebar). */
 .scrim {
   position: fixed;
   inset: 0;
@@ -1430,22 +1436,9 @@ button {
   background: transparent;
 }
 .accordion-trigger[aria-expanded='true'] .ref-count {
-  background: var(--accent-tint, var(--bg-tint));
   color: var(--accent);
 }
 .sidebar-nav-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-.sidebar-nav-index {
-  width: 20px;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0;
-}
-.sidebar-nav-label > span:last-child {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -1464,12 +1457,15 @@ button {
 .settings-fields {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: 0;
 }
 .setting-row {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
   gap: var(--sp-2);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
 }
 .setting-row > .field-label {
   margin-bottom: 0;
@@ -1500,15 +1496,15 @@ button {
 }
 .theme-swatches {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--sp-2);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
 }
 .theme-swatch {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px;
-  border: 1.5px solid var(--line);
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--line);
   border-radius: var(--control-radius);
   align-items: stretch;
 }
@@ -1516,12 +1512,12 @@ button {
   border-color: var(--accent);
 }
 .swatch-chip {
-  height: 34px;
-  border-radius: 5px;
+  height: 18px;
+  border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 .theme-swatch span {
-  font-size: 0.76rem;
+  font-size: 0.64rem;
   font-weight: 600;
   color: var(--ink-2);
 }
