@@ -53,6 +53,18 @@ const NORMAL_FIELDS: FieldSchema[] = [
   { id: 'sd', label: 'SD (σ)', kind: 'number' },
   { id: 'x', label: 'Value (x)', kind: 'number' },
 ];
+const NORMAL_INTERVAL_FIELDS: FieldSchema[] = [
+  { id: 'mean', label: 'Mean (μ)', kind: 'number' },
+  { id: 'sd', label: 'SD (σ)', kind: 'number' },
+  { id: 'lower', label: 'Lower bound', kind: 'number', optional: true },
+  { id: 'upper', label: 'Upper bound', kind: 'number', optional: true },
+];
+const SAMPLING_FIELDS: FieldSchema[] = [
+  { id: 'mean', label: 'Population mean (μ)', kind: 'number' },
+  { id: 'sd', label: 'Population SD (σ)', kind: 'number' },
+  { id: 'n', label: 'Sample size (n)', kind: 'number' },
+  { id: 'xbar', label: 'Sample mean (x̄)', kind: 'number', optional: true },
+];
 const CONFIDENCE_FIELDS: FieldSchema[] = [
   { id: 'mean', label: 'Sample mean', kind: 'number' },
   { id: 'sd', label: 'Sample SD', kind: 'number' },
@@ -83,6 +95,22 @@ export const distributionsSolver: Solver = {
       serialize: formatParams,
     },
     {
+      id: 'normal-interval',
+      name: 'Normal interval',
+      blurb:
+        'Find a lower-tail, upper-tail or between-values probability from a normal model.',
+      fields: NORMAL_INTERVAL_FIELDS,
+      serialize: formatParams,
+    },
+    {
+      id: 'sampling',
+      name: 'Sampling distribution',
+      blurb:
+        'Find the mean and standard error of x̄, or standardise a sample mean.',
+      fields: SAMPLING_FIELDS,
+      serialize: formatParams,
+    },
+    {
       id: 'confidence',
       name: 'Confidence interval',
       blurb:
@@ -99,6 +127,11 @@ export const distributionsSolver: Solver = {
       return 0.97;
     if (/normal|z.?score|standardise|standardize/.test(l) && p.sd !== undefined)
       return 0.97;
+    if (
+      /sampling|sample mean|sampling distribution|x.?bar|x̄/.test(l) &&
+      p.n !== undefined
+    )
+      return 0.97;
     if (/confidence|interval/.test(l) && p.n !== undefined) return 0.97;
     // The shape of the data identifies the distribution even when the student
     // never names it — "probability of exactly 3 heads in 10 flips, p=0.5".
@@ -111,11 +144,17 @@ export const distributionsSolver: Solver = {
     const l = input.toLowerCase();
     const asked = /binomial/.test(l)
       ? 'binomial'
-      : /confidence|interval/.test(l)
-        ? 'confidence'
-        : /normal|z.?score/.test(l)
-          ? 'normal'
-          : methodId;
+      : /sampling|sample mean|sampling distribution|x.?bar|x̄/.test(l)
+        ? 'sampling'
+        : /normal.*(?:between|above|below|greater|less)|(?:between|above|below|greater|less).*normal/.test(
+              l,
+            )
+          ? 'normal-interval'
+          : /confidence/.test(l)
+            ? 'confidence'
+            : /normal|z.?score/.test(l)
+              ? 'normal'
+              : methodId;
 
     if (asked === 'binomial') {
       const n = p.n;
@@ -229,6 +268,11 @@ export const distributionsSolver: Solver = {
           error:
             'The sample size must be positive and the standard deviation cannot be negative.',
         };
+      if (![90, 95, 98, 99].some((allowed) => Math.abs(level - allowed) < 1e-9))
+        return {
+          ok: false,
+          error: 'Use a 90%, 95%, 98% or 99% confidence level.',
+        };
 
       const z = zStar(level);
       const se = sd / Math.sqrt(n);
@@ -268,6 +312,138 @@ export const distributionsSolver: Solver = {
           ],
           answerLatex: `\\left(${fmt(mean - margin, 4)},\\; ${fmt(mean + margin, 4)}\\right)`,
           derivedValues: { confidence: level },
+        },
+      };
+    }
+
+    if (asked === 'sampling') {
+      const mean = p.mean ?? p.mu ?? p.m;
+      const sd = p.sd ?? p.sigma ?? p.s;
+      const n = p.n;
+      const xbar = p.xbar ?? p['x̄'] ?? p.samplemean;
+      if (mean === undefined || sd === undefined || n === undefined) {
+        return {
+          ok: false,
+          error:
+            'Give the population mean, population SD and sample size, e.g.  sampling mean=50, sd=8, n=100.',
+        };
+      }
+      if (sd <= 0 || n <= 0)
+        return {
+          ok: false,
+          error: 'The population SD and sample size must both be positive.',
+        };
+      const se = sd / Math.sqrt(n);
+      const steps: Step[] = [
+        {
+          note: 'The sampling distribution of the sample mean is centred on the population mean.',
+          latex: `\\mu_{\\bar{x}} = \\mu = ${fmt(mean, 4)}`,
+        },
+        {
+          note: 'Its standard deviation is the standard error, the population SD divided by √n.',
+          latex: `\\sigma_{\\bar{x}} = \\dfrac{\\sigma}{\\sqrt{n}} = \\dfrac{${fmt(sd, 4)}}{\\sqrt{${fmt(n)}}} = ${fmt(se, 6)}`,
+          annotation: 'standard error',
+        },
+      ];
+      if (xbar === undefined) {
+        return {
+          ok: true,
+          solution: {
+            headline: `Sampling distribution of $\\bar{x}$`,
+            methodName: 'Sampling distribution',
+            steps,
+            answerLatex: `\\bar{x} \\sim N(${fmt(mean, 4)}, ${fmt(se, 4)}^{2})`,
+          },
+        };
+      }
+      const z = (xbar - mean) / se;
+      const probability = phi(z);
+      steps.push(
+        {
+          note: 'Standardise the sample mean using the sampling distribution.',
+          latex: `z = \\dfrac{\\bar{x} - \\mu}{\\sigma_{\\bar{x}}} = \\dfrac{${fmt(xbar, 4)} - ${fmt(mean, 4)}}{${fmt(se, 6)}} = ${fmt(z, 4)}`,
+        },
+        {
+          note: 'Read the lower-tail probability from the standard normal distribution.',
+          latex: `P(\\bar{x} \\le ${fmt(xbar, 4)}) = \\Phi(${fmt(z, 4)}) = ${fmt(probability, 6)}`,
+          annotation: 'probability',
+        },
+      );
+      return {
+        ok: true,
+        solution: {
+          headline: `Find P(\\bar{x} \\le ${fmt(xbar, 4)})`,
+          methodName: 'Sampling distribution',
+          steps,
+          answerLatex: `P(\\bar{x} \\le ${fmt(xbar, 4)}) = ${fmt(probability, 6)}`,
+        },
+      };
+    }
+
+    if (asked === 'normal-interval') {
+      const mean = p.mean ?? p.mu ?? p.m;
+      const sd = p.sd ?? p.sigma ?? p.s;
+      let lower = p.lower ?? p.min;
+      let upper = p.upper ?? p.max;
+      const between = input.match(
+        /between\s*(-?\d*\.?\d+)\s*and\s*(-?\d*\.?\d+)/i,
+      );
+      if (between) {
+        lower ??= Number(between[1]);
+        upper ??= Number(between[2]);
+      }
+      const below = input.match(
+        /(?:below|less\s+than|at\s+most)\s*(-?\d*\.?\d+)/i,
+      );
+      const above = input.match(
+        /(?:above|greater\s+than|at\s+least)\s*(-?\d*\.?\d+)/i,
+      );
+      if (below) upper ??= Number(below[1]);
+      if (above) lower ??= Number(above[1]);
+      if (
+        mean === undefined ||
+        sd === undefined ||
+        (lower === undefined && upper === undefined)
+      ) {
+        return {
+          ok: false,
+          error:
+            'Give mean, SD and a lower or upper bound, e.g.  normal between 80 and 120, mean=100, sd=15.',
+        };
+      }
+      if (sd <= 0)
+        return { ok: false, error: 'The standard deviation must be positive.' };
+      const lowerZ = lower === undefined ? -Infinity : (lower - mean) / sd;
+      const upperZ = upper === undefined ? Infinity : (upper - mean) / sd;
+      if (lower !== undefined && upper !== undefined && lower > upper)
+        return {
+          ok: false,
+          error: 'The lower bound must not exceed the upper bound.',
+        };
+      const probability = phi(upperZ) - phi(lowerZ);
+      const bounds =
+        lower === undefined
+          ? `X \\ge ${fmt(upper!)}`
+          : upper === undefined
+            ? `X \\le ${fmt(lower)}`
+            : `${fmt(lower)} \\le X \\le ${fmt(upper)}`;
+      return {
+        ok: true,
+        solution: {
+          headline: `Find P(${bounds}) for a normal variable`,
+          methodName: 'Normal interval',
+          steps: [
+            {
+              note: 'Standardise each bound with z = (x − μ)/σ.',
+              latex: `z_{lower} = ${Number.isFinite(lowerZ) ? fmt(lowerZ, 4) : '-\\infty'}, \\quad z_{upper} = ${Number.isFinite(upperZ) ? fmt(upperZ, 4) : '+\\infty'}`,
+            },
+            {
+              note: 'Subtract the standard normal cumulative probabilities.',
+              latex: `P(${bounds}) = \\Phi(z_{upper}) - \\Phi(z_{lower}) = ${fmt(probability, 6)}`,
+              annotation: 'probability',
+            },
+          ],
+          answerLatex: `P(${bounds}) = ${fmt(probability, 6)}`,
         },
       };
     }

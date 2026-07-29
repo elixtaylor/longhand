@@ -62,6 +62,8 @@ export const CALCULATORS: CalculatorGroup[] = [
     items: [
       { solverId: 'distributions', methodId: 'binomial' },
       { solverId: 'distributions', methodId: 'normal' },
+      { solverId: 'distributions', methodId: 'normal-interval' },
+      { solverId: 'distributions', methodId: 'sampling' },
       { solverId: 'distributions', methodId: 'confidence' },
     ],
   },

@@ -88,6 +88,24 @@ describe('distributionsSolver', () => {
     expect(s.answerLatex).toContain('51.568');
   });
 
+  it('finds a sampling distribution and standard error', () => {
+    const s = sol(
+      distributionsSolver,
+      'sampling mean=50, sd=8, n=100',
+      'sampling',
+    );
+    expect(s.answerLatex).toContain('0.8');
+  });
+
+  it('finds a probability between two normal bounds', () => {
+    const s = sol(
+      distributionsSolver,
+      'normal between lower=80 and upper=120, mean=100, sd=15',
+      'normal-interval',
+    );
+    expect(s.answerLatex).toContain('0.817');
+  });
+
   it('rejects an impossible probability', () => {
     expect(
       distributionsSolver.solve('binomial n=10, p=1.5, x=3', 'binomial').ok,

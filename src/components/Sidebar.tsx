@@ -69,7 +69,15 @@ export function Sidebar({
     count?: number;
     available: boolean;
   }> = [
-    { id: 'calculators', label: 'Calculators', available: true },
+    {
+      id: 'calculators',
+      label: 'Calculators',
+      count: CALCULATORS.reduce(
+        (total, group) => total + group.items.length,
+        0,
+      ),
+      available: true,
+    },
     {
       id: 'formulas',
       label: 'Formulas',

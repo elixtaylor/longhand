@@ -3,6 +3,7 @@ import { parsePoly, Poly, ParseError } from '../../lib/math/parse';
 import { polyLatex } from '../../lib/math/format';
 import { parseExpr, evaluateExpr } from '../../lib/math/expr';
 import { exprToPolyFrac } from '../../lib/math/expand';
+import { realRoots } from '../../lib/math/roots';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /** Pull out definite-integral limits written as "from a to b" or "_a^b". */
@@ -48,6 +49,186 @@ interface ByPartsInput {
   functionName: 'exp' | 'sin' | 'cos';
 }
 
+interface BasicIntegral {
+  coefficient: number;
+  functionName:
+    | 'sin'
+    | 'cos'
+    | 'exp'
+    | 'sec2'
+    | 'reciprocal'
+    | 'tan'
+    | 'sin2'
+    | 'cos2'
+    | 'sincos'
+    | 'atan'
+    | 'asin';
+}
+
+interface IntegrationApplication {
+  kind: 'area' | 'volume';
+  first: Poly;
+  second?: Poly;
+  lower: number;
+  upper: number;
+  axis?: 'x' | 'y';
+}
+
+function polynomialValue(poly: Poly, x: number): number {
+  let total = 0;
+  for (const { power, coeff } of poly.terms())
+    total += coeff.toNumber() * Math.pow(x, power);
+  return total;
+}
+
+function areaUnder(poly: Poly, lower: number, upper: number): number {
+  const anti = integrate(poly);
+  return polynomialValue(anti, upper) - polynomialValue(anti, lower);
+}
+
+function parseApplicationPoly(raw: string): Poly {
+  const cleaned = raw
+    .replace(/^\s*y\s*=\s*/i, '')
+    .replace(
+      /\b(?:the|curve|function|graph|area|region|volume|solid|of|revolution|rotated|about|axis)\b/gi,
+      ' ',
+    )
+    .replace(/\s+/g, ' ')
+    .replace(/[.,;:]+$/, '')
+    .trim();
+  return parsePoly(cleaned.replace(/^\s*=?\s*/, ''), 'x');
+}
+
+/** Read the common SACE area-between-curves and volume-of-revolution forms. */
+function readApplication(input: string): IntegrationApplication | null {
+  const limits = input.match(
+    /\bfrom\s*(-?\d*\.?\d+)\s*(?:to|and)\s*(-?\d*\.?\d+)/i,
+  );
+  if (!limits) return null;
+  const lower = Number(limits[1]);
+  const upper = Number(limits[2]);
+  if (!Number.isFinite(lower) || !Number.isFinite(upper) || lower >= upper)
+    return null;
+
+  if (/area\s+between|area\s+enclosed|region\s+between/i.test(input)) {
+    const between = input.match(
+      /\bbetween\s+(?:y\s*=\s*)?(.+?)\s+and\s+(?:y\s*=\s*)?(.+?)\s+from\s*-?\d/i,
+    );
+    if (!between) return null;
+    try {
+      return {
+        kind: 'area',
+        first: parseApplicationPoly(between[1]),
+        second: parseApplicationPoly(between[2]),
+        lower,
+        upper,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  if (
+    /volume\s+of\s+revolution|solid\s+of\s+revolution|volume.*about/i.test(
+      input,
+    )
+  ) {
+    const functionMatch = input.match(
+      /(?:volume\s+of\s+revolution|solid\s+of\s+revolution|volume)\s+(?:of\s+)?(?:y\s*=\s*)?(.+?)\s+from\s*-?\d/i,
+    );
+    if (!functionMatch) return null;
+    const axis = input.match(/about\s+(?:the\s+)?([xy])-?axis/i)?.[1] as
+      'x' | 'y' | undefined;
+    try {
+      return {
+        kind: 'volume',
+        first: parseApplicationPoly(functionMatch[1]),
+        lower,
+        upper,
+        axis,
+      };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function solveAreaApplication(q: IntegrationApplication): SolveResult {
+  const top = q.first;
+  const bottom = q.second!;
+  const difference = top.sub(bottom);
+  const roots = realRoots(difference).filter(
+    (x) => x > q.lower + 1e-9 && x < q.upper - 1e-9,
+  );
+  const cuts = [q.lower, ...roots.sort((a, b) => a - b), q.upper];
+  const pieces = cuts
+    .slice(0, -1)
+    .map((a, i) => Math.abs(areaUnder(difference, a, cuts[i + 1])));
+  const area = pieces.reduce((sum, value) => sum + value, 0);
+  const splitNote = roots.length
+    ? `Split at the intersection points ${roots.map((x) => fmtNum(x)).join(', ')}.`
+    : 'The curves do not cross inside the interval, so one integral is enough.';
+  return {
+    ok: true,
+    solution: {
+      headline: `Area between $${polyLatex(top)}$ and $${polyLatex(bottom)}$`,
+      methodName: 'Area between curves',
+      steps: [
+        {
+          note: 'Find the vertical difference between the curves.',
+          latex: `f(x) - g(x) = ${polyLatex(difference)}`,
+        },
+        {
+          note: splitNote,
+          latex: `A = \\int_{${fmtNum(q.lower)}}^{${fmtNum(q.upper)}} |f(x)-g(x)|\\,dx`,
+        },
+        {
+          note: 'Integrate the difference on each interval and add the positive areas.',
+          latex: `A = ${pieces.map((v) => fmtNum(v)).join(' + ')} = ${fmtNum(area)}`,
+          annotation: 'area',
+        },
+      ],
+      answerLatex: `A = ${fmtNum(area)}\\text{ square units}`,
+    },
+  };
+}
+
+function solveVolumeApplication(q: IntegrationApplication): SolveResult {
+  if (q.axis === 'y')
+    return {
+      ok: false,
+      error:
+        'This calculator currently uses washers about the x-axis. Rewrite the curve as x = f(y) for a y-axis rotation.',
+    };
+  const square = q.first.mul(q.first);
+  const integral = areaUnder(square, q.lower, q.upper);
+  const volume = Math.PI * integral;
+  return {
+    ok: true,
+    solution: {
+      headline: `Volume of revolution of $${polyLatex(q.first)}$`,
+      methodName: 'Volume of revolution',
+      steps: [
+        {
+          note: 'A rotation about the x-axis makes circular washers with radius f(x).',
+          latex: `V = \\pi \\int_{${fmtNum(q.lower)}}^{${fmtNum(q.upper)}} [f(x)]^2\\,dx`,
+        },
+        {
+          note: 'Square the radius function.',
+          latex: `[f(x)]^2 = ${polyLatex(square)}`,
+        },
+        {
+          note: 'Integrate and multiply by π.',
+          latex: `V = \\pi \\times ${fmtNum(integral)} = ${fmtNum(volume)}`,
+          annotation: 'volume',
+        },
+      ],
+      answerLatex: `V = ${fmtNum(volume)}\\text{ cubic units}`,
+    },
+  };
+}
+
 /** Read the standard SACE examples x^n e^x, x sin x, and x cos x. */
 function readByParts(input: string): ByPartsInput | null {
   const expression = cleanIntegrand(input).replace(/\s+/g, '');
@@ -64,6 +245,132 @@ function readByParts(input: string): ByPartsInput | null {
       : 'cos';
   if (!Number.isSafeInteger(power) || power < 1 || power > 4) return null;
   return { power, functionName };
+}
+
+/** Read the elementary non-polynomial integrals used before substitution. */
+function readBasicIntegral(input: string): BasicIntegral | null {
+  const expression = cleanIntegrand(input)
+    .replace(/\s+/g, '')
+    .replace(/^\((.*)\)$/s, '$1');
+  const match = expression.match(
+    /^([+-]?(?:\d*\.?\d+)?)?(sin|cos|tan|exp|sec\^2)(?:\(x\)|x)$/i,
+  );
+  if (match) {
+    const raw = match[1];
+    const coefficient =
+      raw === undefined || raw === '' || raw === '+'
+        ? 1
+        : raw === '-'
+          ? -1
+          : Number(raw);
+    if (!Number.isFinite(coefficient)) return null;
+    return {
+      coefficient,
+      functionName:
+        match[2].toLowerCase() === 'sec^2'
+          ? 'sec2'
+          : (match[2].toLowerCase() as BasicIntegral['functionName']),
+    };
+  }
+  const identity = expression.match(
+    /^([+-]?(?:\d*\.?\d+)?)?(sin\^2x|cos\^2x|sinxcosx)$/i,
+  );
+  if (identity) {
+    const raw = identity[1];
+    const coefficient =
+      raw === undefined || raw === '' || raw === '+'
+        ? 1
+        : raw === '-'
+          ? -1
+          : Number(raw);
+    if (!Number.isFinite(coefficient)) return null;
+    return {
+      coefficient,
+      functionName:
+        identity[2].toLowerCase() === 'sin^2x'
+          ? 'sin2'
+          : identity[2].toLowerCase() === 'cos^2x'
+            ? 'cos2'
+            : 'sincos',
+    };
+  }
+  if (/^1\/(?:1\+x\^2|\(1\+x\^2\))$/i.test(expression))
+    return { coefficient: 1, functionName: 'atan' };
+  if (/^1\/sqrt\(1-x\^2\)$/i.test(expression))
+    return { coefficient: 1, functionName: 'asin' };
+  if (/^(?:1\/x|x\^-1)$/i.test(expression))
+    return { coefficient: 1, functionName: 'reciprocal' };
+  return null;
+}
+
+function solveBasicIntegral(q: BasicIntegral): SolveResult {
+  const coefficient = fmtNum(q.coefficient);
+  const signed = q.coefficient === 1 ? '' : `${coefficient}`;
+  const fn = q.functionName;
+  let answer: string;
+  let integrand: string;
+  let rule: string;
+  if (fn === 'sin') {
+    integrand = `${signed}\\sin x`;
+    answer = `${q.coefficient === -1 ? '' : coefficient === '1' ? '-' : `-${coefficient}`}\\cos x + C`;
+    rule = '\\int \\sin x\\,dx = -\\cos x + C';
+  } else if (fn === 'cos') {
+    integrand = `${signed}\\cos x`;
+    answer = `${q.coefficient === 1 ? '' : coefficient}\\sin x + C`;
+    rule = '\\int \\cos x\\,dx = \\sin x + C';
+  } else if (fn === 'exp') {
+    integrand = `${signed}e^x`;
+    answer = `${q.coefficient === 1 ? '' : coefficient}e^x + C`;
+    rule = '\\int e^x\\,dx = e^x + C';
+  } else if (fn === 'sec2') {
+    integrand = `${signed}\\sec^2 x`;
+    answer = `${q.coefficient === 1 ? '' : coefficient}\\tan x + C`;
+    rule = '\\int \\sec^2 x\\,dx = \\tan x + C';
+  } else if (fn === 'tan') {
+    integrand = `${signed}\\tan x`;
+    answer = `${q.coefficient === 1 ? '-' : `-${coefficient}`}\\ln|\\cos x| + C`;
+    rule = '\\int \\tan x\\,dx = -\\ln|\\cos x| + C';
+  } else if (fn === 'sin2') {
+    integrand = `${signed}\\sin^2 x`;
+    answer = `${q.coefficient === 1 ? '' : `${coefficient}`}\\left(\\dfrac{x}{2} - \\dfrac{\\sin 2x}{4}\\right) + C`;
+    rule = '\\sin^2 x = \\dfrac{1 - \\cos 2x}{2}';
+  } else if (fn === 'cos2') {
+    integrand = `${signed}\\cos^2 x`;
+    answer = `${q.coefficient === 1 ? '' : `${coefficient}`}\\left(\\dfrac{x}{2} + \\dfrac{\\sin 2x}{4}\\right) + C`;
+    rule = '\\cos^2 x = \\dfrac{1 + \\cos 2x}{2}';
+  } else if (fn === 'sincos') {
+    integrand = `${signed}\\sin x\\cos x`;
+    answer = `${q.coefficient === 1 ? '' : `${coefficient}`}\\dfrac{\\sin^2 x}{2} + C`;
+    rule = '\\int \\sin x\\cos x\\,dx = \\dfrac{\\sin^2 x}{2} + C';
+  } else if (fn === 'atan') {
+    integrand = '\\dfrac{1}{1+x^2}';
+    answer = '\\arctan x + C';
+    rule = '\\int \\dfrac{1}{1+x^2}\\,dx = \\arctan x + C';
+  } else if (fn === 'asin') {
+    integrand = '\\dfrac{1}{\\sqrt{1-x^2}}';
+    answer = '\\arcsin x + C';
+    rule = '\\int \\dfrac{1}{\\sqrt{1-x^2}}\\,dx = \\arcsin x + C';
+  } else {
+    integrand = '\\dfrac{1}{x}';
+    answer = '\\ln|x| + C';
+    rule = '\\int \\dfrac{1}{x}\\,dx = \\ln|x| + C';
+  }
+  return {
+    ok: true,
+    solution: {
+      headline: `Integrate $${integrand}$`,
+      methodName: 'Basic function integrals',
+      steps: [
+        { note: 'Recognise the standard antiderivative.', latex: rule },
+        {
+          note: 'Keep the constant multiplier and add the constant of integration.',
+          latex: `\\int ${integrand}\\,dx = ${answer}`,
+          annotation: '+ C matters!',
+        },
+      ],
+      answerLatex: answer,
+    },
+  };
 }
 
 /** Read the common substitution form ∫(ax+b)^n dx exactly. */
@@ -115,7 +422,7 @@ export const integrationSolver: Solver = {
   title: 'Integration',
   subjects: ['Methods', 'Specialist'],
   blurb:
-    'Find polynomial antiderivatives, definite areas, substitutions, and parts.',
+    'Find antiderivatives, areas between curves, volumes, substitutions, and parts.',
   placeholder: 'e.g.  3x^2 + 2x - 5   or   ∫ x exp(x) dx',
   methods: [
     {
@@ -139,15 +446,46 @@ export const integrationSolver: Solver = {
       name: 'Integration by parts',
       blurb: 'Choose u and dv, then use ∫u\,dv = uv − ∫v\,du.',
     },
+    {
+      id: 'basic-functions',
+      name: 'Basic function integrals',
+      blurb:
+        'Use the standard antiderivatives for sin, cos, tan, sec², eˣ and 1/x.',
+    },
+    {
+      id: 'area-between',
+      name: 'Area between curves',
+      blurb:
+        'Integrate the positive difference between two curves over an interval.',
+    },
+    {
+      id: 'volume-revolution',
+      name: 'Volume of revolution',
+      blurb:
+        'Use washers to rotate a curve about the x-axis and find its volume.',
+    },
   ],
   defaultMethodId: 'reverse-power',
   detect(input) {
+    if (
+      /area\s+between|area\s+enclosed|volume\s+of\s+revolution|solid\s+of\s+revolution/i.test(
+        input,
+      )
+    )
+      return 0.99;
     if (/d\/dx|dy\/dx|differentiate|derivative/i.test(input)) return 0;
     return /∫|\bintegrate\b|\bantiderivative\b|dx\s*$/i.test(input) ? 0.97 : 0;
   },
   solve(input): SolveResult {
+    const application = readApplication(input);
+    if (application)
+      return application.kind === 'area'
+        ? solveAreaApplication(application)
+        : solveVolumeApplication(application);
     const byParts = readByParts(input);
     if (byParts) return solveByParts(byParts);
+    const basic = readBasicIntegral(input);
+    if (basic) return solveBasicIntegral(basic);
     const affine = readAffinePower(input);
     if (affine) return solveAffinePower(input, affine);
 

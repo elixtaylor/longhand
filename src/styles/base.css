@@ -1114,14 +1114,19 @@ button {
 .calc-groups {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
+}
+.calc-group .examples {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
 }
 .calc-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 7px 8px;
   text-align: left;
   border-radius: var(--control-radius);
   border: 1px solid transparent;
@@ -1132,12 +1137,17 @@ button {
   border-color: var(--line);
 }
 .calc-item-label {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink);
 }
 .calc-item-blurb {
-  font-size: 0.76rem;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 0.7rem;
+  line-height: 1.35;
   color: var(--ink-3);
 }
 

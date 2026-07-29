@@ -110,6 +110,49 @@ describe('integrationSolver', () => {
       'x\\sin x + \\cos x + C',
     );
   });
+
+  it('integrates basic trigonometric and reciprocal functions', () => {
+    expect(ans(integrationSolver, '∫ sin x dx', 'basic-functions')).toBe(
+      '-\\cos x + C',
+    );
+    expect(ans(integrationSolver, 'integrate 3 cos x', 'basic-functions')).toBe(
+      '3\\sin x + C',
+    );
+    expect(ans(integrationSolver, 'integrate 1/x', 'basic-functions')).toBe(
+      '\\ln|x| + C',
+    );
+    const sinSquared = integrationSolver.solve(
+      'integrate sin^2 x',
+      'basic-functions',
+    );
+    expect(sinSquared.ok, sinSquared.ok ? '' : sinSquared.error).toBe(true);
+    if (sinSquared.ok)
+      expect(sinSquared.solution.answerLatex).toContain('\\sin 2x');
+    const atan = integrationSolver.solve(
+      'integrate 1/(1+x^2)',
+      'basic-functions',
+    );
+    expect(atan.ok, atan.ok ? '' : atan.error).toBe(true);
+    if (atan.ok) expect(atan.solution.answerLatex).toBe('\\arctan x + C');
+  });
+
+  it('finds the area between two curves, including crossings', () => {
+    const result = integrationSolver.solve(
+      'area between y=x^2 and y=2x from 0 to 2',
+      'area-between',
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.solution.answerLatex).toContain('1.333333333');
+  });
+
+  it('finds a washer volume about the x-axis', () => {
+    const result = integrationSolver.solve(
+      'volume of revolution y=x from 0 to 2 about x-axis',
+      'volume-revolution',
+    );
+    expect(result.ok, result.ok ? '' : result.error).toBe(true);
+    if (result.ok) expect(result.solution.answerLatex).toContain('8.37758041');
+  });
 });
 
 describe('differentiationSolver — product, quotient and chain rules', () => {
