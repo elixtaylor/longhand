@@ -104,6 +104,8 @@ export function Workspace({
   const [copied, setCopied] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
   const hasSolved = useRef(false);
+  const solutionRef = useRef<HTMLElement>(null);
+  const scrollToSolution = useRef(false);
 
   /**
    * Work the question. With no pin the engine detects the topic itself and may
@@ -135,6 +137,7 @@ export function Workspace({
   /** Solving is the moment worth recording and worth making shareable. */
   const commit = useCallback(
     (value: string, pinned: Pin) => {
+      if (value.trim() !== '') scrollToSolution.current = true;
       solveWith(value, pinned);
       if (value.trim() === '') return;
       const sid = pinned?.solverId ?? solverId;
@@ -156,6 +159,28 @@ export function Workspace({
 
     [solveWith, solverId, methodId],
   );
+
+  // A solved result is taller than the input controls on most screens. Move
+  // the newly revealed working into view after React has painted it, rather
+  // than making the student hunt for the result below the fold.
+  useEffect(() => {
+    if (!scrollToSolution.current) return;
+    scrollToSolution.current = false;
+    if (!worked?.parts.length) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const solution = solutionRef.current;
+      if (!solution || typeof solution.scrollIntoView !== 'function') return;
+      const reducedMotion =
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ??
+        false;
+      solution.scrollIntoView({
+        behavior: reducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [worked]);
 
   // Restore a shared link on first load.
   useEffect(() => {
@@ -447,7 +472,12 @@ export function Workspace({
           </section>
         </aside>
 
-        <section className="solution" aria-live="polite">
+        <section
+          className="solution"
+          aria-live="polite"
+          ref={solutionRef}
+          tabIndex={-1}
+        >
           {worked && worked.parts.length > 0 && (
             <button
               type="button"
