@@ -357,6 +357,27 @@ export const examples: Example[] = [
     subject: 'Methods',
   },
   {
+    solverId: 'integrate',
+    methodId: 'by-parts',
+    input: '∫ x exp(x) dx',
+    label: '∫ x eˣ dx  (by parts)',
+    subject: 'Methods',
+  },
+  {
+    solverId: 'geometry-proof',
+    methodId: 'angle-sum',
+    input: 'prove the angles in a triangle add to 180',
+    label: 'Prove the angles in a triangle add to 180°',
+    subject: 'Methods',
+  },
+  {
+    solverId: 'geometry-proof',
+    methodId: 'parallel-lines',
+    input: 'prove alternate angles are equal when lines are parallel',
+    label: 'Prove alternate angles on parallel lines',
+    subject: 'Methods',
+  },
+  {
     solverId: 'binomial',
     methodId: 'theorem',
     input: 'expand (x + 2)^3',

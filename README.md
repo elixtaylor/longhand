@@ -67,40 +67,41 @@ own, so the working shows the join: differentiate, solve what you differentiated
 
 Covering SACE Stage 1 and Stage 2 (Years 11–12).
 
-| Subject         | Topic                                | Methods you can choose                                     |
-| --------------- | ------------------------------------ | ---------------------------------------------------------- |
-| **Foundations** | Multiplication                       | Grid / box · Column (long)                                 |
-|                 | Division                             | Short (bus-stop) · Long division · Chunking                |
-|                 | Fractions                            | Common denominator (+ − × ÷)                               |
-|                 | Percentages                          | Decimal multiplier · Unitary · Reverse                     |
-| **General**     | Linear equations                     | Balancing · Backtracking                                   |
-|                 | Simultaneous equations               | Elimination · Substitution                                 |
-|                 | Networks                             | Shortest path (Dijkstra) · Minimum spanning tree (Kruskal) |
-|                 | Investing & borrowing                | Compound · Simple · Depreciation · Loan repayments         |
-|                 | Measurement                          | Area · Perimeter · Volume · Surface area                   |
-|                 | Right-angled triangles               | Pythagoras · SOH CAH TOA                                   |
-|                 | Sine & cosine rules                  | Sine rule · Cosine rule · Area (½ab sin C, Heron)          |
-|                 | Statistics                           | Full summary · Centre · Spread · Five-number summary       |
-|                 | Matrices                             | Add · Multiply · Determinant · Inverse                     |
-| **Methods**     | Gradients, tangents & turning points | Stationary points · Gradient at a point · Tangent · Normal |
-|                 | Inequalities                         | Balancing (with sign flip) · Sign diagram                  |
-|                 | Quadratic equations                  | Factorising · Completing the square · Quadratic formula    |
-|                 | Polynomials                          | Factor theorem · Division · Remainder theorem              |
-|                 | Logs & exponentials                  | Equating indices · Taking logs                             |
-|                 | Sketching curves                     | Key features · Using calculus                              |
-|                 | Trigonometric equations              | Unit circle                                                |
-|                 | Differentiation                      | Power rule · Product/quotient/chain · First principles     |
-|                 | Integration                          | Reverse power rule · Definite integral · Substitution      |
-|                 | Probability                          | Single event · Union · Intersection · Conditional          |
-|                 | Counting & combinations              | Combination (nCr) · Permutation (nPr) · Factorial          |
-|                 | Binomial expansion                   | Binomial theorem                                           |
-|                 | Random variables                     | Binomial · Normal · Confidence interval                    |
-| **Specialist**  | Indices & surds                      | Simplify surd · Rationalise · Index laws                   |
-|                 | Sequences & series                   | Arithmetic · Geometric (incl. limiting sum)                |
-|                 | Growth, decay & rates                | Exponential model · Half-life / doubling                   |
-|                 | Vectors                              | Component form (dot, cross, magnitude, angle)              |
-|                 | Complex numbers                      | Rectangular form · Polar form                              |
-|                 | Mathematical induction               | Base case → assumption → inductive step                    |
+| Subject         | Topic                                | Methods you can choose                                                       |
+| --------------- | ------------------------------------ | ---------------------------------------------------------------------------- |
+| **Foundations** | Multiplication                       | Grid / box · Column (long)                                                   |
+|                 | Division                             | Short (bus-stop) · Long division · Chunking                                  |
+|                 | Fractions                            | Common denominator (+ − × ÷)                                                 |
+|                 | Percentages                          | Decimal multiplier · Unitary · Reverse                                       |
+| **General**     | Linear equations                     | Balancing · Backtracking                                                     |
+|                 | Simultaneous equations               | Elimination · Substitution                                                   |
+|                 | Networks                             | Shortest path (Dijkstra) · Minimum spanning tree (Kruskal)                   |
+|                 | Investing & borrowing                | Compound · Simple · Depreciation · Loan repayments                           |
+|                 | Measurement                          | Area · Perimeter · Volume · Surface area                                     |
+|                 | Right-angled triangles               | Pythagoras · SOH CAH TOA                                                     |
+|                 | Sine & cosine rules                  | Sine rule · Cosine rule · Area (½ab sin C, Heron)                            |
+|                 | Statistics                           | Full summary · Centre · Spread · Five-number summary                         |
+|                 | Matrices                             | Add · Multiply · Determinant · Inverse                                       |
+| **Methods**     | Gradients, tangents & turning points | Stationary points · Gradient at a point · Tangent · Normal                   |
+|                 | Inequalities                         | Balancing (with sign flip) · Sign diagram                                    |
+|                 | Quadratic equations                  | Factorising · Completing the square · Quadratic formula                      |
+|                 | Polynomials                          | Factor theorem · Division · Remainder theorem                                |
+|                 | Logs & exponentials                  | Equating indices · Taking logs                                               |
+|                 | Sketching curves                     | Key features · Using calculus                                                |
+|                 | Trigonometric equations              | Unit circle                                                                  |
+|                 | Differentiation                      | Power rule · Product/quotient/chain · First principles                       |
+|                 | Integration                          | Reverse power rule · Definite integral · Substitution · Integration by parts |
+|                 | Geometric proof                      | Triangle angle sum · Parallel lines · Isosceles · Congruence                 |
+|                 | Probability                          | Single event · Union · Intersection · Conditional                            |
+|                 | Counting & combinations              | Combination (nCr) · Permutation (nPr) · Factorial                            |
+|                 | Binomial expansion                   | Binomial theorem                                                             |
+|                 | Random variables                     | Binomial · Normal · Confidence interval                                      |
+| **Specialist**  | Indices & surds                      | Simplify surd · Rationalise · Index laws                                     |
+|                 | Sequences & series                   | Arithmetic · Geometric (incl. limiting sum)                                  |
+|                 | Growth, decay & rates                | Exponential model · Half-life / doubling                                     |
+|                 | Vectors                              | Component form (dot, cross, magnitude, angle)                                |
+|                 | Complex numbers                      | Rectangular form · Polar form                                                |
+|                 | Mathematical induction               | Base case → assumption → inductive step                                      |
 
 Terminology and methods follow **SACE** (Foundations / General / Methods / Specialist).
 Induction derives the closed form itself, so the proof is always of a true statement.
@@ -205,8 +206,7 @@ solve, and its answer is re-derived independently before it ships.
 ## Scope notes
 
 Deliberately out of scope for now: photo/handwriting input; statistical _investigations_ and the
-open-ended modelling topics (which are written up, not computed); integration by parts; geometric
-proof. Affine substitution, bracket expansion, and mixed algebra/trigonometry equations are
+open-ended modelling topics (which are written up, not computed). Affine substitution, bracket expansion, and mixed algebra/trigonometry equations are
 worked as overlapping techniques, with the intermediate algebra shown rather than hidden.
 
 Natural language covers the phrasings students actually use, not arbitrary prose — it is a

@@ -82,6 +82,34 @@ describe('integrationSolver', () => {
       expect(result.solution.answerLatex).toContain('^{4}');
     }
   });
+
+  it('uses integration by parts for x exp(x)', () => {
+    const result = integrationSolver.solve('∫ x exp(x) dx', 'by-parts');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.methodName).toBe('Integration by parts');
+      expect(result.solution.answerLatex).toBe('e^x\\left(x - 1\\right) + C');
+      expect(
+        result.solution.steps.some((step) => /identity/i.test(step.note ?? '')),
+      ).toBe(true);
+    }
+  });
+
+  it('handles the repeated-parts pattern x squared e to the x', () => {
+    const result = integrationSolver.solve('integrate x^2 e^x', 'by-parts');
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(result.solution.answerLatex).toContain('x^{2} - 2x + 2');
+  });
+
+  it('uses integration by parts for x sin x and x cos x', () => {
+    expect(ans(integrationSolver, '∫ x sin x dx', 'by-parts')).toBe(
+      '-x\\cos x + \\sin x + C',
+    );
+    expect(ans(integrationSolver, '∫ x cos x dx', 'by-parts')).toBe(
+      'x\\sin x + \\cos x + C',
+    );
+  });
 });
 
 describe('differentiationSolver — product, quotient and chain rules', () => {

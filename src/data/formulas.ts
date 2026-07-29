@@ -207,7 +207,27 @@ export const FORMULAS: Record<string, Formula[]> = {
       name: 'Exponential',
       latex: '\\int e^{kx}\\,dx = \\dfrac{1}{k}e^{kx} + C',
     },
+    {
+      name: 'Integration by parts',
+      latex: '\\int u\\,dv = uv - \\int v\\,du',
+    },
     { name: 'Reciprocal', latex: '\\int \\dfrac{1}{x}\\,dx = \\ln|x| + C' },
+  ],
+  'geometry-proof': [
+    {
+      name: 'Triangle angle sum',
+      latex: '\\angle A + \\angle B + \\angle C = 180^{\\circ}',
+    },
+    {
+      name: 'Parallel lines',
+      latex:
+        'l \\parallel m \\Rightarrow \\text{alternate/corresponding angles are equal}',
+    },
+    {
+      name: 'Congruence criteria',
+      latex:
+        '\\text{SSS, SAS, ASA, AAS or RHS} \\Rightarrow \\triangle ABC \\cong \\triangle DEF',
+    },
   ],
   'calculus-applications': [
     { name: 'Stationary points', latex: "f'(x) = 0" },

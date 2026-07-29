@@ -35,6 +35,7 @@ import { binomialSolver } from '../../solvers/statistics/binomial';
 import { networksSolver } from '../../solvers/networks';
 import { ratesSolver } from '../../solvers/calculus/rates';
 import { calculusApplicationsSolver } from '../../solvers/calculus/applications';
+import { geometricProofSolver } from '../../solvers/geometry/proofs';
 
 /**
  * The list of topics the app offers. Order here is the order shown in the UI,
@@ -66,6 +67,7 @@ export const solvers: Solver[] = [
   trigEquationSolver,
   differentiationSolver,
   integrationSolver,
+  geometricProofSolver,
   calculusApplicationsSolver,
   ratesSolver,
   statisticsSolver,

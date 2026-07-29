@@ -43,6 +43,29 @@ interface AffinePower {
   power: number;
 }
 
+interface ByPartsInput {
+  power: number;
+  functionName: 'exp' | 'sin' | 'cos';
+}
+
+/** Read the standard SACE examples x^n e^x, x sin x, and x cos x. */
+function readByParts(input: string): ByPartsInput | null {
+  const expression = cleanIntegrand(input).replace(/\s+/g, '');
+  const match = expression.match(
+    /^x(?:\^(\d+))?(?:\*|)?(exp\(x\)|e\^x|sin\(x\)|cos\(x\)|sinx|cosx)$/i,
+  );
+  if (!match) return null;
+  const power = Number(match[1] ?? 1);
+  const rawName = match[2].toLowerCase();
+  const functionName: ByPartsInput['functionName'] = rawName.startsWith('e')
+    ? 'exp'
+    : rawName.startsWith('sin')
+      ? 'sin'
+      : 'cos';
+  if (!Number.isSafeInteger(power) || power < 1 || power > 4) return null;
+  return { power, functionName };
+}
+
 /** Read the common substitution form ∫(ax+b)^n dx exactly. */
 function readAffinePower(input: string): AffinePower | null {
   try {
@@ -92,8 +115,8 @@ export const integrationSolver: Solver = {
   title: 'Integration',
   subjects: ['Methods', 'Specialist'],
   blurb:
-    'Find polynomial antiderivatives, definite areas, and affine substitutions.',
-  placeholder: 'e.g.  3x^2 + 2x - 5',
+    'Find polynomial antiderivatives, definite areas, substitutions, and parts.',
+  placeholder: 'e.g.  3x^2 + 2x - 5   or   ∫ x exp(x) dx',
   methods: [
     {
       id: 'reverse-power',
@@ -111,6 +134,11 @@ export const integrationSolver: Solver = {
       name: 'Substitution',
       blurb: 'Let u = ax + b, then integrate the resulting power of u.',
     },
+    {
+      id: 'by-parts',
+      name: 'Integration by parts',
+      blurb: 'Choose u and dv, then use ∫u\,dv = uv − ∫v\,du.',
+    },
   ],
   defaultMethodId: 'reverse-power',
   detect(input) {
@@ -118,6 +146,8 @@ export const integrationSolver: Solver = {
     return /∫|\bintegrate\b|\bantiderivative\b|dx\s*$/i.test(input) ? 0.97 : 0;
   },
   solve(input): SolveResult {
+    const byParts = readByParts(input);
+    if (byParts) return solveByParts(byParts);
     const affine = readAffinePower(input);
     if (affine) return solveAffinePower(input, affine);
 
@@ -210,6 +240,100 @@ export const integrationSolver: Solver = {
     };
   },
 };
+
+function solveByParts(q: ByPartsInput): SolveResult {
+  const { power, functionName } = q;
+  const fn = functionName === 'exp' ? 'e^x' : `\\${functionName}x`;
+  const steps: Step[] = [
+    {
+      note: 'Choose the algebraic factor as u and the remaining factor as dv.',
+      latex: `u = x^{${power}},\\quad dv = ${fn}\\,dx`,
+    },
+    {
+      note: 'Differentiate u and integrate dv.',
+      latex:
+        functionName === 'exp'
+          ? `du = ${power}x^{${power - 1}}\\,dx,\\quad v = e^x`
+          : `du = ${power}x^{${power - 1}}\\,dx,\\quad v = ${functionName === 'sin' ? '-\\cos x' : '\\sin x'}`,
+    },
+    {
+      note: 'Apply the integration-by-parts identity.',
+      latex: `\\int u\\,dv = uv - \\int v\\,du`,
+    },
+  ];
+
+  if (functionName === 'exp') {
+    const terms: string[] = [];
+    for (let k = 0; k <= power; k++) {
+      const coefficient = factorialRatio(power, k);
+      const sign = k % 2 === 0 ? '' : '-';
+      const exponent = power - k;
+      const xTerm =
+        exponent === 0 ? '' : exponent === 1 ? 'x' : `x^{${exponent}}`;
+      const coefficientText =
+        exponent === 0 || coefficient !== 1 ? String(coefficient) : '';
+      terms.push(`${sign}${coefficientText}${xTerm}`);
+    }
+    const body = terms.join(' + ').replace(/\+ -/g, '- ');
+    steps.push({
+      note: 'Repeat the same choice on the remaining polynomial–exponential integral until the power reaches zero.',
+      latex: `\\int x^{${power}}e^x\\,dx = e^x\\left(${body}\\right) + C`,
+      annotation: 'repeated parts',
+    });
+    const answer = `e^x\\left(${body}\\right) + C`;
+    steps.push({
+      note: 'Differentiate the result to check it returns the original integrand.',
+      latex: `\\dfrac{d}{dx}\\left[${answer.replace(' + C', '')}\\right] = x^{${power}}e^x`,
+      annotation: 'checked',
+    });
+    return {
+      ok: true,
+      solution: {
+        headline: `Integrate $x^{${power}}e^x$`,
+        methodName: 'Integration by parts',
+        steps,
+        answerLatex: answer,
+      },
+    };
+  }
+
+  if (power !== 1) {
+    return {
+      ok: false,
+      error:
+        'Integration by parts currently handles x sin x and x cos x; use a lower power or expand it first.',
+    };
+  }
+
+  const answer =
+    functionName === 'sin'
+      ? '-x\\cos x + \\sin x + C'
+      : 'x\\sin x + \\cos x + C';
+  steps.push({
+    note: 'Substitute u, v, and du into uv − ∫v du, then integrate the remaining basic trig function.',
+    latex: `\\int x\\,\\${functionName}x\\,dx = ${answer}`,
+  });
+  steps.push({
+    note: 'Differentiate the result to check it returns the original integrand.',
+    latex: `\\dfrac{d}{dx}\left[${answer.replace(' + C', '')}\right] = x\\,\\${functionName}x`,
+    annotation: 'checked',
+  });
+  return {
+    ok: true,
+    solution: {
+      headline: `Integrate $x\\${functionName}x$`,
+      methodName: 'Integration by parts',
+      steps,
+      answerLatex: answer,
+    },
+  };
+}
+
+function factorialRatio(n: number, k: number): number {
+  let value = 1;
+  for (let i = 0; i < k; i++) value *= n - i;
+  return value;
+}
 
 function solveAffinePower(input: string, q: AffinePower): SolveResult {
   const { a, b, power } = q;
