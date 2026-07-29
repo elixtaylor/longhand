@@ -265,12 +265,7 @@ function SettingsPage({
         </div>
       </header>
       <div className="settings-content">
-        <section className="page-card">
-          <SettingsPanel
-            {...settings}
-            onResetPreferences={onResetPreferences}
-          />
-        </section>
+        <SettingsPanel {...settings} onResetPreferences={onResetPreferences} />
       </div>
     </main>
   );

@@ -1555,16 +1555,9 @@ button {
   border-radius: var(--control-radius);
   align-items: stretch;
 }
-.settings-page .page-card {
-  width: min(1040px, 100%);
-}
 .settings-page .settings-content {
   width: min(1040px, 100%);
   margin: var(--sp-5) auto 0;
-}
-.settings-page .settings-content .page-card {
-  width: 100%;
-  margin: 0;
 }
 .settings-page .settings-fields {
   display: grid;
@@ -1691,15 +1684,6 @@ button {
   color: var(--accent);
   border-color: var(--accent);
 }
-.page-card {
-  width: min(920px, 100%);
-  margin: 0 auto;
-  padding: var(--sp-5) var(--sp-6);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-1);
-}
 .calculator-directory {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1751,10 +1735,6 @@ button {
   color: var(--ink-3);
   font-size: 0.7rem;
 }
-.settings-page .page-card {
-  margin-top: var(--sp-5);
-}
-
 @media (max-width: 980px) {
   .calculator-directory {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2135,9 +2115,6 @@ button {
   }
   .page-header {
     gap: var(--sp-3);
-  }
-  .page-card {
-    padding: var(--sp-4);
   }
   .graphing-header {
     padding: var(--sp-4);
