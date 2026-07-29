@@ -191,14 +191,8 @@ export function StepList({
       <ol className="steps" ref={listRef}>
         {solution.steps.map((step, i) => {
           const hidden = i >= revealed;
-          const sameOperation = /same to both sides|both sides/i.test(
-            `${step.annotation ?? ''} ${step.note ?? ''}`,
-          );
           return (
-            <li
-              key={i}
-              className={`step${hidden ? ' is-hidden' : ''}${sameOperation ? ' step-operation' : ''}`}
-            >
+            <li key={i} className={`step${hidden ? ' is-hidden' : ''}`}>
               <div className="step-body">
                 {step.note && showNotes && (
                   <p className="step-note">

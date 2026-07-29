@@ -691,7 +691,7 @@ button {
    */
 .step-line {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: var(--sp-3);
   min-width: 0;
 }
@@ -705,56 +705,31 @@ button {
   padding: 4px 0;
 }
 .step-annotation {
-  align-self: stretch;
+  align-self: center;
   display: flex;
-  align-items: flex-end;
-  flex-shrink: 0;
-  max-width: min(260px, 36%);
-  padding-left: 10px;
-  padding-bottom: 4px;
+  align-items: center;
+  flex: 0 0 min(220px, 30%);
+  width: min(220px, 30%);
+  max-width: min(220px, 30%);
+  padding: 0;
   font-family: var(--font-annotation);
-  font-size: 1rem;
-  color: var(--marker);
-  border-left: 2px solid var(--marker);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--ink-3);
   overflow-wrap: anywhere;
 }
 :root[data-theme='notebook'] .step-annotation {
-  /* One ruled square, not a text-height sliver, so the red border-left
-     reads as ruling off a square for the note rather than an arbitrary
-     underline. .step-line's flex-end alignment (see above) lands this
-     box's bottom on .step-expr's own bottom edge — but that edge is the
-     *line box's* bottom, sitting --rule-baseline short of --rule below the
-     actual glyph baseline (see that variable's definition), not the ruling
-     the maths is written on. The margin pulls the visible box up by that
-     same gap so it lines up with the ruling instead, landing this square
-     exactly over the one the equation sits in. */
   display: flex;
   align-items: center;
   height: var(--rule);
   margin-bottom: calc(var(--rule) - var(--rule-baseline));
-  padding-bottom: 0;
+  border: 0;
 }
 :root[data-theme='notebook'] .step-annotation-text {
-  /* Centering the line box (above) isn't quite centering the ink — the
-     hand font's glyphs sit slightly high within their own line box. Nudged
-     on the text itself, not .step-annotation, so the border-left stays on
-     the square it was aligned to above. */
-  position: relative;
-  top: 1.5px;
+  position: static;
 }
 .step.is-hidden {
   display: none;
-}
-.step-operation .step-expr {
-  padding: 7px 12px;
-  margin-left: -12px;
-  border-left: 3px solid var(--marker);
-  border-radius: 0 var(--control-radius) var(--control-radius) 0;
-  background: var(--marker-soft, var(--bg-tint));
-}
-.step-operation .step-annotation {
-  color: var(--marker);
-  font-weight: 700;
 }
 
 /* Why? toggle ------------------------------------------------------------- */

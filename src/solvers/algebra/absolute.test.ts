@@ -25,6 +25,9 @@ describe('absolute value equations', () => {
     expect(
       answers(solve('abs(x) = 4').answerLatex).sort((a, b) => a - b),
     ).toEqual([-4, 4]);
+    expect(
+      answers(solve('|x^2| = 4').answerLatex).sort((a, b) => a - b),
+    ).toEqual([-2, 2]);
   });
 
   it('has exactly one case when k = 0', () => {

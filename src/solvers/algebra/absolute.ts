@@ -150,6 +150,27 @@ function caseSteps(
   return { steps, answer: r.solution.answerLatex };
 }
 
+/** Keep a case split from printing the same root twice when both branches
+ * simplify to an equivalent answer (common with ± and zero). */
+function uniqueAnswerLines(answers: string[]): string[] {
+  const lines = answers
+    .flatMap((answer) =>
+      answer
+        .replace(/\\quad\\text\{or\}\\quad/g, '|')
+        .replace(/,\s*\\quad/g, '|')
+        .split('|'),
+    )
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  return lines.filter((line) => {
+    const key = line.replace(/\s+/g, '');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function solveImpl(input: string, methodId: string): SolveResult {
   const parsed = parse(input);
   if (!parsed) {
@@ -237,8 +258,8 @@ function solveImpl(input: string, methodId: string): SolveResult {
   }
   steps.push(...case1.steps, ...case2.steps);
 
-  let answers = [case1.answer, case2.answer].filter(
-    (a): a is string => a !== undefined,
+  let answers = uniqueAnswerLines(
+    [case1.answer, case2.answer].filter((a): a is string => a !== undefined),
   );
 
   // |A| = C(x): C must actually be ≥ 0 at the solution, since an absolute

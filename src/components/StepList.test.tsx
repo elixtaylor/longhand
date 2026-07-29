@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { StepList } from './StepList';
 
-describe('StepList operation emphasis', () => {
-  it('highlights a line that applies the same operation to both sides', () => {
+describe('StepList annotations', () => {
+  it('keeps operation annotations unhighlighted', () => {
     Object.defineProperty(document, 'fonts', {
       configurable: true,
       value: {
@@ -35,6 +35,9 @@ describe('StepList operation emphasis', () => {
         showNotes={false}
       />,
     );
-    expect(screen.getByRole('listitem').className).toContain('step-operation');
+    expect(screen.getByRole('listitem').className).not.toContain(
+      'step-operation',
+    );
+    expect(screen.getByText('same to both sides')).toBeTruthy();
   });
 });
