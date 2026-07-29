@@ -272,14 +272,14 @@ function GraphPlot({
           const pointX = sx(point.x);
           const pointY = sy(point.y);
           const boxWidth = label.length * 6.4 + 8;
-          const gap = 12;
+          const gap = 16;
           const rightX = pointX + gap;
           const leftX = pointX - gap - boxWidth;
           const labelX =
             rightX + boxWidth <= width - pad.right
               ? rightX
               : Math.max(pad.left + 4, leftX);
-          const boxHeight = 16;
+          const boxHeight = 18;
           const aboveY = pointY - gap - boxHeight;
           const belowY = pointY + gap;
           const boxY =
@@ -288,7 +288,7 @@ function GraphPlot({
               : belowY + boxHeight <= height - pad.bottom
                 ? belowY
                 : Math.max(pad.top, aboveY);
-          const labelY = boxY + 12;
+          const labelY = boxY + 13;
           return (
             <g
               key={pointId}

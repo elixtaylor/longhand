@@ -1945,6 +1945,18 @@ button {
 .graph-point-group {
   cursor: pointer;
 }
+.graph-point-group:focus,
+.graph-point-group:focus-visible {
+  outline: none;
+}
+.graph-point-group:focus-visible .graph-table-point {
+  stroke: var(--focus-ring);
+  stroke-width: 3;
+}
+.graph-point-group:focus-visible .graph-point-label-bg {
+  stroke: var(--focus-ring);
+  stroke-width: 1.5;
+}
 .graph-point-hover-target {
   fill: transparent;
   pointer-events: all;
