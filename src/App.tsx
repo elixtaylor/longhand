@@ -14,6 +14,10 @@ export default function App() {
     'longhand.textSize',
     'md',
   );
+  const [showPalette, setShowPalette] = useLocalStorage<boolean>(
+    'longhand.palette',
+    true,
+  );
   /**
    * Off by default: the working itself is what a student came for, and a
    * sentence above every line pushes the maths apart. The toggle sits with
@@ -124,6 +128,8 @@ export default function App() {
         onDark={setDark}
         textSize={textSize}
         onTextSize={setTextSize}
+        showPalette={showPalette}
+        onShowPalette={setShowPalette}
         resetKey={resetKey}
       />
     </div>

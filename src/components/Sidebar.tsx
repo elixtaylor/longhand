@@ -36,6 +36,8 @@ export function Sidebar({
   onDark,
   textSize,
   onTextSize,
+  showPalette,
+  onShowPalette,
 }: {
   onClose: () => void;
   solver: Solver;
@@ -52,6 +54,8 @@ export function Sidebar({
   onDark: (d: boolean) => void;
   textSize: TextSize;
   onTextSize: (s: TextSize) => void;
+  showPalette: boolean;
+  onShowPalette: (show: boolean) => void;
 }) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -152,7 +156,6 @@ export function Sidebar({
         <div className="sidebar-head">
           <div className="sidebar-title-group">
             <span className="sidebar-kicker">Longhand</span>
-            <h2>Reference</h2>
           </div>
           <button
             type="button"
@@ -301,6 +304,8 @@ export function Sidebar({
                       onDark={onDark}
                       textSize={textSize}
                       onTextSize={onTextSize}
+                      showPalette={showPalette}
+                      onShowPalette={onShowPalette}
                     />
                   )}
                 </div>

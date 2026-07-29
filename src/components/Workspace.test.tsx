@@ -40,6 +40,8 @@ describe('Workspace solution reveal', () => {
         onDark={vi.fn()}
         textSize="md"
         onTextSize={vi.fn()}
+        showPalette
+        onShowPalette={vi.fn()}
       />,
     );
 
@@ -70,6 +72,8 @@ describe('Workspace solution reveal', () => {
         onDark={vi.fn()}
         textSize="md"
         onTextSize={vi.fn()}
+        showPalette
+        onShowPalette={vi.fn()}
         resetKey={0}
       />,
     );
@@ -94,6 +98,8 @@ describe('Workspace solution reveal', () => {
         onDark={vi.fn()}
         textSize="md"
         onTextSize={vi.fn()}
+        showPalette
+        onShowPalette={vi.fn()}
         resetKey={1}
       />,
     );

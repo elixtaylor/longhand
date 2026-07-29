@@ -85,12 +85,15 @@ export function ProblemInput({
   onChange,
   placeholder,
   preview,
+  showPalette = true,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   /** Canonical rewrite to preview instead of the raw text, when there is one. */
   preview?: string | null;
+  /** Keep the symbol shortcuts available unless the student hides them. */
+  showPalette?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
 
@@ -132,18 +135,20 @@ export function ProblemInput({
         onChange={(e) => onChange(e.target.value)}
       />
 
-      <div className="palette" role="group" aria-label="Insert symbol">
-        {KEYS.map((k) => (
-          <button
-            key={k.label}
-            type="button"
-            className="palette-key"
-            onClick={() => insert(k)}
-          >
-            {k.label}
-          </button>
-        ))}
-      </div>
+      {showPalette && (
+        <div className="palette" role="group" aria-label="Insert symbol">
+          {KEYS.map((k) => (
+            <button
+              key={k.label}
+              type="button"
+              className="palette-key"
+              onClick={() => insert(k)}
+            >
+              {k.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {trimmed !== '' && (
         <div className="preview" aria-live="polite">

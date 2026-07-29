@@ -18,6 +18,8 @@ export function SettingsPanel({
   onDark,
   textSize,
   onTextSize,
+  showPalette,
+  onShowPalette,
 }: {
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
@@ -27,6 +29,8 @@ export function SettingsPanel({
   onDark: (d: boolean) => void;
   textSize: TextSize;
   onTextSize: (s: TextSize) => void;
+  showPalette: boolean;
+  onShowPalette: (show: boolean) => void;
 }) {
   return (
     <div className="settings-fields">
@@ -119,6 +123,23 @@ export function SettingsPanel({
             One at a time
           </button>
         </div>
+      </div>
+
+      <div className="setting-row">
+        <span className="field-label">Equation buttons</span>
+        <button
+          type="button"
+          className="setting-switch"
+          role="switch"
+          aria-label="Equation buttons"
+          aria-checked={showPalette}
+          onClick={() => onShowPalette(!showPalette)}
+        >
+          <span className="setting-switch-track" aria-hidden="true">
+            <span className="setting-switch-thumb" />
+          </span>
+          <span>{showPalette ? 'On' : 'Off'}</span>
+        </button>
       </div>
     </div>
   );

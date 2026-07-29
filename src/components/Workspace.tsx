@@ -62,6 +62,8 @@ export function Workspace({
   onDark,
   textSize,
   onTextSize,
+  showPalette,
+  onShowPalette,
   resetKey = 0,
 }: {
   revealMode: RevealMode;
@@ -76,6 +78,8 @@ export function Workspace({
   onDark: (d: boolean) => void;
   textSize: TextSize;
   onTextSize: (s: TextSize) => void;
+  showPalette: boolean;
+  onShowPalette: (show: boolean) => void;
   resetKey?: number;
 }) {
   const shared =
@@ -398,6 +402,8 @@ export function Workspace({
             onDark={onDark}
             textSize={textSize}
             onTextSize={onTextSize}
+            showPalette={showPalette}
+            onShowPalette={onShowPalette}
           />
         </Suspense>
       )}
@@ -465,6 +471,7 @@ export function Workspace({
                   }}
                   placeholder="e.g. x^2 + 5x + 6 = 0"
                   preview={reading}
+                  showPalette={showPalette}
                 />
 
                 {reading && (

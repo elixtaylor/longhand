@@ -23,4 +23,17 @@ describe('ProblemInput', () => {
       (screen.getByLabelText('Your problem') as HTMLInputElement).value,
     ).toBe('x');
   });
+
+  it('can hide the symbol palette', () => {
+    render(
+      <ProblemInput
+        value=""
+        onChange={vi.fn()}
+        placeholder="Type a problem"
+        showPalette={false}
+      />,
+    );
+
+    expect(screen.queryByRole('group', { name: 'Insert symbol' })).toBeNull();
+  });
 });

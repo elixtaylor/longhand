@@ -21,6 +21,8 @@ describe('Sidebar calculator directory', () => {
         onDark={vi.fn()}
         textSize="md"
         onTextSize={vi.fn()}
+        showPalette
+        onShowPalette={vi.fn()}
       />,
     );
 
@@ -60,6 +62,8 @@ describe('Sidebar calculator directory', () => {
         onDark={vi.fn()}
         textSize="md"
         onTextSize={vi.fn()}
+        showPalette
+        onShowPalette={vi.fn()}
       />,
     );
 
