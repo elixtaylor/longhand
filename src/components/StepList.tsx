@@ -7,6 +7,7 @@ import { StepVisualView } from './visuals';
 /** The notebook theme's squared-paper tile, in px — literally, not measured;
  * see measureGrid's own doc comment below for why it can't be. */
 const RULE = 24;
+const COMPACT_EQUATION_WIDTH = 640;
 
 export function StepList({
   solution,
@@ -29,6 +30,7 @@ export function StepList({
 }) {
   const total = solution.steps.length;
   const [revealed, setRevealed] = useState(total);
+  const [wide, setWide] = useState(false);
   const listRef = useRef<HTMLOListElement>(null);
 
   // Reset the reveal counter whenever a new solution arrives or the mode changes.
@@ -38,11 +40,10 @@ export function StepList({
 
   /**
    * The notebook theme still needs to measure each line's height so its
-   * squared-paper ruling stays aligned. Width is deliberately left to CSS:
-   * the working area now grows on wide screens and equations share the full
-   * available row instead of creating an inner horizontal scrollbar. If a
-   * very long line still exceeds a narrow viewport, the rendered maths is
-   * scaled to fit rather than making the page scroll sideways.
+   * squared-paper ruling stays aligned. Ordinary working keeps its compact
+   * reading measure; a measured long equation adds .steps-wide so the parent
+   * can widen only for that solution. If a line still exceeds the viewport,
+   * the rendered maths is scaled to fit rather than making the page scroll.
    */
   useEffect(() => {
     const list = listRef.current;
@@ -51,6 +52,7 @@ export function StepList({
     function measure() {
       const exprs = list!.querySelectorAll<HTMLElement>('.step-expr');
       const notebook = document.documentElement.dataset.theme === 'notebook';
+      let requiresWide = false;
       exprs.forEach((exprEl) => {
         const katex = exprEl.querySelector<HTMLElement>(
           '.katex-display > .katex',
@@ -63,6 +65,7 @@ export function StepList({
         katex.style.removeProperty('transform-origin');
         const availableWidth = exprEl.clientWidth;
         const naturalWidth = katex.scrollWidth;
+        if (naturalWidth > COMPACT_EQUATION_WIDTH) requiresWide = true;
         if (availableWidth > 0 && naturalWidth > availableWidth) {
           const scale = availableWidth / naturalWidth;
           katex.style.transformOrigin = 'left bottom';
@@ -75,6 +78,7 @@ export function StepList({
           exprEl.style.height = `${squares * RULE}px`;
         }
       });
+      setWide((current) => (current === requiresWide ? current : requiresWide));
     }
 
     measure();
@@ -174,21 +178,9 @@ export function StepList({
     }
   }
 
-  function downloadWorking() {
-    const blob = new Blob([workingText(solution, showNotes).join('\n')], {
-      type: 'text/plain;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'longhand-working.txt';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div>
-      <ol className="steps" ref={listRef}>
+      <ol className={`steps${wide ? ' steps-wide' : ''}`} ref={listRef}>
         {solution.steps.map((step, i) => {
           const hidden = i >= revealed;
           return (
@@ -258,12 +250,6 @@ export function StepList({
         )}
         <button type="button" className="btn" onClick={copyWorking}>
           Copy working
-        </button>
-        <button type="button" className="btn" onClick={downloadWorking}>
-          Download .txt
-        </button>
-        <button type="button" className="btn" onClick={() => window.print()}>
-          Print
         </button>
         <span className="reveal-count">
           {Math.min(revealed, total)} / {total} steps

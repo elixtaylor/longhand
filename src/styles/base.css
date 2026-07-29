@@ -119,15 +119,17 @@ button {
 .worksheet {
   width: 100%;
   min-width: 0;
-  /* Give worked equations a real reading measure on larger screens. The
-     previous 860px cap forced long lines into a nested horizontal scrollbar
-     even when the viewport had plenty of unused width. */
-  max-width: 1280px;
+  max-width: 860px;
   margin: 0 auto;
   padding: var(--sp-6);
   display: flex;
   flex-direction: column;
   gap: var(--sp-6);
+}
+/* Stay compact for ordinary working. A measured long KaTeX line opts the
+   worksheet into the wider reading measure only when it actually needs it. */
+.worksheet:has(.steps-wide) {
+  max-width: 1280px;
 }
 @media (max-width: 600px) {
   .worksheet {
