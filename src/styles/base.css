@@ -1747,6 +1747,8 @@ button {
 }
 .settings-page .setting-reset-row {
   grid-area: reset;
+  grid-template-columns: 1fr;
+  justify-items: center;
   min-height: 30px;
   padding: 10px 0 0;
   border-top: 1px solid var(--line);
