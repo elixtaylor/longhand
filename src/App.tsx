@@ -126,7 +126,18 @@ export default function App() {
       <div className="app">
         {page === 'home' && (
           <header className="masthead">
-            <div className="masthead-left">
+            <div className="masthead-top">
+              <button
+                type="button"
+                className="wordmark"
+                aria-label="Longhand home, clear the current problem"
+                onClick={goHome}
+              >
+                <span className="wordmark-mark">L</span>
+                Longhand
+              </button>
+            </div>
+            <div className="masthead-nav">
               <button
                 type="button"
                 className="icon-btn"
@@ -149,15 +160,6 @@ export default function App() {
                 >
                   <path d="M3 6h18M3 12h18M3 18h18" />
                 </svg>
-              </button>
-              <button
-                type="button"
-                className="wordmark"
-                aria-label="Longhand home, clear the current problem"
-                onClick={goHome}
-              >
-                <span className="wordmark-mark">L</span>
-                Longhand
               </button>
             </div>
           </header>

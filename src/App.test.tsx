@@ -20,4 +20,17 @@ describe('home reset', () => {
       ).toBe(''),
     );
   });
+
+  it('keeps the menu control in its own row below the wordmark', () => {
+    window.localStorage.clear();
+    render(<App />);
+    const masthead = document.querySelector('.masthead');
+    expect(masthead?.querySelector('.masthead-top .wordmark')).not.toBeNull();
+    expect(
+      masthead?.querySelector('.masthead-nav [aria-label="Open menu"]'),
+    ).not.toBeNull();
+    expect(
+      masthead?.querySelector('.masthead-top')?.nextElementSibling?.className,
+    ).toBe('masthead-nav');
+  });
 });

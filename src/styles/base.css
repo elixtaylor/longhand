@@ -57,17 +57,27 @@ button {
 
 .masthead {
   display: flex;
-  align-items: baseline;
-  justify-content: flex-start;
-  gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-6);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 var(--sp-4);
   border-bottom: 1px solid var(--line-strong);
   background: var(--surface);
 }
-.masthead-left {
+
+.masthead-top,
+.masthead-nav {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+}
+.masthead-top {
+  min-height: 58px;
+  padding: var(--sp-3) 0;
+}
+.masthead-nav {
+  min-height: 48px;
+  padding: 2px 0 6px;
+  border-top: 1px solid var(--line);
 }
 .wordmark {
   display: flex;
@@ -144,7 +154,7 @@ button {
     gap: var(--sp-4);
   }
   .masthead {
-    padding: var(--sp-4);
+    padding: 0 var(--sp-4);
   }
 }
 
