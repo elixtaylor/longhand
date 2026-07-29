@@ -72,7 +72,11 @@ export const statisticsSolver: Solver = {
   defaultMethodId: 'summary',
   detect(input) {
     // A plain list of four or more numbers is almost always a data set…
-    if (!/,/.test(input) || /=/.test(input)) return 0;
+    // Matrix/vector notation also contains comma-separated numbers, but it
+    // has its own structured solver and must never fall through to statistics
+    // just because a matrix operation was invalid.
+    if (!/,/.test(input) || /=/.test(input) || /\[\[|\]\]/.test(input))
+      return 0;
     const list = readData(input);
     if (list.length < 4) return 0;
     const explicit =

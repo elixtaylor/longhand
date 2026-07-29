@@ -1,6 +1,8 @@
 import { Rational } from '../../lib/math/rational';
 import { parsePoly, Poly, ParseError } from '../../lib/math/parse';
 import { polyLatex } from '../../lib/math/format';
+import { parseExpr, evaluateExpr } from '../../lib/math/expr';
+import { exprToPolyFrac } from '../../lib/math/expand';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /** Pull out definite-integral limits written as "from a to b" or "_a^b". */
@@ -35,6 +37,32 @@ function parseIntegrand(input: string): Poly {
   return poly;
 }
 
+interface AffinePower {
+  a: number;
+  b: number;
+  power: number;
+}
+
+/** Read the common substitution form ∫(ax+b)^n dx exactly. */
+function readAffinePower(input: string): AffinePower | null {
+  try {
+    const expression = cleanIntegrand(input);
+    const parsed = parseExpr(expression);
+    if (parsed.t !== 'pow') return null;
+    const power = evaluateExpr(parsed.b);
+    if (!Number.isSafeInteger(power) || power < 0) return null;
+    const fraction = exprToPolyFrac(parsed.a, 'x');
+    if (fraction.den.degree() !== 0 || fraction.num.degree() !== 1) return null;
+    const denominator = fraction.den.get(0).toNumber();
+    const a = fraction.num.get(1).toNumber() / denominator;
+    const b = fraction.num.get(0).toNumber() / denominator;
+    if (!Number.isFinite(a) || a === 0 || !Number.isFinite(b)) return null;
+    return { a, b, power };
+  } catch {
+    return null;
+  }
+}
+
 /** Antiderivative of a polynomial (constant of integration handled separately). */
 export function integrate(poly: Poly): Poly {
   const m = new Map<number, Rational>();
@@ -63,7 +91,8 @@ export const integrationSolver: Solver = {
   id: 'integrate',
   title: 'Integration',
   subjects: ['Methods', 'Specialist'],
-  blurb: 'Find the indefinite integral of a polynomial.',
+  blurb:
+    'Find polynomial antiderivatives, definite areas, and affine substitutions.',
   placeholder: 'e.g.  3x^2 + 2x - 5',
   methods: [
     {
@@ -77,6 +106,11 @@ export const integrationSolver: Solver = {
       name: 'Definite integral',
       blurb: 'Integrate, then evaluate F(b) − F(a) — the area under the curve.',
     },
+    {
+      id: 'substitution',
+      name: 'Substitution',
+      blurb: 'Let u = ax + b, then integrate the resulting power of u.',
+    },
   ],
   defaultMethodId: 'reverse-power',
   detect(input) {
@@ -84,6 +118,9 @@ export const integrationSolver: Solver = {
     return /∫|\bintegrate\b|\bantiderivative\b|dx\s*$/i.test(input) ? 0.97 : 0;
   },
   solve(input): SolveResult {
+    const affine = readAffinePower(input);
+    if (affine) return solveAffinePower(input, affine);
+
     let poly: Poly;
     try {
       poly = parseIntegrand(input);
@@ -173,6 +210,80 @@ export const integrationSolver: Solver = {
     };
   },
 };
+
+function solveAffinePower(input: string, q: AffinePower): SolveResult {
+  const { a, b, power } = q;
+  const limits = readLimits(input);
+  const baseLatex = `(${polyLatex(
+    new Poly(
+      new Map([
+        [1, Rational.fromDecimal(a)],
+        [0, Rational.fromDecimal(b)],
+      ]),
+      'x',
+    ),
+  )})`;
+  const antiderivative =
+    power === -1 ? null : `(u^{${power + 1}})/(${fmtNum(a * (power + 1))})`;
+  if (!antiderivative)
+    return {
+      ok: false,
+      error: 'This substitution form needs a non-negative whole-number power.',
+    };
+
+  const steps: Step[] = [
+    {
+      note: 'Choose the repeated inner expression as u.',
+      latex: `u = ${baseLatex}`,
+    },
+    {
+      note: 'Differentiate the substitution.',
+      latex: `du = ${fmtNum(a)}\\,dx \\Rightarrow dx = \\dfrac{du}{${fmtNum(a)}}`,
+    },
+    {
+      note: 'Rewrite the integral in terms of u and apply the reverse power rule.',
+      latex: `\\int u^{${power}}\\,\\dfrac{du}{${fmtNum(a)}} = \\dfrac{u^{${power + 1}}}{${fmtNum(a * (power + 1))}} + C`,
+    },
+  ];
+
+  if (limits) {
+    const valueAt = (x: number) =>
+      Math.pow(a * x + b, power + 1) / (a * (power + 1));
+    const upper = valueAt(limits.upper);
+    const lower = valueAt(limits.lower);
+    const value = upper - lower;
+    steps.push({
+      note: 'Substitute the limits into the antiderivative; the constant cancels.',
+      latex: `\\left[\\dfrac{(${fmtNum(a)}x ${b < 0 ? '-' : '+'} ${fmtNum(Math.abs(b))})^{${power + 1}}}{${fmtNum(a * (power + 1))}}\\right]_${limits.lower}^{${limits.upper}} = ${fmtNum(value)}`,
+      annotation: 'definite integral',
+    });
+    return {
+      ok: true,
+      solution: {
+        headline: `Evaluate the definite integral`,
+        methodName: 'Substitution',
+        steps,
+        answerLatex: fmtNum(value),
+      },
+    };
+  }
+
+  const answer = `\\dfrac{(${fmtNum(a)}x ${b < 0 ? '-' : '+'} ${fmtNum(Math.abs(b))})^{${power + 1}}}{${fmtNum(a * (power + 1))}} + C`;
+  steps.push({
+    note: 'Substitute u back in and add the constant of integration.',
+    latex: `= ${answer}`,
+    annotation: '+ C matters!',
+  });
+  return {
+    ok: true,
+    solution: {
+      headline: `Integrate $${baseLatex}^{${power}}$`,
+      methodName: 'Substitution',
+      steps,
+      answerLatex: answer,
+    },
+  };
+}
 
 /** Tidy decimal, avoiding "-0" and long floating-point tails. */
 function fmtNum(x: number): string {

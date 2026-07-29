@@ -70,6 +70,18 @@ describe('integrationSolver', () => {
       ans(integrationSolver, 'integrate x from -1 to 1', 'reverse-power'),
     ).toBe('0');
   });
+
+  it('uses substitution for an affine power', () => {
+    const result = integrationSolver.solve(
+      'integrate (2x + 1)^3',
+      'substitution',
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.methodName).toBe('Substitution');
+      expect(result.solution.answerLatex).toContain('^{4}');
+    }
+  });
 });
 
 describe('differentiationSolver — product, quotient and chain rules', () => {

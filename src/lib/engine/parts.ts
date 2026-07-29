@@ -1,6 +1,6 @@
 import { normalise } from '../nl/normalise';
 import { foldArithmetic } from '../nl/arithmetic';
-import { detectSolver } from './registry';
+import { detectSolvers } from './registry';
 import type { Solver, SolveResult } from './types';
 
 /**
@@ -149,36 +149,54 @@ function attempt(
   text: string,
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
 ): { solver: Solver; methodId: string; result: SolveResult } | null {
-  const detection = detectSolver(normalise(text).text) ?? detectSolver(text);
-  if (!detection) return null;
-  const solver = detection.solver;
+  const detected = [
+    ...detectSolvers(normalise(text).text),
+    ...detectSolvers(text),
+  ].filter(
+    (d, i, all) =>
+      all.findIndex((other) => other.solver.id === d.solver.id) === i,
+  );
+  detected.sort((a, b) => b.score - a.score);
+  // Only genuinely competing readings get a chance. A broad fallback such as
+  // inverse operations (0.7) must not override a high-confidence specialist
+  // refusal such as an impossible logarithm (0.97).
+  const topScore = detected[0]?.score ?? 0;
+  const candidates = detected.filter((d) => d.score >= topScore - 0.05);
+  if (candidates.length === 0) return null;
 
-  const first = solveOne(solver, text, solver.defaultMethodId);
-  if (first.ok && first.solution.answerLatex) {
-    return { solver, methodId: solver.defaultMethodId, result: first };
-  }
-
-  // A method that reaches a conclusion without a value — "no triangle exists",
-  // proved in three steps — is a real answer, and used to be thrown away in
-  // favour of another method's error message. Keep the best one seen.
-  let reasoned: {
+  let fallback: {
     solver: Solver;
     methodId: string;
     result: SolveResult;
-  } | null = first.ok
-    ? { solver, methodId: solver.defaultMethodId, result: first }
-    : null;
+  } | null = null;
+  for (const { solver } of candidates) {
+    const first = solveOne(solver, text, solver.defaultMethodId);
+    fallback ??= { solver, methodId: solver.defaultMethodId, result: first };
+    if (first.ok && first.solution.answerLatex) {
+      return { solver, methodId: solver.defaultMethodId, result: first };
+    }
+    // A method that reaches a conclusion without a value is still useful. It
+    // belongs to this topic, so keep it ahead of a broad neighbour's summary.
+    let candidateReasoned: {
+      solver: Solver;
+      methodId: string;
+      result: SolveResult;
+    } | null = first.ok
+      ? { solver, methodId: solver.defaultMethodId, result: first }
+      : null;
 
-  for (const method of solver.methods) {
-    if (method.id === solver.defaultMethodId) continue;
-    const alt = solveOne(solver, text, method.id);
-    if (alt.ok && alt.solution.answerLatex)
-      return { solver, methodId: method.id, result: alt };
-    if (alt.ok) reasoned ??= { solver, methodId: method.id, result: alt };
+    for (const method of solver.methods) {
+      if (method.id === solver.defaultMethodId) continue;
+      const alt = solveOne(solver, text, method.id);
+      if (alt.ok && alt.solution.answerLatex)
+        return { solver, methodId: method.id, result: alt };
+      if (alt.ok)
+        candidateReasoned ??= { solver, methodId: method.id, result: alt };
+    }
+    if (candidateReasoned) return candidateReasoned;
   }
-  return (
-    reasoned ?? { solver, methodId: solver.defaultMethodId, result: first }
-  );
+
+  return fallback;
 }
 
 /**

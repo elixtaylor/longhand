@@ -77,6 +77,19 @@ describe('questions that only look like two topics', () => {
     }
   });
 
+  it('keeps the algebra and trigonometry layers in one worked equation', () => {
+    const w = runWorked('2sin x + 1 = 2');
+    expect(w.split).toBe(false);
+    expect(w.parts[0].solver.id).toBe('trig-equations');
+    expect(w.parts[0].result.ok).toBe(true);
+    if (w.parts[0].result.ok)
+      expect(
+        w.parts[0].result.solution.steps.some(
+          (s) => s.annotation === 'algebra first',
+        ),
+      ).toBe(true);
+  });
+
   it('respects a topic the student chose by hand', () => {
     const solver = getSolver('differentiate')!;
     const w = runWorked('d/dx x^3 - 4x^2', { solver, methodId: 'power' });

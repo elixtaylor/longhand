@@ -356,6 +356,13 @@ export const examples: Example[] = [
     label: '∫₀² 3x² dx  (definite)',
     subject: 'Methods',
   },
+  {
+    solverId: 'binomial',
+    methodId: 'theorem',
+    input: 'expand (x + 2)^3',
+    label: 'Expand (x + 2)³',
+    subject: 'Methods',
+  },
 
   // ------------------------------------------------------------------ Statistics
   {

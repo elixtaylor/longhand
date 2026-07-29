@@ -357,6 +357,10 @@ export const rightTriangleSolver: Solver = {
   ],
   defaultMethodId: 'pythagoras',
   detect(input) {
+    // C is the third angle of a general triangle, not an angle in the
+    // right-triangle notation (which only uses A and B). Let the sine/cosine
+    // rule solver own that shape, even when exactly two sides are present.
+    if (/\bC\s*=/.test(input)) return 0;
     const rt = read(input);
     const n = countKnown(rt);
     if (n !== 2) return 0; // three knowns means a general triangle
@@ -377,6 +381,18 @@ export const rightTriangleSolver: Solver = {
     }
     const sides = [rt.a, rt.b, rt.c].filter((v) => v !== undefined).length;
     const hasAngle = rt.A !== undefined || rt.B !== undefined;
+
+    for (const side of [rt.a, rt.b, rt.c]) {
+      if (side !== undefined && side <= 0)
+        return { ok: false, error: 'Side lengths must be positive.' };
+    }
+    for (const angle of [rt.A, rt.B]) {
+      if (angle !== undefined && (angle <= 0 || angle >= 90))
+        return {
+          ok: false,
+          error: 'A right-triangle angle must be between 0° and 90°.',
+        };
+    }
 
     // Pythagoras needs two sides; fall back sensibly rather than erroring.
     if (methodId === 'pythagoras') {

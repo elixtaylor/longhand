@@ -31,6 +31,7 @@ import { reduceSolver } from '../../solvers/algebra/reduce';
 import { functionsSolver } from '../../solvers/algebra/functions';
 import { probabilitySolver } from '../../solvers/statistics/probability';
 import { countingSolver } from '../../solvers/statistics/counting';
+import { binomialSolver } from '../../solvers/statistics/binomial';
 import { networksSolver } from '../../solvers/networks';
 import { ratesSolver } from '../../solvers/calculus/rates';
 import { calculusApplicationsSolver } from '../../solvers/calculus/applications';
@@ -70,6 +71,7 @@ export const solvers: Solver[] = [
   statisticsSolver,
   probabilitySolver,
   countingSolver,
+  binomialSolver,
   distributionsSolver,
   networksSolver,
   matricesSolver,
@@ -91,15 +93,16 @@ export interface Detection {
 }
 
 /**
- * Work out which topic an input belongs to by asking every solver how well it
- * matches, then taking the strongest answer. Returns null when nothing is
- * confident enough — the UI then asks the student to pick a topic.
+ * Work out which topics an input may belong to by asking every solver how well
+ * it matches, retaining all confident candidates in score order. The UI uses
+ * `detectSolver` for its single live label; the worked engine can use the
+ * candidate list when an equation legitimately sits between topics.
  */
-export function detectSolver(input: string): Detection | null {
+export function detectSolvers(input: string): Detection[] {
   const trimmed = input.trim();
-  if (trimmed === '') return null;
+  if (trimmed === '') return [];
 
-  let best: Detection | null = null;
+  const found: Detection[] = [];
   for (const solver of solvers) {
     let score = 0;
     try {
@@ -107,7 +110,12 @@ export function detectSolver(input: string): Detection | null {
     } catch {
       score = 0; // a detector must never break the app
     }
-    if (score > (best?.score ?? 0)) best = { solver, score };
+    if (score >= DETECT_THRESHOLD) found.push({ solver, score });
   }
-  return best && best.score >= DETECT_THRESHOLD ? best : null;
+  return found.sort((a, b) => b.score - a.score);
+}
+
+/** The strongest confident topic, retained for the live UI label. */
+export function detectSolver(input: string): Detection | null {
+  return detectSolvers(input)[0] ?? null;
 }

@@ -90,9 +90,10 @@ Covering SACE Stage 1 and Stage 2 (Years 11–12).
 |                 | Sketching curves                     | Key features · Using calculus                              |
 |                 | Trigonometric equations              | Unit circle                                                |
 |                 | Differentiation                      | Power rule · Product/quotient/chain · First principles     |
-|                 | Integration                          | Reverse power rule · Definite integral                     |
+|                 | Integration                          | Reverse power rule · Definite integral · Substitution      |
 |                 | Probability                          | Single event · Union · Intersection · Conditional          |
 |                 | Counting & combinations              | Combination (nCr) · Permutation (nPr) · Factorial          |
+|                 | Binomial expansion                   | Binomial theorem                                           |
 |                 | Random variables                     | Binomial · Normal · Confidence interval                    |
 | **Specialist**  | Indices & surds                      | Simplify surd · Rationalise · Index laws                   |
 |                 | Sequences & series                   | Arithmetic · Geometric (incl. limiting sum)                |
@@ -204,8 +205,9 @@ solve, and its answer is re-derived independently before it ships.
 ## Scope notes
 
 Deliberately out of scope for now: photo/handwriting input; statistical _investigations_ and the
-open-ended modelling topics (which are written up, not computed); integration by parts and by
-substitution; geometric proof. All fit the same solver interface when wanted.
+open-ended modelling topics (which are written up, not computed); integration by parts; geometric
+proof. Affine substitution, bracket expansion, and mixed algebra/trigonometry equations are
+worked as overlapping techniques, with the intermediate algebra shown rather than hidden.
 
 Natural language covers the phrasings students actually use, not arbitrary prose — it is a
 deterministic rewriter, not a language model. When it can't read something it says so and shows

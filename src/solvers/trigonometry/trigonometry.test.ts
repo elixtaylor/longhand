@@ -86,6 +86,16 @@ describe('trigEquationSolver', () => {
       'x = 45^{\\circ},\\; x = 225^{\\circ}',
     );
   });
+  it('does the linear algebra layer before solving 2sin x + 1 = 2', () => {
+    expect(ans(trigEquationSolver, '2sin x + 1 = 2', 'unit-circle')).toBe(
+      'x = 30^{\\circ},\\; x = 150^{\\circ}',
+    );
+    const result = trigEquationSolver.solve('2sin x + 1 = 2', 'unit-circle');
+    expect(
+      result.ok &&
+        result.solution.steps.some((s) => s.annotation === 'algebra first'),
+    ).toBe(true);
+  });
   it('rejects an impossible sine value', () => {
     expect(trigEquationSolver.solve('sin x = 2', 'unit-circle').ok).toBe(false);
   });
