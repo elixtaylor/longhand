@@ -234,6 +234,68 @@ const UNITS: Record<string, string> = {
   surface: 'square units',
 };
 
+const LENGTH_UNITS: Record<string, { factor: number; label: string }> = {
+  mm: { factor: 0.001, label: 'mm' },
+  cm: { factor: 0.01, label: 'cm' },
+  m: { factor: 1, label: 'm' },
+  km: { factor: 1000, label: 'km' },
+  in: { factor: 0.0254, label: 'in' },
+  ft: { factor: 0.3048, label: 'ft' },
+};
+
+function unitFor(
+  input: string,
+  key: string,
+): { factor: number; label: string } | null {
+  const unit = input.match(
+    new RegExp(
+      `\\b${key}\\s*=\\s*-?\\d*\\.?\\d+\\s*(mm|cm|km|m|in|ft)\\b`,
+      'i',
+    ),
+  )?.[1];
+  return unit ? LENGTH_UNITS[unit.toLowerCase()] : null;
+}
+
+function dimensionValues(
+  input: string,
+  values: Record<string, number>,
+): {
+  values: Record<string, number>;
+  unit: string | null;
+} {
+  const specified = Object.keys(values)
+    .map((key) => unitFor(input, key))
+    .filter((unit): unit is { factor: number; label: string } => unit !== null);
+  const common =
+    specified.length > 0 &&
+    specified.every((u) => u.label === specified[0].label)
+      ? specified[0]
+      : specified.length > 0
+        ? LENGTH_UNITS.m
+        : null;
+  const converted = Object.fromEntries(
+    Object.entries(values).map(([key, value]) => {
+      const source = unitFor(input, key);
+      return [
+        key,
+        common && source ? (value * source.factor) / common.factor : value,
+      ];
+    }),
+  );
+  return { values: converted, unit: common?.label ?? null };
+}
+
+function unitLatex(quantity: string, unit: string | null): string {
+  if (!unit) return '';
+  const power =
+    quantity === 'volume'
+      ? 3
+      : quantity === 'area' || quantity === 'surface'
+        ? 2
+        : 1;
+  return `\\mathrm{${unit}}${power === 1 ? '' : `^{${power}}`}`;
+}
+
 export const measurementSolver: Solver = {
   id: 'measurement',
   title: 'Measurement',
@@ -277,8 +339,8 @@ export const measurementSolver: Solver = {
           'Start with the shape name, e.g.  circle r=5,  cylinder r=3 h=10,  trapezium a=5 b=7 h=4.',
       };
     }
-    const p = parseParams(input);
-    const missing = shape.needs.filter((k) => p[k] === undefined);
+    const parsed = parseParams(input);
+    const missing = shape.needs.filter((k) => parsed[k] === undefined);
     if (missing.length > 0) {
       return {
         ok: false,
@@ -287,6 +349,7 @@ export const measurementSolver: Solver = {
     }
 
     // Decide which quantities to work out.
+    const { values: p, unit } = dimensionValues(input, parsed);
     const requested =
       askedFor(input) ?? (methodId !== 'auto' ? methodId : null);
     const available: Array<[string, Calc | undefined]> = [
@@ -309,7 +372,11 @@ export const measurementSolver: Solver = {
     const steps: Step[] = [
       {
         note: `Write down what you know about the ${shape.id}.`,
-        latex: shape.needs.map((k) => `${k} = ${fmt(p[k])}`).join(', \\quad '),
+        latex: shape.needs
+          .map(
+            (k) => `${k} = ${fmt(p[k])}${unit ? `\\,\\mathrm{${unit}}` : ''}`,
+          )
+          .join(', \\quad '),
       },
     ];
 
@@ -333,12 +400,15 @@ export const measurementSolver: Solver = {
                 .map((w) => w[0])
                 .join('')
         } = ${fmt(calc.value)}`,
-        annotation: UNITS[key],
+        annotation: unit ? unitLatex(key, unit) : UNITS[key],
       });
     }
 
     const answer = wanted
-      .map(([k, c]) => `\\text{${LABELS[k]}} = ${fmt(c.value)}`)
+      .map(([k, c]) => {
+        const suffix = unitLatex(k, unit);
+        return `\\text{${LABELS[k]}} = ${fmt(c.value)}${suffix ? `\\,${suffix}` : ''}`;
+      })
       .join(', \\quad ');
     return {
       ok: true,

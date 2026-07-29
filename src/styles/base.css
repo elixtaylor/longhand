@@ -1141,7 +1141,7 @@ button {
 }
 
 /* Sidebar content ---------------------------------------------------------- */
-/* Shared by the sidebar's reference sections (see Sidebar). */
+/* Shared by the sidebar's textbook and recent sections (see Sidebar). */
 .ref-panel-title {
   font-family: var(--font-ui);
   font-size: 0.74rem;
@@ -1158,17 +1158,10 @@ button {
 }
 /* One column at the sidebar's width — the grid still earns its keep should
    this content ever sit somewhere wider (e.g. printed output). */
-.examples-grid,
-.formula-grid {
+.examples-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 6px var(--sp-5);
-}
-.formula-grid {
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: var(--sp-3) var(--sp-4);
-  margin: 0;
-  align-items: start;
 }
 
 /* The calculator directory, kept as one compact list. */
@@ -1515,6 +1508,18 @@ button {
 .setting-row > .segmented {
   width: min(100%, 280px);
 }
+.setting-subrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding-top: 4px;
+}
+.setting-subrow > .field-label {
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
 .setting-hint {
   font-size: 0.82rem;
   color: var(--ink-3);
@@ -1607,6 +1612,74 @@ button {
   font-size: 0.64rem;
   font-weight: 600;
   color: var(--ink-2);
+}
+
+.sidebar-tool {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.sidebar-tool-hint {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.sidebar-tool-input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--control-radius);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.check-result {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.check-correct {
+  color: var(--success, #16734a);
+}
+.check-incorrect {
+  color: var(--danger, #a33a32);
+}
+.check-unrecognised {
+  color: var(--ink-2);
+}
+.practice-subject {
+  color: var(--ink-3);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.practice-prompt {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+.practice-answer {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--bg-tint);
+  border-radius: var(--control-radius);
+  text-align: center;
+}
+.practice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.practice-actions .btn,
+.practice-actions .btn-primary {
+  width: auto;
+  flex: 1 1 0;
+  padding: 8px 9px;
+  font-size: 0.78rem;
 }
 
 /* KaTeX sizing ------------------------------------------------------------ */

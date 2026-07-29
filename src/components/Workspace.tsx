@@ -10,7 +10,7 @@ import { solvers, getSolver } from '../lib/engine/registry';
 import { interpret, runWorked, type Worked } from '../lib/engine/run';
 import { hasMethodChoice } from '../lib/engine/methods';
 import type { SolveResult, Solver } from '../lib/engine/types';
-import type { ThemeId, RevealMode, TextSize } from '../lib/ui';
+import type { ThemeId, RevealMode, TextSize, DisplayMode } from '../lib/ui';
 import {
   loadHistory,
   pushHistory,
@@ -19,6 +19,7 @@ import {
   encodeShare,
   shareUrl,
   type HistoryEntry,
+  type ShareState,
 } from '../lib/history';
 import { TopicMethodPicker } from './TopicMethodPicker';
 import { ProblemInput } from './ProblemInput';
@@ -49,6 +50,19 @@ const CompareMethods = lazy(() =>
  */
 type Pin = { solverId: string; methodId: string } | null;
 
+function pinFromShare(state: ShareState | null): Pin {
+  if (!state?.solverId) return null;
+  const solver = getSolver(state.solverId);
+  if (!solver) return null;
+  const method = solver.methods.find(
+    (candidate) => candidate.id === state.methodId,
+  );
+  return {
+    solverId: solver.id,
+    methodId: method?.id ?? solver.defaultMethodId,
+  };
+}
+
 export function Workspace({
   revealMode,
   onRevealMode,
@@ -64,6 +78,8 @@ export function Workspace({
   onTextSize,
   showPalette,
   onShowPalette,
+  displayMode = 'exact',
+  onDisplayMode = () => undefined,
   resetKey = 0,
 }: {
   revealMode: RevealMode;
@@ -80,26 +96,28 @@ export function Workspace({
   onTextSize: (s: TextSize) => void;
   showPalette: boolean;
   onShowPalette: (show: boolean) => void;
+  displayMode?: DisplayMode;
+  onDisplayMode?: (mode: DisplayMode) => void;
   resetKey?: number;
 }) {
   const shared =
     typeof window !== 'undefined' ? decodeShare(window.location.hash) : null;
-  const sharedSolver = getSolver(shared?.solverId ?? '');
+  const sharedPin = pinFromShare(shared);
+  const sharedSolver = sharedPin ? getSolver(sharedPin.solverId) : undefined;
 
-  const [pin, setPin] = useState<Pin>(
-    sharedSolver
-      ? { solverId: sharedSolver.id, methodId: shared?.methodId ?? '' }
-      : null,
+  const [pin, setPin] = useState<Pin>(sharedPin);
+  const [solverId, setSolverId] = useState(
+    sharedPin?.solverId ?? solvers[0].id,
   );
-  const [solverId, setSolverId] = useState(sharedSolver?.id ?? solvers[0].id);
   const [methodId, setMethodId] = useState(
-    shared?.methodId ??
+    sharedPin?.methodId ??
       sharedSolver?.defaultMethodId ??
       solvers[0].defaultMethodId,
   );
   const [input, setInput] = useLocalStorage<string>(
     'longhand.draft',
     shared?.input ?? '',
+    { preferInitial: Boolean(shared?.input) },
   );
   const [worked, setWorked] = useState<Worked | null>(null);
   const [partMethodOverrides, setPartMethodOverrides] = useState<
@@ -216,7 +234,16 @@ export function Workspace({
 
   // Restore a shared link on first load.
   useEffect(() => {
-    if (shared?.input) solveWith(shared.input, pin);
+    if (shared?.input) {
+      const sharedPin = pinFromShare(shared);
+      setPin(sharedPin);
+      if (sharedPin) {
+        setSolverId(sharedPin.solverId);
+        setMethodId(sharedPin.methodId);
+      }
+      setInput(shared.input);
+      solveWith(shared.input, sharedPin);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -229,10 +256,7 @@ export function Workspace({
     function onHashChange() {
       const next = decodeShare(window.location.hash);
       if (!next?.input) return;
-      const nextSolver = getSolver(next?.solverId ?? '');
-      const pinned: Pin = nextSolver
-        ? { solverId: nextSolver.id, methodId: next.methodId ?? '' }
-        : null;
+      const pinned = pinFromShare(next);
       if (pinned) {
         setSolverId(pinned.solverId);
         setMethodId(
@@ -404,6 +428,18 @@ export function Workspace({
             onTextSize={onTextSize}
             showPalette={showPalette}
             onShowPalette={onShowPalette}
+            input={input}
+            worked={worked}
+            onOpenExample={(example) =>
+              loadImported(
+                example.solverId,
+                example.methodId ??
+                  getSolver(example.solverId)!.defaultMethodId,
+                example.input,
+              )
+            }
+            displayMode={displayMode}
+            onDisplayMode={onDisplayMode}
           />
         </Suspense>
       )}

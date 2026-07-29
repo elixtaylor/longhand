@@ -59,12 +59,36 @@ function addRoot(found: number[], candidate: number): void {
     found.push(candidate);
 }
 
-/** Find sign changes and exact grid hits, avoiding poles and undefined values. */
+function refineMinimum(f: Expr, left: number, right: number): number | null {
+  // Golden-section search catches repeated roots, which never change sign.
+  let a = left;
+  let b = right;
+  const phi = (1 + Math.sqrt(5)) / 2;
+  let c = b - (b - a) / phi;
+  let d = a + (b - a) / phi;
+  const absValue = (x: number) => {
+    const y = value(f, x);
+    return Number.isFinite(y) ? Math.abs(y) : Number.POSITIVE_INFINITY;
+  };
+  for (let i = 0; i < 45; i++) {
+    if (absValue(c) < absValue(d)) {
+      b = d;
+    } else {
+      a = c;
+    }
+    c = b - (b - a) / phi;
+    d = a + (b - a) / phi;
+  }
+  const x = (a + b) / 2;
+  return absValue(x) < 1e-7 ? x : null;
+}
+
+/** Find sign changes and repeated roots, avoiding poles and undefined values. */
 function numericalRoots(f: Expr): number[] {
   const roots: number[] = [];
-  const min = -100;
-  const max = 100;
-  const step = 0.25;
+  const min = -1000;
+  const max = 1000;
+  const step = 0.5;
   let previousX = min;
   let previous = value(f, previousX);
   for (let x = min + step; x <= max; x += step) {
@@ -74,6 +98,25 @@ function numericalRoots(f: Expr): number[] {
     if (
       Number.isFinite(previous) &&
       Number.isFinite(current) &&
+      Math.abs(previous) < 1e6 &&
+      Math.abs(current) < 1e6 &&
+      x < max - step
+    ) {
+      const next = value(f, x + step);
+      if (
+        Number.isFinite(next) &&
+        Math.abs(current) <= Math.abs(previous) &&
+        Math.abs(current) <= Math.abs(next)
+      ) {
+        const repeated = refineMinimum(f, x - step, x + step);
+        if (repeated !== null) addRoot(roots, repeated);
+      }
+    }
+    if (
+      Number.isFinite(previous) &&
+      Number.isFinite(current) &&
+      Math.abs(previous) < 1e6 &&
+      Math.abs(current) < 1e6 &&
       previous * current < 0
     ) {
       let left = previousX;
@@ -165,7 +208,7 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
   ];
   if (roots.length === 0) {
     steps.push({
-      note: 'No real root was found in the searched domain −100 ≤ x ≤ 100.',
+      note: 'No real root was located in the searched domain −1000 ≤ x ≤ 1000. This search cannot prove that no root exists elsewhere.',
       latex: '\\text{no real solutions}',
     });
     return {
@@ -174,7 +217,7 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
         headline: `Solve ${toLatex(left)} = ${toLatex(right)}`,
         methodName: 'Numerical equation solver',
         steps,
-        answerLatex: '\\text{no real solutions}',
+        answerLatex: '\\text{no root found in search domain}',
       },
     };
   }

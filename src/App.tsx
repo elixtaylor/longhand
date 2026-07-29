@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocalStorage } from './lib/useLocalStorage';
-import type { ThemeId, RevealMode, TextSize } from './lib/ui';
+import type { ThemeId, RevealMode, TextSize, DisplayMode } from './lib/ui';
 import { Workspace } from './components/Workspace';
+import { DisplayModeContext } from './components/TeX';
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'mono');
@@ -13,6 +14,10 @@ export default function App() {
   const [textSize, setTextSize] = useLocalStorage<TextSize>(
     'longhand.textSize',
     'md',
+  );
+  const [displayMode, setDisplayMode] = useLocalStorage<DisplayMode>(
+    'longhand.displayMode',
+    'exact',
   );
   const [showPalette, setShowPalette] = useLocalStorage<boolean>(
     'longhand.palette',
@@ -77,61 +82,65 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app">
-      <header className="masthead">
-        <div className="masthead-left">
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="Open menu"
-            aria-haspopup="dialog"
-            onClick={() => setSidebarOpen((o) => !o)}
-          >
-            {/* hamburger glyph — the drawer now holds calculators, formulas,
-                textbook questions and recent work, not just settings */}
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+    <DisplayModeContext.Provider value={displayMode}>
+      <div className="app">
+        <header className="masthead">
+          <div className="masthead-left">
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="Open menu"
+              aria-haspopup="dialog"
+              onClick={() => setSidebarOpen((o) => !o)}
             >
-              <path d="M3 6h18M3 12h18M3 18h18" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="wordmark"
-            aria-label="Longhand home, clear the current problem"
-            onClick={goHome}
-          >
-            <span className="wordmark-mark">L</span>
-            Longhand
-          </button>
-        </div>
-      </header>
+              {/* hamburger glyph — the drawer holds calculators, practice,
+                answer checking, textbook questions and settings */}
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 6h18M3 12h18M3 18h18" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="wordmark"
+              aria-label="Longhand home, clear the current problem"
+              onClick={goHome}
+            >
+              <span className="wordmark-mark">L</span>
+              Longhand
+            </button>
+          </div>
+        </header>
 
-      <Workspace
-        revealMode={revealMode}
-        onRevealMode={setRevealMode}
-        showNotes={showNotes}
-        onShowNotes={setShowNotes}
-        sidebarOpen={sidebarOpen}
-        onSidebarClose={closeSidebar}
-        theme={theme}
-        onTheme={setTheme}
-        dark={dark}
-        onDark={setDark}
-        textSize={textSize}
-        onTextSize={setTextSize}
-        showPalette={showPalette}
-        onShowPalette={setShowPalette}
-        resetKey={resetKey}
-      />
-    </div>
+        <Workspace
+          revealMode={revealMode}
+          onRevealMode={setRevealMode}
+          showNotes={showNotes}
+          onShowNotes={setShowNotes}
+          sidebarOpen={sidebarOpen}
+          onSidebarClose={closeSidebar}
+          theme={theme}
+          onTheme={setTheme}
+          dark={dark}
+          onDark={setDark}
+          textSize={textSize}
+          onTextSize={setTextSize}
+          showPalette={showPalette}
+          onShowPalette={setShowPalette}
+          resetKey={resetKey}
+          displayMode={displayMode}
+          onDisplayMode={setDisplayMode}
+        />
+      </div>
+    </DisplayModeContext.Provider>
   );
 }

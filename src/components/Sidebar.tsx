@@ -1,24 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Solver } from '../lib/engine/types';
-import type { ThemeId, RevealMode, TextSize } from '../lib/ui';
+import type { ThemeId, RevealMode, TextSize, DisplayMode } from '../lib/ui';
 import { CALCULATORS } from '../data/calculators';
 import { importedFor, sourceOf, type ImportedProblem } from '../data/imported';
 import { getSolver } from '../lib/engine/registry';
 import type { HistoryEntry } from '../lib/history';
 import { SettingsPanel } from './SettingsPanel';
+import { AnswerCheckPanel } from './AnswerCheckPanel';
+import { PracticePanel } from './PracticePanel';
+import type { Worked } from '../lib/engine/run';
+import type { Example } from '../data/examples';
 
 /**
- * The collapsible drawer that used to be the top ReferenceTabs strip plus the
- * gear-icon settings modal — now one place, opened from the masthead. An
- * compact utility sections keep calculators, textbook questions, recent work
- * and settings in one predictable vertical list.
+ * The collapsible drawer keeps calculators, practice, answer checking,
+ * textbook questions, recent work and settings in one compact list.
  *
  * Mounted only while open (see Workspace), same as the settings modal it
  * replaces — so this owns the scrim, Escape-to-close and focus-on-open it
  * used to own, and `onClose` is its only way out.
  */
 
-type SectionId = 'calculators' | 'textbook' | 'recent' | 'settings';
+type SectionId =
+  'calculators' | 'textbook' | 'recent' | 'check' | 'practice' | 'settings';
 
 export function Sidebar({
   onClose,
@@ -38,6 +41,11 @@ export function Sidebar({
   onTextSize,
   showPalette,
   onShowPalette,
+  input = '',
+  worked = null,
+  onOpenExample = () => undefined,
+  displayMode = 'exact',
+  onDisplayMode = () => undefined,
 }: {
   onClose: () => void;
   solver: Solver;
@@ -56,6 +64,11 @@ export function Sidebar({
   onTextSize: (s: TextSize) => void;
   showPalette: boolean;
   onShowPalette: (show: boolean) => void;
+  input?: string;
+  worked?: Worked | null;
+  onOpenExample?: (example: Example) => void;
+  displayMode?: DisplayMode;
+  onDisplayMode?: (mode: DisplayMode) => void;
 }) {
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -88,6 +101,8 @@ export function Sidebar({
       available: history.length > 0,
     },
     { id: 'settings', label: 'Settings', available: true },
+    { id: 'check', label: 'Check my answer', available: true },
+    { id: 'practice', label: 'Practice mode', available: true },
   ];
   const shown = sections.filter((s) => s.available);
 
@@ -306,7 +321,15 @@ export function Sidebar({
                       onTextSize={onTextSize}
                       showPalette={showPalette}
                       onShowPalette={onShowPalette}
+                      displayMode={displayMode}
+                      onDisplayMode={onDisplayMode}
                     />
+                  )}
+                  {s.id === 'check' && (
+                    <AnswerCheckPanel input={input} worked={worked} />
+                  )}
+                  {s.id === 'practice' && (
+                    <PracticePanel onOpenExample={onOpenExample} />
                   )}
                 </div>
               )}

@@ -6,8 +6,9 @@
 correct, step-by-step working — with your choice of method.
 
 Longhand computes every step itself with a purpose-built, deterministic engine. There is **no AI
-in the output**: the working is always exact (no arithmetic slips), it runs entirely in the
-browser, and it reads like real maths rather than generated prose.
+in the output**: the engine is deterministic (no generated arithmetic slips), it runs entirely in the
+browser, and it reads like real maths rather than generated prose. Exact answers can be switched
+to decimal display from Settings.
 
 ## Just ask in plain English
 
@@ -47,19 +48,23 @@ own, so the working shows the join: differentiate, solve what you differentiated
 
 - **Compare all methods** — every method for the same problem side by side, with a
   step count for each and a check that they agree. The whole point of the app, in one view.
-- **Reference tabs** at the top — formulas, textbook questions and recent work,
-  one click away instead of a scroll past the working.
+- **Compact sidebar** — calculators, textbook questions, recent work, practice mode,
+  answer checking and settings are one click away.
 - **Maths first** — the working shows lines only. **Why?**, top right, adds the reason
   for each line when you want it.
 - **No duplicate methods** — if two methods give identical working for your problem
   (solving `ln x = 5` is the same either way), only one is offered.
-- **Diagrams** — scale triangles, parabolas with roots and turning points marked, shaded
-  normal curves, box plots, and number lines for inequalities.
-- **Formula sheet** for the current topic, in the tab strip above the working.
+- **Data-driven visuals** — parabolas with roots and turning points marked, shaded normal
+  curves, box plots, and number lines for inequalities.
+- **Measurement units** — length units are converted consistently and answers carry the
+  correct linear, square or cubic dimension.
+- **Practice mode and answer checking** — generate a worked example, hide the answer, then
+  check your own response against the current solution.
 - **Shareable links** — every solve updates the URL, so you can send working to a
   classmate or hand it to a teacher.
 - **Recent problems**, kept locally so you can pick up where you left off.
-- **Light and dark**, with each theme keeping its own character after dark.
+- **Light and dark**, with Mono (black, grey and white) as the default theme, plus Editorial,
+  Notebook and Warm alternatives.
 - **Keyboard**: `/` jumps to the problem box, `,` opens settings.
 - **Print** produces a clean worked solution with the controls stripped out.
 
@@ -113,8 +118,9 @@ the SACE question genuinely combines topics.
 
 ## Design
 
-Three complete, switchable themes (Settings → Theme), default **Editorial**:
+Four complete, switchable themes (Settings → Theme), default **Mono**:
 
+- **Mono** — modern black, grey and white with a restrained accent.
 - **Editorial** — clean textbook: warm paper, serif headings, deep-teal accent.
 - **Notebook** — squared exercise-book paper with fountain-pen ink and red-pen annotations.
 - **Warm** — a friendly study-app look in cream and forest green.

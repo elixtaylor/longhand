@@ -6,14 +6,21 @@ import type { CurveData } from '../../lib/engine/visuals';
  * working produced.
  */
 export function CurveSketch({ data }: { data: CurveData }) {
-  const { coeffs, roots, yIntercept, turningPoints } = data;
-  const f = (x: number) =>
-    coeffs.reduce((sum, [p, c]) => sum + c * Math.pow(x, p), 0);
+  const { coeffs = [], roots, yIntercept, turningPoints } = data;
+  const f = (x: number) => {
+    if (data.expression === 'sin') return Math.sin(x);
+    if (data.expression === 'cos') return Math.cos(x);
+    if (data.expression === 'tan') return Math.tan(x);
+    if (data.expression === 'exp') return Math.exp(x);
+    if (data.expression === 'ln') return Math.log(x);
+    if (data.expression === 'reciprocal') return 1 / x;
+    return coeffs.reduce((sum, [p, c]) => sum + c * Math.pow(x, p), 0);
+  };
 
   // Frame the interesting part of the curve: every marked feature, padded.
   const xsOfInterest = [...roots, ...turningPoints.map((t) => t.x), 0];
-  const xMinRaw = Math.min(...xsOfInterest);
-  const xMaxRaw = Math.max(...xsOfInterest);
+  const xMinRaw = data.xDomain?.[0] ?? Math.min(...xsOfInterest);
+  const xMaxRaw = data.xDomain?.[1] ?? Math.max(...xsOfInterest);
   const spanRaw = Math.max(xMaxRaw - xMinRaw, 2);
   const xMin = xMinRaw - spanRaw * 0.35;
   const xMax = xMaxRaw + spanRaw * 0.35;
@@ -25,7 +32,11 @@ export function CurveSketch({ data }: { data: CurveData }) {
     pts.push({ x, y: f(x) });
   }
 
-  const ysOfInterest = [...turningPoints.map((t) => t.y), yIntercept, 0];
+  const ysOfInterest = [
+    ...turningPoints.map((t) => t.y),
+    ...(Number.isFinite(yIntercept) ? [yIntercept] : []),
+    0,
+  ];
   let yMin = Math.min(...ysOfInterest, ...pts.map((p) => p.y));
   let yMax = Math.max(...ysOfInterest, ...pts.map((p) => p.y));
   // Keep the vertical scale sane when the curve shoots off the top.
@@ -46,7 +57,11 @@ export function CurveSketch({ data }: { data: CurveData }) {
   // Clip the path where it leaves the visible band.
   const path = pts
     .map((p, i) => {
-      const inside = p.y >= yMin && p.y <= yMax;
+      const inside =
+        Number.isFinite(p.y) &&
+        p.y >= yMin &&
+        p.y <= yMax &&
+        (i === 0 || Math.abs(p.y - pts[i - 1].y) < (yMax - yMin) * 5);
       if (!inside) return null;
       const prevInside = i > 0 && pts[i - 1].y >= yMin && pts[i - 1].y <= yMax;
       return `${prevInside ? 'L' : 'M'}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`;
@@ -56,6 +71,10 @@ export function CurveSketch({ data }: { data: CurveData }) {
 
   const showXAxis = yMin <= 0 && yMax >= 0;
   const showYAxis = xMin <= 0 && xMax >= 0;
+  const showYIntercept =
+    Number.isFinite(yIntercept) &&
+    data.expression !== 'ln' &&
+    data.expression !== 'reciprocal';
 
   return (
     <div className="viz-scroll">
@@ -76,7 +95,7 @@ export function CurveSketch({ data }: { data: CurveData }) {
             className="diagram-axis"
           />
         )}
-        {showYAxis && (
+        {showYAxis && showYIntercept && (
           <line
             x1={sx(0)}
             y1={PAD / 2}

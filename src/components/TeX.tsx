@@ -1,5 +1,9 @@
-import { useMemo } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import katex from 'katex';
+import { decimaliseLatex } from '../lib/math/display';
+import type { DisplayMode } from '../lib/ui';
+
+export const DisplayModeContext = createContext<DisplayMode>('exact');
 
 /** Render a LaTeX string to KaTeX HTML (never throws — shows the source on error). */
 export function texToHtml(tex: string, display: boolean): string {
@@ -20,7 +24,9 @@ export function TeX({
   display?: boolean;
   className?: string;
 }) {
-  const html = useMemo(() => texToHtml(tex, display), [tex, display]);
+  const displayMode = useContext(DisplayModeContext);
+  const shown = displayMode === 'decimal' ? decimaliseLatex(tex) : tex;
+  const html = useMemo(() => texToHtml(shown, display), [shown, display]);
   return (
     <span className={className} dangerouslySetInnerHTML={{ __html: html }} />
   );

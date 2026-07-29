@@ -40,8 +40,36 @@ const angleSumSteps: Step[] = [
   },
 ];
 
+function triangleNames(input: string): { first: string; second: string } {
+  const named = input.match(
+    /triangles?\s+([A-Z]{3})\s+(?:and|&|,)\s+([A-Z]{3})/,
+  );
+  if (named)
+    return { first: named[1].toUpperCase(), second: named[2].toUpperCase() };
+  const one = input.match(/triangle\s+([A-Z]{3})/)?.[1];
+  return { first: one?.toUpperCase() ?? 'ABC', second: 'DEF' };
+}
+
+function angleSumFor(input: string): Step[] {
+  const [a, b, c] = triangleNames(input).first.split('');
+  return angleSumSteps.map((step) => ({
+    ...step,
+    note: step.note?.replace(/\bA\b|\bB\b|\bC\b/g, (label) =>
+      label === 'A' ? a : label === 'B' ? b : c,
+    ),
+    latex: step.latex?.replace(/\bA\b|\bB\b|\bC\b/g, (label) =>
+      label === 'A' ? a : label === 'B' ? b : c,
+    ),
+  }));
+}
+
 function parallelSteps(input: string): { steps: Step[]; answer: string } {
   const text = input.toLowerCase();
+  const lines = input.match(
+    /\b([a-z])\s*(?:\|\||parallel(?:\s+to)?)\s*([a-z])\b/i,
+  );
+  const lineA = lines?.[1] ?? 'l';
+  const lineB = lines?.[2] ?? 'm';
   const coInterior = /co-interior|cointerior|same[- ]side/.test(text);
   const corresponding = /corresponding/.test(text);
   if (coInterior) {
@@ -49,7 +77,7 @@ function parallelSteps(input: string): { steps: Step[]; answer: string } {
       steps: [
         {
           note: 'Let two parallel lines be cut by a transversal.',
-          latex: 'l \\parallel m',
+          latex: `${lineA} \\parallel ${lineB}`,
         },
         {
           note: 'Co-interior angles on the same side of a transversal are supplementary.',
@@ -69,7 +97,7 @@ function parallelSteps(input: string): { steps: Step[]; answer: string } {
     steps: [
       {
         note: 'Let two parallel lines be cut by a transversal.',
-        latex: 'l \\parallel m',
+        latex: `${lineA} \\parallel ${lineB}`,
       },
       {
         note: `Use ${reason}: angles in matching positions are equal.`,
@@ -92,8 +120,8 @@ function solveProof(kind: ProofKind, input: string): SolveResult {
       solution: {
         headline: 'Prove the angle sum of a triangle',
         methodName: 'Parallel-line proof',
-        steps: angleSumSteps,
-        answerLatex: 'A + B + C = 180^{\\circ}',
+        steps: angleSumFor(input),
+        answerLatex: `${triangleNames(input).first.split('').join(' + ')} = 180^{\\circ}`,
       },
     };
   }
@@ -110,45 +138,72 @@ function solveProof(kind: ProofKind, input: string): SolveResult {
     };
   }
   if (kind === 'isosceles') {
+    const triangle = triangleNames(input).first;
+    const [a, b, c] = triangle.split('');
+    const equality = input.match(/\b([A-Z]{2})\s*=\s*([A-Z]{2})\b/i);
+    const equalSides = equality
+      ? [equality[1].toUpperCase(), equality[2].toUpperCase()]
+      : [`${a}${b}`, `${a}${c}`];
+    const apex =
+      equalSides[0][0] === equalSides[1][0]
+        ? equalSides[0][0]
+        : equalSides[0][1] === equalSides[1][1]
+          ? equalSides[0][1]
+          : a;
+    const base = triangle.split('').filter((vertex) => vertex !== apex);
+    const baseEquality = `\\angle ${apex}${base[0]}${base[1]} = \\angle ${base[0]}${base[1]}${apex}`;
     return {
       ok: true,
       solution: {
         headline: 'Prove the base angles of an isosceles triangle are equal',
         methodName: 'Isosceles triangle proof',
         steps: [
-          { note: 'Let AB = AC in isosceles triangle ABC.', latex: 'AB = AC' },
+          {
+            note: `Let ${equalSides[0]} = ${equalSides[1]} in isosceles triangle ${triangle}.`,
+            latex: `${equalSides[0]} = ${equalSides[1]}`,
+          },
           {
             note: 'Draw the angle bisector AD to meet BC at D; AD is common to both triangles.',
-            latex: '\\angle BAD = \\angle DAC,\\quad AD = AD',
+            latex: `\\angle ${apex}${base[0]}D = \\angle D${apex}${base[1]},\\quad ${apex}D = ${apex}D`,
           },
           {
             note: 'The two smaller triangles have equal side, included angle, and side (SAS).',
-            latex: 'AB = AC,\\quad \\angle BAD = \\angle DAC,\\quad AD = AD',
+            latex: `${equalSides[0]} = ${equalSides[1]},\\quad \\angle ${apex}${base[0]}D = \\angle D${apex}${base[1]},\\quad ${apex}D = ${apex}D`,
           },
           {
             note: 'Therefore the two smaller triangles are congruent by SAS.',
-            latex: '\\triangle ABD \\cong \\triangle ACD \\quad (SAS)',
+            latex: `\\triangle ${apex}${base[0]}D \\cong \\triangle ${apex}${base[1]}D \\quad (SAS)`,
           },
           {
             note: 'Corresponding angles in congruent triangles are equal.',
-            latex: '\\boxed{\\angle ABC = \\angle BCA}',
+            latex: `\\boxed{${baseEquality}}`,
             annotation: 'proved',
           },
         ],
-        answerLatex: '\\angle ABC = \\angle BCA',
+        answerLatex: baseEquality,
       },
     };
   }
   const criterion =
     input.match(/\b(sss|sas|asa|aas|rhs)\b/i)?.[1]?.toUpperCase() ?? 'SSS';
+  const { first, second } = triangleNames(input);
+  const [a, b, c] = first.split('');
+  const [d, e, f] = second.split('');
+  const explicit = [
+    ...input.matchAll(
+      /(?:angle\s*)?([A-Z]{1,2})\s*=\s*(?:angle\s*)?([A-Z]{1,2})/gi,
+    ),
+  ].map((match) => `${match[1].toUpperCase()} = ${match[2].toUpperCase()}`);
   const given =
-    criterion === 'SAS'
-      ? 'AB = DE,\\quad \\angle B = \\angle E,\\quad BC = EF'
-      : criterion === 'ASA' || criterion === 'AAS'
-        ? '\\angle A = \\angle D,\\quad AB = DE,\\quad \\angle B = \\angle E'
-        : criterion === 'RHS'
-          ? '\\angle B = \\angle E = 90^{\\circ},\\quad AC = DF,\\quad AB = DE'
-          : 'AB = DE,\\quad BC = EF,\\quad AC = DF';
+    explicit.length >= 3
+      ? explicit.slice(0, 3).join(',\\quad ')
+      : criterion === 'SAS'
+        ? `${a}${b} = ${d}${e},\\quad \\angle ${b} = \\angle ${e},\\quad ${b}${c} = ${e}${f}`
+        : criterion === 'ASA' || criterion === 'AAS'
+          ? `\\angle ${a} = \\angle ${d},\\quad ${a}${b} = ${d}${e},\\quad \\angle ${b} = \\angle ${e}`
+          : criterion === 'RHS'
+            ? `\\angle ${b} = \\angle ${e} = 90^{\\circ},\\quad ${a}${c} = ${d}${f},\\quad ${a}${b} = ${d}${e}`
+            : `${a}${b} = ${d}${e},\\quad ${b}${c} = ${e}${f},\\quad ${a}${c} = ${d}${f}`;
   return {
     ok: true,
     solution: {
@@ -161,16 +216,15 @@ function solveProof(kind: ProofKind, input: string): SolveResult {
         },
         {
           note: `The triangles satisfy the ${criterion} congruence criterion.`,
-          latex: `\\triangle ABC \\cong \\triangle DEF \\quad (${criterion})`,
+          latex: `\\triangle ${first} \\cong \\triangle ${second} \\quad (${criterion})`,
         },
         {
           note: 'Therefore all corresponding sides and angles are equal.',
-          latex:
-            '\\angle A = \\angle D,\\quad \\angle B = \\angle E,\\quad \\angle C = \\angle F',
+          latex: `\\angle ${a} = \\angle ${d},\\quad \\angle ${b} = \\angle ${e},\\quad \\angle ${c} = \\angle ${f}`,
           annotation: 'proved',
         },
       ],
-      answerLatex: '\\triangle ABC \\cong \\triangle DEF',
+      answerLatex: `\\triangle ${first} \\cong \\triangle ${second}`,
     },
   };
 }

@@ -38,6 +38,13 @@ export function runSolve(
   raw: string,
   methodId: string,
 ): SolveResult {
+  // Measurement inputs carry dimensional units which the general prose
+  // normaliser intentionally strips. Give that solver the raw form first so
+  // `r=5 cm` can be converted rather than silently becoming unitless.
+  if (solver.id === 'measurement') {
+    const original = solver.solve(raw, methodId);
+    if (original.ok) return original;
+  }
   const { text } = normalise(raw);
   const first = solver.solve(text, methodId);
   if (first.ok) return first;

@@ -3,6 +3,7 @@ import {
   type ThemeId,
   type RevealMode,
   type TextSize,
+  type DisplayMode,
 } from '../lib/ui';
 
 /**
@@ -20,6 +21,8 @@ export function SettingsPanel({
   onTextSize,
   showPalette,
   onShowPalette,
+  displayMode = 'exact',
+  onDisplayMode = () => undefined,
 }: {
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
@@ -31,6 +34,8 @@ export function SettingsPanel({
   onTextSize: (s: TextSize) => void;
   showPalette: boolean;
   onShowPalette: (show: boolean) => void;
+  displayMode?: DisplayMode;
+  onDisplayMode?: (mode: DisplayMode) => void;
 }) {
   return (
     <div className="settings-fields">
@@ -122,6 +127,25 @@ export function SettingsPanel({
           >
             One at a time
           </button>
+        </div>
+        <div className="setting-subrow">
+          <span className="field-label">Number format</span>
+          <div className="segmented" role="group" aria-label="Number format">
+            <button
+              type="button"
+              aria-pressed={displayMode === 'exact'}
+              onClick={() => onDisplayMode('exact')}
+            >
+              Exact
+            </button>
+            <button
+              type="button"
+              aria-pressed={displayMode === 'decimal'}
+              onClick={() => onDisplayMode('decimal')}
+            >
+              Decimal
+            </button>
+          </div>
         </div>
       </div>
 

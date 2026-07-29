@@ -14,12 +14,15 @@ function mTex(m: Matrix, dp = 4): string {
 function parseMatrix(s: string): Matrix {
   const rows = [...s.matchAll(/\[([^\][]*)\]/g)].map((m) => m[1]);
   if (rows.length === 0) throw new Error('Write matrices like  [[1,2],[3,4]].');
-  const out = rows.map((r) =>
-    r
-      .split(',')
-      .map((x) => Number(x.trim()))
-      .filter((x) => !Number.isNaN(x)),
-  );
+  const out = rows.map((r) => {
+    const tokens = r.split(',').map((x) => x.trim());
+    if (tokens.some((token) => token === ''))
+      throw new Error('Matrix entries cannot be empty.');
+    const values = tokens.map(Number);
+    if (values.some((value) => !Number.isFinite(value)))
+      throw new Error('Every matrix entry must be a finite number.');
+    return values;
+  });
   const width = out[0].length;
   if (width === 0 || out.some((r) => r.length !== width)) {
     throw new Error('Every row of a matrix needs the same number of entries.');

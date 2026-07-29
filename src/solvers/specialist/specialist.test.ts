@@ -201,6 +201,11 @@ describe('matricesSolver', () => {
       matricesSolver.solve('[[1,2],[3,4]] * [[1,2,3]]', 'standard').ok,
     ).toBe(false);
   });
+  it('rejects malformed entries instead of silently dropping them', () => {
+    const result = matricesSolver.solve('[[1,broken],[3,4]]', 'standard');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain('finite number');
+  });
 });
 
 describe('inductionSolver', () => {

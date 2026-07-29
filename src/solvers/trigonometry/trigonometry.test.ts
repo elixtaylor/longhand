@@ -162,6 +162,12 @@ describe('trigEquationSolver', () => {
   it('rejects an impossible sine value', () => {
     expect(trigEquationSolver.solve('sin x = 2', 'unit-circle').ok).toBe(false);
   });
+
+  it('solves in radians rather than appending a conversion to degree answers', () => {
+    expect(ans(trigEquationSolver, 'sin x = 0.5 radians', 'unit-circle')).toBe(
+      'x = \\dfrac{\\pi}{6},\\; x = \\dfrac{5\\pi}{6}',
+    );
+  });
 });
 
 describe('measurementSolver', () => {
@@ -191,5 +197,10 @@ describe('measurementSolver', () => {
   it('asks for the missing measurement', () => {
     const r = measurementSolver.solve('cylinder r=3', 'auto');
     expect(r.ok).toBe(false);
+  });
+  it('converts dimensional inputs and labels the result', () => {
+    const r = measurementSolver.solve('rectangle l=2 m, w=30 cm area', 'area');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.solution.answerLatex).toContain('\\mathrm{m}^{2}');
   });
 });

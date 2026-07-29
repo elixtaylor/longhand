@@ -19,6 +19,107 @@ function clean(input: string): string {
     .trim();
 }
 
+type AnalyticName = 'sin' | 'cos' | 'tan' | 'exp' | 'ln' | 'reciprocal';
+
+function analyticName(input: string): AnalyticName | null {
+  const s = input.toLowerCase().replace(/\s+/g, '');
+  if (/\b(?:sin\(?x\)?|y=sinx)\b/.test(s)) return 'sin';
+  if (/\b(?:cos\(?x\)?|y=cosx)\b/.test(s)) return 'cos';
+  if (/\b(?:tan\(?x\)?|y=tanx)\b/.test(s)) return 'tan';
+  if (/(?:e\^x|exp\(?x\)?)/.test(s)) return 'exp';
+  if (/(?:ln\(?x\)?|log\(?x\)?)/.test(s)) return 'ln';
+  if (/(?:1\/x|x\^-1)/.test(s)) return 'reciprocal';
+  return null;
+}
+
+function analyticSolution(name: AnalyticName): SolveResult {
+  const details: Record<
+    AnalyticName,
+    {
+      range: string;
+      features: string;
+      answer: string;
+      domain: [number, number];
+    }
+  > = {
+    sin: {
+      range: '-1 \\le y \\le 1',
+      features: 'period 2\\pi; zeros at x = n\\pi; maxima 1; minima -1',
+      answer: '\\text{Range }[-1,1],\\; \\text{period }2\\pi',
+      domain: [-2 * Math.PI, 2 * Math.PI],
+    },
+    cos: {
+      range: '-1 \\le y \\le 1',
+      features:
+        'period 2\\pi; zeros at x = \\dfrac{\\pi}{2}+n\\pi; maxima 1; minima -1',
+      answer: '\\text{Range }[-1,1],\\; \\text{period }2\\pi',
+      domain: [-2 * Math.PI, 2 * Math.PI],
+    },
+    tan: {
+      range: 'y \\in \\mathbb{R}',
+      features:
+        'period \\pi; zeros at x = n\\pi; vertical asymptotes x = \\dfrac{\\pi}{2}+n\\pi',
+      answer: '\\text{Range }\\mathbb{R},\\; \\text{period }\\pi',
+      domain: [-Math.PI, Math.PI],
+    },
+    exp: {
+      range: 'y > 0',
+      features:
+        'y-intercept (0,1); horizontal asymptote y = 0; increasing for all x',
+      answer: '\\text{Domain }\\mathbb{R},\\; \\text{Range }(0,\\infty)',
+      domain: [-4, 4],
+    },
+    ln: {
+      range: 'y \\in \\mathbb{R}',
+      features: 'x-intercept (1,0); vertical asymptote x = 0; domain x > 0',
+      answer: '\\text{Domain }x>0,\\; \\text{Range }\\mathbb{R}',
+      domain: [0.05, 5],
+    },
+    reciprocal: {
+      range: 'y \\ne 0',
+      features:
+        'vertical asymptote x = 0; horizontal asymptote y = 0; domain x \\ne 0',
+      answer: '\\text{Domain }x\\ne0,\\; \\text{Range }y\\ne0',
+      domain: [-5, 5],
+    },
+  };
+  const info = details[name];
+  const yIntercept = name === 'exp' ? 1 : name === 'cos' ? 1 : 0;
+  return {
+    ok: true,
+    solution: {
+      headline: `Sketch $y = ${name === 'exp' ? 'e^x' : name === 'reciprocal' ? '1/x' : `${name} x`}$`,
+      methodName: 'Key features',
+      steps: [
+        {
+          note: 'Write the function.',
+          latex: `f(x) = ${name === 'exp' ? 'e^x' : name === 'reciprocal' ? '\\dfrac{1}{x}' : `\\${name} x`}`,
+        },
+        { note: 'State the domain and range.', latex: `${info.range}` },
+        {
+          note: 'Identify the key features needed for a sketch.',
+          latex: info.features,
+        },
+        {
+          note: 'Putting those features together gives the sketch.',
+          visual: {
+            kind: 'curve',
+            data: {
+              expression: name,
+              roots: [],
+              yIntercept,
+              turningPoints: [],
+              xDomain: info.domain,
+            },
+          },
+          annotation: 'the sketch',
+        },
+      ],
+      answerLatex: info.answer,
+    },
+  };
+}
+
 export const functionsSolver: Solver = {
   id: 'functions',
   title: 'Sketching curves',
@@ -55,10 +156,12 @@ export const functionsSolver: Solver = {
       const wantsSketch = /\bsketch|\bgraph\b|key\s*features?/i.test(input);
       return wantsSketch ? 0.95 : 0.4;
     } catch {
-      return 0;
+      return analyticName(input) ? 0.88 : 0;
     }
   },
   solve(input): SolveResult {
+    const analytic = analyticName(input);
+    if (analytic) return analyticSolution(analytic);
     let p: Poly;
     try {
       p = parsePoly(clean(input), 'x');
@@ -74,10 +177,10 @@ export const functionsSolver: Solver = {
         ok: false,
         error: 'That is a constant — there is no curve to sketch.',
       };
-    if (deg > 4)
+    if (deg > 6)
       return {
         ok: false,
-        error: 'Sketching handles polynomials up to degree 4.',
+        error: 'Sketching handles polynomials up to degree 6.',
       };
 
     const fx = polyLatex(p);
@@ -130,6 +233,7 @@ export const functionsSolver: Solver = {
       });
 
       const d2 = differentiate(d1);
+      const d3 = deg >= 3 ? differentiate(d2) : null;
       steps.push({
         note: 'Differentiate again to classify each one.',
         latex: `f''(x) = ${polyLatex(d2)}`,
@@ -138,9 +242,14 @@ export const functionsSolver: Solver = {
       for (const x of stationary) {
         const y = evaluatePoly(p, x);
         const curvature = evaluatePoly(d2, x);
-        const kind =
-          Math.abs(curvature) < 1e-9
-            ? 'a possible point of inflection'
+        const isInflection =
+          Math.abs(curvature) < 1e-9 &&
+          d3 !== null &&
+          Math.abs(evaluatePoly(d3, x)) > 1e-8;
+        const kind = isInflection
+          ? 'a point of inflection'
+          : Math.abs(curvature) < 1e-9
+            ? 'a possible stationary inflection'
             : curvature > 0
               ? 'a minimum'
               : 'a maximum';
@@ -168,9 +277,17 @@ export const functionsSolver: Solver = {
       : lead > 0
         ? 'falls to the left, rises to the right'
         : 'rises to the left, falls to the right';
+    const leftLimit = even
+      ? lead > 0
+        ? '+\\infty'
+        : '-\\infty'
+      : lead > 0
+        ? '-\\infty'
+        : '+\\infty';
+    const rightLimit = lead > 0 ? '+\\infty' : '-\\infty';
     steps.push({
       note: `The leading term is $${fmt(lead)}x^{${deg}}$, so for large $|x|$ the curve ${endBehaviour}.`,
-      latex: `\\text{as } x \\to \\pm\\infty, \\; f(x) \\to ${even ? (lead > 0 ? '+\\infty' : '-\\infty') : '\\pm\\infty'}`,
+      latex: `x \\to -\\infty: f(x) \\to ${leftLimit}; \\quad x \\to +\\infty: f(x) \\to ${rightLimit}`,
       annotation: 'end behaviour',
     });
 
@@ -188,6 +305,12 @@ export const functionsSolver: Solver = {
         note: 'The axis of symmetry runs through the turning point.',
         latex: `x = ${fmt(vertexX, 4)}`,
         annotation: 'axis of symmetry',
+      });
+    } else if (deg === 1 || deg === 3) {
+      steps.push({
+        note: 'An odd-degree polynomial is continuous and unbounded in both directions.',
+        latex: `\\text{Domain: } x \\in \\mathbb{R}, \\quad \\text{Range: } y \\in \\mathbb{R}`,
+        annotation: 'domain and range',
       });
     } else {
       steps.push({

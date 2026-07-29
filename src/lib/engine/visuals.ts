@@ -11,6 +11,9 @@ export interface CurveData {
     y: number;
     kind: 'max' | 'min' | 'inflection';
   }>;
+  /** Optional named function for non-polynomial sketching. */
+  expression?: 'sin' | 'cos' | 'tan' | 'exp' | 'ln' | 'reciprocal';
+  xDomain?: [number, number];
 }
 
 /** A normal distribution with a shaded tail or interval. */
