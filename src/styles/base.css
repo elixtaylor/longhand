@@ -1679,9 +1679,13 @@ button {
 .page-shell {
   min-height: 100vh;
   min-height: 100dvh;
-  padding: var(--sp-5) var(--sp-6) var(--sp-7);
+  padding: 0 var(--sp-6) var(--sp-7);
   background: var(--bg);
   overflow-x: clip;
+}
+.page-shell > .graphing-header {
+  width: calc(100% + 2 * var(--sp-6));
+  margin-inline: calc(-1 * var(--sp-6));
 }
 .return-btn {
   flex: 0 0 auto;
@@ -2121,7 +2125,11 @@ button {
 }
 @media (max-width: 600px) {
   .page-shell {
-    padding: var(--sp-4);
+    padding: 0 var(--sp-4) var(--sp-4);
+  }
+  .page-shell > .graphing-header {
+    width: calc(100% + 2 * var(--sp-4));
+    margin-inline: calc(-1 * var(--sp-4));
   }
   .page-header {
     gap: var(--sp-3);
