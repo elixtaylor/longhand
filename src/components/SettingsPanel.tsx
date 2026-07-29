@@ -83,7 +83,7 @@ export function SettingsPanel({
 
   return (
     <div className="settings-fields">
-      <div className="setting-row">
+      <div className="setting-row setting-row-theme">
         <span className="field-label">Theme</span>
         <div className="theme-swatches">
           {THEMES.map((t) => (
@@ -154,7 +154,7 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className="setting-row">
+      <div className="setting-row setting-row-working">
         <span className="field-label">Working out</span>
         <div className="segmented" role="group" aria-label="Reveal mode">
           <button

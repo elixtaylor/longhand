@@ -250,7 +250,7 @@ function SettingsPage({
   onResetPreferences: () => void;
 }) {
   return (
-    <main className="page-shell">
+    <main className="page-shell settings-page">
       <header className="page-header">
         <button type="button" className="return-btn" onClick={onReturn}>
           ← Return
