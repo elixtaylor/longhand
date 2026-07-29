@@ -1653,15 +1653,8 @@ button {
 }
 .graphing-header-left {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--sp-4);
-}
-.graphing-header h1 {
-  margin-top: 2px;
-  font-family: var(--font-display);
-  font-size: 1.65rem;
-  font-weight: var(--display-weight);
-  letter-spacing: var(--display-tracking);
 }
 .graphing-kicker {
   color: var(--ink-3);
@@ -1936,9 +1929,6 @@ button {
   }
   .graphing-plot {
     min-height: 260px;
-  }
-  .graphing-header h1 {
-    font-size: 1.4rem;
   }
 }
 

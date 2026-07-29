@@ -399,10 +399,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
           >
             ← Return
           </button>
-          <div>
-            <span className="graphing-kicker">Longhand / Graphing</span>
-            <h1>Explore functions</h1>
-          </div>
+          <span className="graphing-kicker">Graphs and Equations</span>
         </div>
       </header>
       <main className="graphing-layout">
