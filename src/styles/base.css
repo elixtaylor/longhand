@@ -83,7 +83,7 @@ button {
 }
 .home-workspace > .masthead-menu {
   position: absolute;
-  top: 4px;
+  top: 6px;
   left: 0;
   z-index: 2;
 }
