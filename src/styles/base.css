@@ -1603,14 +1603,14 @@ button {
 .settings-page .setting-row-light,
 .settings-page .setting-row-number,
 .settings-page .setting-row-text,
-.settings-page .setting-row-reading,
-.settings-page .setting-row-notes {
+.settings-page .setting-row-working {
   grid-column: 1;
 }
-.settings-page .setting-row-working,
 .settings-page .setting-row-palette,
 .settings-page .setting-row-auto,
-.settings-page .setting-row-reduce {
+.settings-page .setting-row-reading,
+.settings-page .setting-row-reduce,
+.settings-page .setting-row-notes {
   grid-column: 2;
 }
 .settings-page .setting-reset-row {

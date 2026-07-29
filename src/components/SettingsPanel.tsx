@@ -127,26 +127,6 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className="setting-row setting-row-working">
-        <span className="field-label">Working out</span>
-        <div className="segmented" role="group" aria-label="Reveal mode">
-          <button
-            type="button"
-            aria-pressed={revealMode === 'all'}
-            onClick={() => onRevealMode('all')}
-          >
-            Show all steps
-          </button>
-          <button
-            type="button"
-            aria-pressed={revealMode === 'step'}
-            onClick={() => onRevealMode('step')}
-          >
-            One at a time
-          </button>
-        </div>
-      </div>
-
       <div className="setting-row setting-row-number">
         <span className="field-label">Number format</span>
         <div className="segmented" role="group" aria-label="Number format">
@@ -190,6 +170,26 @@ export function SettingsPanel({
             onClick={() => onTextSize('lg')}
           >
             Large
+          </button>
+        </div>
+      </div>
+
+      <div className="setting-row setting-row-working">
+        <span className="field-label">Working out</span>
+        <div className="segmented" role="group" aria-label="Reveal mode">
+          <button
+            type="button"
+            aria-pressed={revealMode === 'all'}
+            onClick={() => onRevealMode('all')}
+          >
+            Show all steps
+          </button>
+          <button
+            type="button"
+            aria-pressed={revealMode === 'step'}
+            onClick={() => onRevealMode('step')}
+          >
+            One at a time
           </button>
         </div>
       </div>
