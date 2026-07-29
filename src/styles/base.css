@@ -9,9 +9,12 @@
 }
 html {
   -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--font-ui);
   font-size: 16px;
   line-height: 1.55;
@@ -19,6 +22,8 @@ body {
   background-color: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
 }
 button,
 input,
@@ -44,8 +49,10 @@ button {
 /* App shell --------------------------------------------------------------- */
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr;
+  overflow-x: clip;
 }
 
 .masthead {
@@ -1336,7 +1343,9 @@ button {
 .sidebar-panel {
   width: min(312px, 90vw);
   height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border-right: 1px solid var(--line-strong);
   box-shadow: 8px 0 24px -20px rgba(0, 0, 0, 0.5);
@@ -1616,8 +1625,10 @@ button {
 /* Standalone pages -------------------------------------------------------- */
 .page-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--sp-5) var(--sp-6) var(--sp-7);
   background: var(--bg);
+  overflow-x: clip;
 }
 .return-btn {
   flex: 0 0 auto;
@@ -1719,7 +1730,9 @@ button {
   position: fixed;
   inset: 0;
   z-index: 60;
-  overflow: auto;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: none;
   background: var(--bg);
   color: var(--ink);
   animation: graphing-enter 0.18s var(--ease);
