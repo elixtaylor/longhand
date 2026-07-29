@@ -137,31 +137,6 @@ export default function App() {
                 Longhand
               </button>
             </div>
-            <div className="masthead-nav">
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="Open menu"
-                aria-haspopup="dialog"
-                onClick={() => setSidebarOpen((o) => !o)}
-              >
-                {/* hamburger glyph — the drawer holds calculators, textbook
-                questions, recent work and settings */}
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M3 6h18M3 12h18M3 18h18" />
-                </svg>
-              </button>
-            </div>
           </header>
         )}
 
@@ -219,6 +194,7 @@ export default function App() {
             onShowNotes={setShowNotes}
             sidebarOpen={sidebarOpen}
             onSidebarClose={closeSidebar}
+            onSidebarToggle={() => setSidebarOpen((open) => !open)}
             theme={theme}
             onTheme={setTheme}
             dark={dark}

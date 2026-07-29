@@ -71,6 +71,7 @@ export function Workspace({
   onShowNotes,
   sidebarOpen,
   onSidebarClose,
+  onSidebarToggle = () => undefined,
   theme,
   onTheme,
   dark,
@@ -95,6 +96,7 @@ export function Workspace({
   onShowNotes: (v: boolean) => void;
   sidebarOpen: boolean;
   onSidebarClose: () => void;
+  onSidebarToggle?: () => void;
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
   dark: boolean;
@@ -460,104 +462,127 @@ export function Workspace({
         <p className="sr-only" role="status">
           {copyMessage}
         </p>
-        <aside className="controls">
-          <section className="panel">
-            {structuredMethod ? (
-              <StructuredInputForm
-                // Remount whenever the field *set* changes (not on every
-                // method switch) — see StructuredInputForm's own doc comment
-                // for why an effect-based reset isn't safe here.
-                key={structuredMethod.fields!.map((f) => f.id).join('|')}
-                method={structuredMethod}
-                solver={solver}
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'vector' ? (
-              <VectorOperationForm
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'complex' ? (
-              <ComplexOperationForm
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-                onOperationChange={(id) => {
-                  if (id !== methodId) chooseMethod(id);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'probability' ? (
-              <ProbabilityOperationForm
-                onOperationChange={(id) => {
-                  if (id !== methodId) chooseMethod(id);
-                }}
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  commit(input, pin);
-                }}
-              >
-                <ProblemInput
-                  value={input}
-                  onChange={(v) => {
-                    // A new question is a new question: stop forcing the topic and
-                    // method that were chosen for the last one.
-                    setInput(v.slice(0, MAX_INPUT_LENGTH));
-                    setPin(null);
-                    setPartMethodOverrides({});
+        <div className="worksheet-input-row">
+          <button
+            type="button"
+            className="icon-btn worksheet-menu"
+            aria-label="Open menu"
+            aria-haspopup="dialog"
+            onClick={onSidebarToggle}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 6h18M3 12h18M3 18h18" />
+            </svg>
+          </button>
+          <aside className="controls">
+            <section className="panel">
+              {structuredMethod ? (
+                <StructuredInputForm
+                  // Remount whenever the field *set* changes (not on every
+                  // method switch) — see StructuredInputForm's own doc comment
+                  // for why an effect-based reset isn't safe here.
+                  key={structuredMethod.fields!.map((f) => f.id).join('|')}
+                  method={structuredMethod}
+                  solver={solver}
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
                   }}
-                  placeholder="e.g. x^2 + 5x + 6 = 0"
-                  preview={reading}
-                  showPalette={showPalette}
                 />
+              ) : pin && activeMethod?.opForm === 'vector' ? (
+                <VectorOperationForm
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                />
+              ) : pin && activeMethod?.opForm === 'complex' ? (
+                <ComplexOperationForm
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                  onOperationChange={(id) => {
+                    if (id !== methodId) chooseMethod(id);
+                  }}
+                />
+              ) : pin && activeMethod?.opForm === 'probability' ? (
+                <ProbabilityOperationForm
+                  onOperationChange={(id) => {
+                    if (id !== methodId) chooseMethod(id);
+                  }}
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                />
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    commit(input, pin);
+                  }}
+                >
+                  <ProblemInput
+                    value={input}
+                    onChange={(v) => {
+                      // A new question is a new question: stop forcing the topic and
+                      // method that were chosen for the last one.
+                      setInput(v.slice(0, MAX_INPUT_LENGTH));
+                      setPin(null);
+                      setPartMethodOverrides({});
+                    }}
+                    placeholder="e.g. x^2 + 5x + 6 = 0"
+                    preview={reading}
+                    showPalette={showPalette}
+                  />
 
-                {showReading && reading && (
-                  <p className="reading" role="status">
-                    <span className="reading-label">Read as</span>
-                    <code className="reading-text">{reading}</code>
-                  </p>
-                )}
+                  {showReading && reading && (
+                    <p className="reading" role="status">
+                      <span className="reading-label">Read as</span>
+                      <code className="reading-text">{reading}</code>
+                    </p>
+                  )}
 
-                {/* Name the topics and nothing else. Once a question has been
+                  {/* Name the topics and nothing else. Once a question has been
                   worked, use what it actually turned out to be: live detection
                   only ever sees one topic, so on a split question it would name
                   whichever half it liked best. */}
-                {topics.length > 0 && (
-                  <p className="detected" role="status">
-                    <span className="detected-dot" aria-hidden="true" />
-                    <strong>{topics.join(' → ')}</strong>
-                  </p>
-                )}
-                {unknown && (
-                  <p className="detected detected-unknown" role="status">
-                    Not sure what this one is yet — try rewording it.
-                  </p>
-                )}
+                  {topics.length > 0 && (
+                    <p className="detected" role="status">
+                      <span className="detected-dot" aria-hidden="true" />
+                      <strong>{topics.join(' → ')}</strong>
+                    </p>
+                  )}
+                  {unknown && (
+                    <p className="detected detected-unknown" role="status">
+                      Not sure what this one is yet — try rewording it.
+                    </p>
+                  )}
 
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  style={{ marginTop: 'var(--sp-3)' }}
-                  disabled={input.trim() === '' || (!detected && !pin)}
-                >
-                  Show the working
-                </button>
-              </form>
-            )}
-          </section>
-        </aside>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    style={{ marginTop: 'var(--sp-3)' }}
+                    disabled={input.trim() === '' || (!detected && !pin)}
+                  >
+                    Show the working
+                  </button>
+                </form>
+              )}
+            </section>
+          </aside>
+        </div>
 
         <section
           className="solution"
