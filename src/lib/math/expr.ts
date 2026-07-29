@@ -24,12 +24,48 @@ export type Expr =
 import { isProseWord } from '../nl/vocabulary';
 
 export type FnName =
-  'sin' | 'cos' | 'tan' | 'sec' | 'ln' | 'log' | 'exp' | 'sqrt';
+  | 'sin'
+  | 'cos'
+  | 'tan'
+  | 'sec'
+  | 'csc'
+  | 'cot'
+  | 'sinh'
+  | 'cosh'
+  | 'tanh'
+  | 'sech'
+  | 'arcsin'
+  | 'arccos'
+  | 'arctan'
+  | 'ln'
+  | 'log'
+  | 'exp'
+  | 'sqrt'
+  | 'abs';
 
 export class ExprError extends Error {}
 
-/** Functions a student can type. `sec` is produced by d(tan x) but not parsed. */
-const FUNCTIONS: FnName[] = ['sin', 'cos', 'tan', 'ln', 'log', 'exp', 'sqrt'];
+/** Functions accepted by the shared parser and used by the equation fallback. */
+const FUNCTIONS: FnName[] = [
+  'arcsin',
+  'arccos',
+  'arctan',
+  'sinh',
+  'cosh',
+  'tanh',
+  'sech',
+  'sqrt',
+  'abs',
+  'sin',
+  'cos',
+  'tan',
+  'sec',
+  'csc',
+  'cot',
+  'ln',
+  'log',
+  'exp',
+];
 
 export const num = (v: number): Expr => ({ t: 'num', v });
 export const variable = (name = 'x'): Expr => ({ t: 'var', name });
@@ -76,6 +112,11 @@ function tokenise(src: string): Token[] {
       // back a confident, wrong derivative.
       if (isProseWord(word)) {
         throw new ExprError(`“${word}” isn’t part of an expression.`);
+      }
+      if (word.toLowerCase() === 'pi') {
+        out.push({ k: 'id', v: 'π' });
+        i = j;
+        continue;
       }
       // "sinx" should read as sin(x), not a variable called "sinx" — and
       // "sinxcosx" as sin(x)cos(x), so scan the whole run rather than peeling
@@ -361,6 +402,24 @@ export function evaluateExpr(
           return Math.tan(v);
         case 'sec':
           return 1 / Math.cos(v);
+        case 'csc':
+          return 1 / Math.sin(v);
+        case 'cot':
+          return 1 / Math.tan(v);
+        case 'sinh':
+          return Math.sinh(v);
+        case 'cosh':
+          return Math.cosh(v);
+        case 'tanh':
+          return Math.tanh(v);
+        case 'sech':
+          return 1 / Math.cosh(v);
+        case 'arcsin':
+          return Math.asin(v);
+        case 'arccos':
+          return Math.acos(v);
+        case 'arctan':
+          return Math.atan(v);
         case 'ln':
           return Math.log(v);
         case 'log':
@@ -369,6 +428,8 @@ export function evaluateExpr(
           return Math.exp(v);
         case 'sqrt':
           return Math.sqrt(v);
+        case 'abs':
+          return Math.abs(v);
       }
     }
   }
@@ -490,6 +551,72 @@ export function differentiate(e: Expr): Expr {
               a: { t: 'fn', name: 'sec', a: u },
               b: { t: 'fn', name: 'tan', a: u },
             };
+          case 'csc':
+            return {
+              t: 'neg',
+              a: {
+                t: 'mul',
+                a: { t: 'fn', name: 'csc', a: u },
+                b: { t: 'fn', name: 'cot', a: u },
+              },
+            };
+          case 'cot':
+            return {
+              t: 'neg',
+              a: {
+                t: 'pow',
+                a: { t: 'fn', name: 'csc', a: u },
+                b: num(2),
+              },
+            };
+          case 'sinh':
+            return { t: 'fn', name: 'cosh', a: u };
+          case 'cosh':
+            return { t: 'fn', name: 'sinh', a: u };
+          case 'tanh':
+            return {
+              t: 'pow',
+              a: { t: 'fn', name: 'sech', a: u },
+              b: num(2),
+            };
+          case 'sech':
+            return {
+              t: 'neg',
+              a: {
+                t: 'mul',
+                a: { t: 'fn', name: 'sech', a: u },
+                b: { t: 'fn', name: 'tanh', a: u },
+              },
+            };
+          case 'arcsin':
+            return {
+              t: 'div',
+              a: num(1),
+              b: {
+                t: 'fn',
+                name: 'sqrt',
+                a: { t: 'sub', a: num(1), b: { t: 'pow', a: u, b: num(2) } },
+              },
+            };
+          case 'arccos':
+            return {
+              t: 'neg',
+              a: {
+                t: 'div',
+                a: num(1),
+                b: {
+                  t: 'fn',
+                  name: 'sqrt',
+                  a: { t: 'sub', a: num(1), b: { t: 'pow', a: u, b: num(2) } },
+                },
+              },
+            };
+          case 'arctan':
+            return {
+              t: 'div',
+              a: num(1),
+              b: { t: 'add', a: num(1), b: { t: 'pow', a: u, b: num(2) } },
+            };
           case 'exp':
             return { t: 'fn', name: 'exp', a: u };
           case 'ln':
@@ -510,6 +637,8 @@ export function differentiate(e: Expr): Expr {
               a: num(1),
               b: { t: 'mul', a: num(2), b: { t: 'fn', name: 'sqrt', a: u } },
             };
+          case 'abs':
+            return { t: 'div', a: u, b: { t: 'fn', name: 'abs', a: u } };
         }
       })();
       return { t: 'mul', a: outer, b: du };
@@ -547,10 +676,20 @@ const FN_TEX: Record<string, string> = {
   cos: '\\cos',
   tan: '\\tan',
   sec: '\\sec',
+  csc: '\\csc',
+  cot: '\\cot',
+  sinh: '\\sinh',
+  cosh: '\\cosh',
+  tanh: '\\tanh',
+  sech: '\\operatorname{sech}',
+  arcsin: '\\arcsin',
+  arccos: '\\arccos',
+  arctan: '\\arctan',
   ln: '\\ln',
   log: '\\log',
   exp: 'e',
   sqrt: '\\sqrt',
+  abs: '\\operatorname{abs}',
 };
 
 export function toLatex(e: Expr): string {
@@ -610,6 +749,7 @@ export function toLatex(e: Expr): string {
     case 'fn': {
       if (e.name === 'sqrt') return `\\sqrt{${toLatex(e.a)}}`;
       if (e.name === 'exp') return `e^{${toLatex(e.a)}}`;
+      if (e.name === 'abs') return `\\left|${toLatex(e.a)}\\right|`;
       return `${fnName(e)} ${fnArg(e.a)}`;
     }
   }

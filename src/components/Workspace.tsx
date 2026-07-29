@@ -62,6 +62,7 @@ export function Workspace({
   onDark,
   textSize,
   onTextSize,
+  resetKey = 0,
 }: {
   revealMode: RevealMode;
   onRevealMode: (m: RevealMode) => void;
@@ -75,6 +76,7 @@ export function Workspace({
   onDark: (d: boolean) => void;
   textSize: TextSize;
   onTextSize: (s: TextSize) => void;
+  resetKey?: number;
 }) {
   const shared =
     typeof window !== 'undefined' ? decodeShare(window.location.hash) : null;
@@ -106,6 +108,24 @@ export function Workspace({
   const hasSolved = useRef(false);
   const solutionRef = useRef<HTMLElement>(null);
   const scrollToSolution = useRef(false);
+
+  // The wordmark is a home/reset action. Keep preferences and history intact,
+  // but clear the active equation, method pin, working and shared-link state.
+  useEffect(() => {
+    if (resetKey === 0) return;
+    setPin(null);
+    setSolverId(solvers[0].id);
+    setMethodId(solvers[0].defaultMethodId);
+    setInput('');
+    setWorked(null);
+    setDetected(null);
+    setReading(null);
+    setComparing(false);
+    setCopied(false);
+    setCopyMessage('');
+    hasSolved.current = false;
+    scrollToSolution.current = false;
+  }, [resetKey, setInput]);
 
   /**
    * Work the question. With no pin the engine detects the topic itself and may
@@ -667,11 +687,6 @@ function SolutionView({
         <div className="empty-state">
           <div className="empty-glyph">∴</div>
           <h2>Your working will appear here</h2>
-          <p>
-            Type your problem and Longhand works out what topic it is, then
-            shows every line — worked out exactly, using the method you were
-            taught.
-          </p>
         </div>
       </div>
     );

@@ -28,6 +28,19 @@ export default function App() {
     false,
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  function goHome() {
+    setSidebarOpen(false);
+    setResetKey((key) => key + 1);
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}`,
+    );
+    window.requestAnimationFrame(() =>
+      document.getElementById('problem')?.focus(),
+    );
+  }
   const closeSidebar = () => {
     setSidebarOpen(false);
     window.requestAnimationFrame(() =>
@@ -65,10 +78,15 @@ export default function App() {
   return (
     <div className="app">
       <header className="masthead">
-        <div className="wordmark">
+        <button
+          type="button"
+          className="wordmark"
+          aria-label="Longhand home, clear the current problem"
+          onClick={goHome}
+        >
           <span className="wordmark-mark">L</span>
           Longhand
-        </div>
+        </button>
         <div className="masthead-meta">
           <button
             type="button"
@@ -109,6 +127,7 @@ export default function App() {
         onDark={setDark}
         textSize={textSize}
         onTextSize={setTextSize}
+        resetKey={resetKey}
       />
     </div>
   );

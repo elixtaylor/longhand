@@ -61,11 +61,16 @@ button {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  padding: 0;
+  text-align: left;
   font-family: var(--font-display);
   font-weight: var(--display-weight);
   letter-spacing: var(--display-tracking);
   font-size: 1.5rem;
   color: var(--ink);
+}
+.wordmark:hover .wordmark-mark {
+  background: var(--accent-tint, var(--bg-tint));
 }
 .wordmark-mark {
   display: inline-flex;

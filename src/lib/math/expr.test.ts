@@ -35,6 +35,12 @@ describe('parseExpr', () => {
     expect(evaluateExpr(parseExpr('π'))).toBeCloseTo(Math.PI, 10);
     expect(evaluateExpr(parseExpr('2*π'))).toBeCloseTo(2 * Math.PI, 10);
   });
+  it('reads inverse, reciprocal and hyperbolic functions', () => {
+    expect(show('arctan x')).toBe('\\arctan x');
+    expect(show('csc x')).toBe('\\csc x');
+    expect(show('sinh x')).toBe('\\sinh x');
+    expect(show('abs(x-2)')).toBe('\\left|x - 2\\right|');
+  });
   it('treats π as a constant when differentiating', () => {
     expect(d('π*x')).toBe('\\pi');
   });
@@ -53,6 +59,10 @@ describe('differentiate — standard results', () => {
     expect(d('sin x')).toBe('\\cos x');
     expect(d('cos x')).toBe('-\\sin x');
     expect(d('ln x')).toBe('\\dfrac{1}{x}');
+  });
+  it('differentiates inverse trig functions', () => {
+    expect(d('arctan x')).toContain('1');
+    expect(d('arcsin x')).toContain('\\sqrt');
   });
 });
 

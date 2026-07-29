@@ -54,4 +54,53 @@ describe('Workspace solution reveal', () => {
       block: 'start',
     });
   });
+
+  it('clears the active equation when the home reset signal changes', async () => {
+    const view = render(
+      <Workspace
+        revealMode="all"
+        onRevealMode={vi.fn()}
+        showNotes={false}
+        onShowNotes={vi.fn()}
+        sidebarOpen={false}
+        onSidebarClose={vi.fn()}
+        theme="notebook"
+        onTheme={vi.fn()}
+        dark={false}
+        onDark={vi.fn()}
+        textSize="md"
+        onTextSize={vi.fn()}
+        resetKey={0}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Your problem'), {
+      target: { value: '2x + 3 = 9' },
+    });
+    expect(
+      (screen.getByLabelText('Your problem') as HTMLInputElement).value,
+    ).toBe('2x + 3 = 9');
+
+    view.rerender(
+      <Workspace
+        revealMode="all"
+        onRevealMode={vi.fn()}
+        showNotes={false}
+        onShowNotes={vi.fn()}
+        sidebarOpen={false}
+        onSidebarClose={vi.fn()}
+        theme="notebook"
+        onTheme={vi.fn()}
+        dark={false}
+        onDark={vi.fn()}
+        textSize="md"
+        onTextSize={vi.fn()}
+        resetKey={1}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText('Your problem') as HTMLInputElement).value,
+      ).toBe(''),
+    );
+  });
 });

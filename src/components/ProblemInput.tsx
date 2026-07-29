@@ -40,7 +40,7 @@ export { isExpression };
  */
 function forPreview(text: string): string {
   return text.replace(
-    /\b(sin|cos|tan|sec|csc|cot|arcsin|arccos|arctan|sinh|cosh|tanh|ln|log|exp|det|min|max|lim)\b/g,
+    /\b(sin|cos|tan|sec|csc|cot|arcsin|arccos|arctan|sinh|cosh|tanh|sech|abs|ln|log|exp|det|min|max|lim|pi)\b/g,
     '\\$1 ',
   );
 }
