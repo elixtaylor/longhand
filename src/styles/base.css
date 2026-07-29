@@ -1336,14 +1336,6 @@ button {
     opacity: 0;
   }
 }
-[data-reduce-motion='on'] *,
-[data-reduce-motion='on'] *::before,
-[data-reduce-motion='on'] *::after {
-  animation-duration: 0.001ms !important;
-  animation-iteration-count: 1 !important;
-  scroll-behavior: auto !important;
-  transition-duration: 0.001ms !important;
-}
 .sidebar-panel {
   width: min(312px, 90vw);
   height: 100vh;
@@ -1604,8 +1596,7 @@ button {
 .settings-page .setting-row-light,
 .settings-page .setting-row-number,
 .settings-page .setting-row-text,
-.settings-page .setting-row-working,
-.settings-page .setting-row-reduce {
+.settings-page .setting-row-working {
   grid-column: 1;
 }
 .settings-page .setting-row-palette,
@@ -1638,15 +1629,12 @@ button {
 .settings-page .setting-row-reading {
   grid-row: 4;
 }
-.settings-page .setting-row-reduce {
-  grid-row: 6;
-}
 .settings-page .setting-row-notes {
   grid-row: 5;
 }
 .settings-page .setting-reset-row {
   grid-column: 1 / -1;
-  grid-row: 7;
+  grid-row: 6;
   min-height: 30px;
   padding: 10px 0 0;
   border-top: 1px solid var(--line);

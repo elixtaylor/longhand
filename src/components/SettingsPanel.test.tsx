@@ -19,7 +19,7 @@ describe('SettingsPanel compact layout', () => {
       />,
     );
 
-    expect(document.querySelectorAll('.setting-row')).toHaveLength(10);
+    expect(document.querySelectorAll('.setting-row')).toHaveLength(9);
     expect(document.querySelectorAll('.setting-hint')).toHaveLength(0);
     expect(screen.getByText('Theme')).toBeTruthy();
     expect(screen.getByText('Light or dark')).toBeTruthy();
@@ -28,7 +28,7 @@ describe('SettingsPanel compact layout', () => {
     expect(screen.getByText('Working out')).toBeTruthy();
     expect(screen.getByText('Auto-scroll to working')).toBeTruthy();
     expect(screen.getByText('Reading preview')).toBeTruthy();
-    expect(screen.getByText('Reduce motion')).toBeTruthy();
+    expect(screen.queryByText('Reduce motion')).toBeNull();
     expect(screen.getByText('Why explanations')).toBeTruthy();
     expect(
       screen

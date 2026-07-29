@@ -27,8 +27,6 @@ export function SettingsPanel({
   onAutoScroll = () => undefined,
   showReading = true,
   onShowReading = () => undefined,
-  reduceMotion = false,
-  onReduceMotion = () => undefined,
   showNotes = false,
   onShowNotes = () => undefined,
   onResetPreferences,
@@ -49,8 +47,6 @@ export function SettingsPanel({
   onAutoScroll?: (value: boolean) => void;
   showReading?: boolean;
   onShowReading?: (value: boolean) => void;
-  reduceMotion?: boolean;
-  onReduceMotion?: (value: boolean) => void;
   showNotes?: boolean;
   onShowNotes?: (value: boolean) => void;
   onResetPreferences?: () => void;
@@ -218,15 +214,6 @@ export function SettingsPanel({
           label="Reading preview"
           value={showReading}
           onChange={onShowReading}
-        />
-      </div>
-
-      <div className="setting-row setting-row-reduce">
-        <span className="field-label">Reduce motion</span>
-        <Switch
-          label="Reduce motion"
-          value={reduceMotion}
-          onChange={onReduceMotion}
         />
       </div>
 

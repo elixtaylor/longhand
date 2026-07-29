@@ -46,10 +46,6 @@ export default function App() {
     'longhand.reading',
     true,
   );
-  const [reduceMotion, setReduceMotion] = useLocalStorage<boolean>(
-    'longhand.reduceMotion',
-    false,
-  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [page, setPage] = useState<PageId>(() =>
     pageFromPath(window.location.pathname),
@@ -100,8 +96,7 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.dark = dark ? 'on' : 'off';
     document.documentElement.dataset.textSize = textSize;
-    document.documentElement.dataset.reduceMotion = reduceMotion ? 'on' : 'off';
-  }, [theme, dark, textSize, reduceMotion]);
+  }, [theme, dark, textSize]);
 
   // Keyboard shortcuts: "/" focuses the problem box, "," opens the menu.
   useEffect(() => {
@@ -192,8 +187,6 @@ export default function App() {
             onAutoScroll={setAutoScroll}
             showReading={showReading}
             onShowReading={setShowReading}
-            reduceMotion={reduceMotion}
-            onReduceMotion={setReduceMotion}
             showNotes={showNotes}
             onShowNotes={setShowNotes}
             onResetPreferences={() => {
@@ -205,7 +198,6 @@ export default function App() {
               setShowPalette(true);
               setAutoScroll(true);
               setShowReading(true);
-              setReduceMotion(false);
               setShowNotes(false);
             }}
           />
@@ -230,7 +222,6 @@ export default function App() {
             onDisplayMode={setDisplayMode}
             autoScroll={autoScroll}
             showReading={showReading}
-            reduceMotion={reduceMotion}
             onNavigatePage={navigate}
             pendingCalculator={pendingCalculator}
             onCalculatorHandled={() => setPendingCalculator(null)}

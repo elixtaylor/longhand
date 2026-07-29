@@ -83,7 +83,6 @@ export function Workspace({
   onDisplayMode = () => undefined,
   autoScroll = true,
   showReading = true,
-  reduceMotion = false,
   onNavigatePage = () => undefined,
   pendingCalculator = null,
   onCalculatorHandled = () => undefined,
@@ -107,7 +106,6 @@ export function Workspace({
   onDisplayMode?: (mode: DisplayMode) => void;
   autoScroll?: boolean;
   showReading?: boolean;
-  reduceMotion?: boolean;
   onNavigatePage?: (
     page: 'home' | 'graphing' | 'calculators' | 'settings',
   ) => void;
@@ -240,12 +238,12 @@ export function Workspace({
         window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ??
         false;
       solution.scrollIntoView({
-        behavior: reduceMotion || prefersReducedMotion ? 'auto' : 'smooth',
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
         block: 'start',
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [worked, reduceMotion]);
+  }, [worked]);
 
   // Restore a shared link on first load.
   useEffect(() => {
