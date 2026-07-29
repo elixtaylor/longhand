@@ -2,16 +2,19 @@ import { Component, cloneElement, isValidElement, type ReactNode } from 'react';
 
 interface State {
   failed: boolean;
-  recoveryAttempted: boolean;
+  recoveryKey: number;
+  showRecoveryNotice: boolean;
 }
 
 /** Recover malformed links or saved drafts without replacing the workspace. */
 export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   state: State = {
     failed: false,
-    recoveryAttempted: false,
+    recoveryKey: 0,
+    showRecoveryNotice: false,
   };
-  private recoveryKey = 0;
+  private recoveryNoticeTimer: ReturnType<typeof window.setTimeout> | null =
+    null;
 
   static getDerivedStateFromError(): Partial<State> {
     return { failed: true };
@@ -35,24 +38,36 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
       /* history unavailable — the fresh workspace can still render locally */
     }
 
-    if (this.state.recoveryAttempted) return;
-    this.recoveryKey = Date.now();
-    this.setState({
+    if (this.recoveryNoticeTimer !== null) {
+      window.clearTimeout(this.recoveryNoticeTimer);
+    }
+    this.setState((state) => ({
       failed: false,
-      recoveryAttempted: true,
-    });
+      recoveryKey: state.recoveryKey + 1,
+      showRecoveryNotice: true,
+    }));
+    this.recoveryNoticeTimer = window.setTimeout(() => {
+      this.setState({ showRecoveryNotice: false });
+      this.recoveryNoticeTimer = null;
+    }, 25_000);
+  }
+
+  componentWillUnmount(): void {
+    if (this.recoveryNoticeTimer !== null) {
+      window.clearTimeout(this.recoveryNoticeTimer);
+    }
   }
 
   render() {
     if (!this.state.failed) {
       const children =
-        this.recoveryKey > 0 && isValidElement(this.props.children)
-          ? cloneElement(this.props.children, { key: this.recoveryKey })
+        this.state.recoveryKey > 0 && isValidElement(this.props.children)
+          ? cloneElement(this.props.children, { key: this.state.recoveryKey })
           : this.props.children;
       return (
         <>
           {children}
-          {this.recoveryKey > 0 && (
+          {this.state.showRecoveryNotice && (
             <div className="error-toast" role="status" aria-live="polite">
               An error occurred.
             </div>

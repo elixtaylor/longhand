@@ -282,20 +282,34 @@ button {
   z-index: 100;
   max-width: min(260px, calc(100vw - 32px));
   padding: 8px 12px;
-  color: var(--ink-2);
-  background: var(--surface-raised);
-  border: 1px solid var(--line-strong);
+  color: #b42318;
+  background: #fff8f7;
+  border: 1px solid #efb2aa;
+  border-left-width: 3px;
   border-radius: var(--control-radius);
   box-shadow: var(--shadow-2);
   font-size: 0.78rem;
   font-weight: 650;
-  animation: error-toast-in 0.18s var(--ease);
+  animation:
+    error-toast-in 0.18s var(--ease),
+    error-toast-out 0.18s var(--ease) 24.75s forwards;
 }
 @keyframes error-toast-in {
   from {
     opacity: 0;
     transform: translateY(-4px);
   }
+}
+@keyframes error-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+:root[data-dark='on'] .error-toast {
+  color: #ffb4ab;
+  background: #351710;
+  border-color: #8a2c25;
 }
 .error-recovery-fallback {
   min-height: 100dvh;
