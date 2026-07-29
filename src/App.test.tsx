@@ -21,13 +21,15 @@ describe('home reset', () => {
     );
   });
 
-  it('keeps the menu control directly below the wordmark', () => {
+  it('keeps the menu control below the masthead in the workspace', () => {
     window.localStorage.clear();
     render(<App />);
     const masthead = document.querySelector('.masthead');
     expect(masthead?.querySelector('.masthead-top .wordmark')).not.toBeNull();
     expect(
-      masthead?.querySelector('.masthead-menu [aria-label="Open menu"]'),
+      document.querySelector(
+        '.home-workspace .masthead-menu [aria-label="Open menu"]',
+      ),
     ).not.toBeNull();
   });
 });

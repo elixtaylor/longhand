@@ -132,29 +132,6 @@ export default function App() {
                 Longhand
               </button>
             </div>
-            <div className="masthead-menu">
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="Open menu"
-                aria-haspopup="dialog"
-                onClick={() => setSidebarOpen((open) => !open)}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M3 6h18M3 12h18M3 18h18" />
-                </svg>
-              </button>
-            </div>
           </header>
         )}
 
@@ -202,30 +179,55 @@ export default function App() {
             }}
           />
         ) : (
-          <Workspace
-            revealMode={revealMode}
-            onRevealMode={setRevealMode}
-            showNotes={showNotes}
-            onShowNotes={setShowNotes}
-            sidebarOpen={sidebarOpen}
-            onSidebarClose={closeSidebar}
-            theme={theme}
-            onTheme={setTheme}
-            dark={dark}
-            onDark={setDark}
-            textSize={textSize}
-            onTextSize={setTextSize}
-            showPalette={showPalette}
-            onShowPalette={setShowPalette}
-            resetKey={resetKey}
-            displayMode={displayMode}
-            onDisplayMode={setDisplayMode}
-            autoScroll={autoScroll}
-            showReading={showReading}
-            onNavigatePage={navigate}
-            pendingCalculator={pendingCalculator}
-            onCalculatorHandled={() => setPendingCalculator(null)}
-          />
+          <div className="home-workspace">
+            <div className="masthead-menu">
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label="Open menu"
+                aria-haspopup="dialog"
+                onClick={() => setSidebarOpen((open) => !open)}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 6h18M3 12h18M3 18h18" />
+                </svg>
+              </button>
+            </div>
+            <Workspace
+              revealMode={revealMode}
+              onRevealMode={setRevealMode}
+              showNotes={showNotes}
+              onShowNotes={setShowNotes}
+              sidebarOpen={sidebarOpen}
+              onSidebarClose={closeSidebar}
+              theme={theme}
+              onTheme={setTheme}
+              dark={dark}
+              onDark={setDark}
+              textSize={textSize}
+              onTextSize={setTextSize}
+              showPalette={showPalette}
+              onShowPalette={setShowPalette}
+              resetKey={resetKey}
+              displayMode={displayMode}
+              onDisplayMode={setDisplayMode}
+              autoScroll={autoScroll}
+              showReading={showReading}
+              onNavigatePage={navigate}
+              pendingCalculator={pendingCalculator}
+              onCalculatorHandled={() => setPendingCalculator(null)}
+            />
+          </div>
         )}
       </div>
     </DisplayModeContext.Provider>
@@ -255,9 +257,9 @@ function SettingsPage({
           <span className="graphing-kicker">Settings</span>
         </div>
       </header>
-      <div className="settings-content">
+      <section className="page-card">
         <SettingsPanel {...settings} onResetPreferences={onResetPreferences} />
-      </div>
+      </section>
     </main>
   );
 }

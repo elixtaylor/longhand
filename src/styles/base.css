@@ -77,6 +77,16 @@ button {
   min-height: 40px;
   padding: 0 var(--sp-4) 2px;
 }
+.home-workspace {
+  position: relative;
+  min-width: 0;
+}
+.home-workspace > .masthead-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
 .wordmark {
   display: flex;
   align-items: baseline;
@@ -1547,9 +1557,8 @@ button {
   border-radius: var(--control-radius);
   align-items: stretch;
 }
-.settings-page .settings-content {
-  width: min(820px, 100%);
-  margin: var(--sp-4) 0 0;
+.settings-page .page-card {
+  width: min(1040px, 100%);
 }
 .settings-page .settings-fields {
   display: grid;
@@ -1605,36 +1614,8 @@ button {
 .settings-page .setting-row-notes {
   grid-column: 2;
 }
-.settings-page .setting-row-theme {
-  grid-row: 1;
-}
-.settings-page .setting-row-light {
-  grid-row: 2;
-}
-.settings-page .setting-row-number {
-  grid-row: 3;
-}
-.settings-page .setting-row-text {
-  grid-row: 4;
-}
-.settings-page .setting-row-working {
-  grid-row: 5;
-}
-.settings-page .setting-row-palette {
-  grid-row: 2;
-}
-.settings-page .setting-row-auto {
-  grid-row: 3;
-}
-.settings-page .setting-row-reading {
-  grid-row: 4;
-}
-.settings-page .setting-row-notes {
-  grid-row: 5;
-}
 .settings-page .setting-reset-row {
   grid-column: 1 / -1;
-  grid-row: 6;
   min-height: 30px;
   padding: 10px 0 0;
   border-top: 1px solid var(--line);
@@ -1671,6 +1652,18 @@ button {
 .return-btn:hover {
   color: var(--accent);
   border-color: var(--accent);
+}
+.page-card {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+.settings-page .page-card {
+  margin-top: var(--sp-5);
 }
 .calculator-directory {
   display: grid;
@@ -2084,13 +2077,8 @@ button {
   .settings-page .settings-fields {
     grid-template-columns: 1fr;
   }
-  .settings-page .setting-row-theme,
-  .settings-page .setting-reset-row {
-    grid-column: auto;
-  }
   .settings-page .setting-row {
     grid-column: 1;
-    grid-row: auto;
   }
 }
 @media (max-width: 600px) {
@@ -2103,6 +2091,9 @@ button {
   }
   .page-header {
     gap: var(--sp-3);
+  }
+  .page-card {
+    padding: var(--sp-4);
   }
   .graphing-header {
     padding: var(--sp-4);
