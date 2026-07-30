@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { CALCULATORS, type CalculatorRef } from '../data/calculators';
 import { getSolver } from '../lib/engine/registry';
 
@@ -11,6 +11,7 @@ export function CalculatorsPage({
 }) {
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState('all');
+  const searchRef = useRef<HTMLInputElement>(null);
   const calculators = CALCULATORS.flatMap((group) =>
     group.items.map((calculator) => ({ group: group.heading, calculator })),
   );
@@ -53,19 +54,27 @@ export function CalculatorsPage({
       </header>
 
       <div className="calculator-directory-tools">
-        <label className="calculator-search">
-          <span className="sr-only">Search calculators</span>
-          <span className="calculator-search-icon" aria-hidden="true">
-            ⌕
-          </span>
+        <div className="calculator-search">
+          <button
+            type="button"
+            className="calculator-search-icon"
+            aria-label="Focus calculator search"
+            onClick={() => searchRef.current?.focus()}
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+              <circle cx="8.5" cy="8.5" r="5.25" />
+              <path d="m12.5 12.5 4 4" />
+            </svg>
+          </button>
           <input
+            ref={searchRef}
             type="search"
             aria-label="Search calculators"
             placeholder="Search calculators"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-        </label>
+        </div>
         <label className="calculator-filter">
           <span className="sr-only">Filter calculators</span>
           <select
@@ -81,9 +90,6 @@ export function CalculatorsPage({
             ))}
           </select>
         </label>
-        <span className="calculator-result-count">
-          {visibleCalculators.length} available
-        </span>
       </div>
 
       <div className="calculator-directory" aria-live="polite">

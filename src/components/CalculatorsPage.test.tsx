@@ -17,10 +17,24 @@ describe('CalculatorsPage', () => {
       0,
     );
     expect(screen.getByText('Calculators')).toBeTruthy();
-    expect(screen.getAllByRole('button')).toHaveLength(expectedCount + 1);
+    const cards = screen
+      .getAllByRole('button')
+      .filter((button) => button.classList.contains('calculator-card'));
+    expect(cards).toHaveLength(expectedCount);
 
-    fireEvent.click(screen.getAllByRole('button')[1]);
+    fireEvent.click(cards[0]);
     expect(onOpenCalculator).toHaveBeenCalledWith(CALCULATORS[0].items[0]);
+  });
+
+  it('lets the search icon focus the search field', () => {
+    render(<CalculatorsPage onReturn={vi.fn()} onOpenCalculator={vi.fn()} />);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Focus calculator search' }),
+    );
+    expect(document.activeElement).toBe(
+      screen.getByLabelText('Search calculators'),
+    );
   });
 
   it('filters the dense directory by search text and topic', () => {
