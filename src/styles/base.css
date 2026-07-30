@@ -218,6 +218,114 @@ button {
   color: var(--ink-3);
 }
 
+.problem-input-shell {
+  position: relative;
+}
+.input-tools {
+  position: relative;
+}
+.palette-key--calculator {
+  color: var(--accent);
+  font-weight: 700;
+}
+.basic-calculator {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  z-index: 12;
+  width: min(310px, 100%);
+  padding: var(--sp-3);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--control-radius);
+  box-shadow: var(--shadow-2);
+}
+.basic-calculator-head,
+.basic-calculator-display,
+.basic-calculator-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.basic-calculator-head {
+  margin-bottom: var(--sp-2);
+  color: var(--ink-2);
+  font-size: 0.78rem;
+}
+.basic-calculator-close {
+  padding: 3px 6px;
+  color: var(--ink-3);
+  font-size: 0.7rem;
+}
+.basic-calculator-display {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: var(--sp-2);
+}
+.basic-calculator-display input,
+.basic-calculator-display output {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+}
+.basic-calculator-display output {
+  min-height: 28px;
+  color: var(--accent);
+  text-align: right;
+  font-weight: 700;
+}
+.basic-calculator-mode {
+  justify-content: flex-start;
+  margin-bottom: var(--sp-2);
+}
+.basic-calculator-mode button {
+  padding: 4px 7px;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+.basic-calculator-mode button[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.basic-calculator-keys {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+}
+.basic-calculator-keys button {
+  min-height: 32px;
+  padding: 4px 3px;
+  color: var(--ink-2);
+  background: var(--bg-tint);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+.basic-calculator-keys button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.basic-calculator-keys .basic-calculator-equals {
+  grid-column: span 2;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .palette {
   display: flex;
   flex-wrap: wrap;

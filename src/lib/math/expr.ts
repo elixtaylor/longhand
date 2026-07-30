@@ -43,6 +43,12 @@ export type FnName =
   | 'sqrt'
   | 'abs';
 
+export type AngleMode = 'radians' | 'degrees';
+
+export interface EvaluateOptions {
+  angleMode?: AngleMode;
+}
+
 export class ExprError extends Error {}
 
 /** Functions accepted by the shared parser and used by the equation fallback. */
@@ -367,7 +373,13 @@ export function simplify(e: Expr): Expr {
 export function evaluateExpr(
   e: Expr,
   vars: Record<string, number> = {},
+  options: EvaluateOptions = {},
 ): number {
+  const angleMode = options.angleMode ?? 'radians';
+  const toRadians = (value: number) =>
+    angleMode === 'degrees' ? (value * Math.PI) / 180 : value;
+  const fromRadians = (value: number) =>
+    angleMode === 'degrees' ? (value * 180) / Math.PI : value;
   switch (e.t) {
     case 'num':
       return e.v;
@@ -380,32 +392,43 @@ export function evaluateExpr(
             ? Math.PI
             : NaN;
     case 'neg':
-      return -evaluateExpr(e.a, vars);
+      return -evaluateExpr(e.a, vars, options);
     case 'add':
-      return evaluateExpr(e.a, vars) + evaluateExpr(e.b, vars);
+      return (
+        evaluateExpr(e.a, vars, options) + evaluateExpr(e.b, vars, options)
+      );
     case 'sub':
-      return evaluateExpr(e.a, vars) - evaluateExpr(e.b, vars);
+      return (
+        evaluateExpr(e.a, vars, options) - evaluateExpr(e.b, vars, options)
+      );
     case 'mul':
-      return evaluateExpr(e.a, vars) * evaluateExpr(e.b, vars);
+      return (
+        evaluateExpr(e.a, vars, options) * evaluateExpr(e.b, vars, options)
+      );
     case 'div':
-      return evaluateExpr(e.a, vars) / evaluateExpr(e.b, vars);
+      return (
+        evaluateExpr(e.a, vars, options) / evaluateExpr(e.b, vars, options)
+      );
     case 'pow':
-      return Math.pow(evaluateExpr(e.a, vars), evaluateExpr(e.b, vars));
+      return Math.pow(
+        evaluateExpr(e.a, vars, options),
+        evaluateExpr(e.b, vars, options),
+      );
     case 'fn': {
-      const v = evaluateExpr(e.a, vars);
+      const v = evaluateExpr(e.a, vars, options);
       switch (e.name) {
         case 'sin':
-          return Math.sin(v);
+          return Math.sin(toRadians(v));
         case 'cos':
-          return Math.cos(v);
+          return Math.cos(toRadians(v));
         case 'tan':
-          return Math.tan(v);
+          return Math.tan(toRadians(v));
         case 'sec':
-          return 1 / Math.cos(v);
+          return 1 / Math.cos(toRadians(v));
         case 'csc':
-          return 1 / Math.sin(v);
+          return 1 / Math.sin(toRadians(v));
         case 'cot':
-          return 1 / Math.tan(v);
+          return 1 / Math.tan(toRadians(v));
         case 'sinh':
           return Math.sinh(v);
         case 'cosh':
@@ -415,11 +438,11 @@ export function evaluateExpr(
         case 'sech':
           return 1 / Math.cosh(v);
         case 'arcsin':
-          return Math.asin(v);
+          return fromRadians(Math.asin(v));
         case 'arccos':
-          return Math.acos(v);
+          return fromRadians(Math.acos(v));
         case 'arctan':
-          return Math.atan(v);
+          return fromRadians(Math.atan(v));
         case 'ln':
           return Math.log(v);
         case 'log':

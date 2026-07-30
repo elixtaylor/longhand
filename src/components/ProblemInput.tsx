@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { TeX } from './TeX';
 import { isExpression } from '../lib/nl/vocabulary';
 import { parseExpr, toLatex } from '../lib/math/expr';
+import { BasicCalculator } from './BasicCalculator';
 
 interface Key {
   label: string;
@@ -22,6 +23,15 @@ const KEYS: Key[] = [
   { label: '÷', insert: '/' },
   { label: '=', insert: '=' },
   { label: '√', insert: 'sqrt()', caretBack: 1 },
+  { label: 'sin', insert: 'sin()', caretBack: 1 },
+  { label: 'cos', insert: 'cos()', caretBack: 1 },
+  { label: 'tan', insert: 'tan()', caretBack: 1 },
+  { label: 'sin⁻¹', insert: 'arcsin()', caretBack: 1 },
+  { label: 'cos⁻¹', insert: 'arccos()', caretBack: 1 },
+  { label: 'tan⁻¹', insert: 'arctan()', caretBack: 1 },
+  { label: 'sec', insert: 'sec()', caretBack: 1 },
+  { label: 'csc', insert: 'csc()', caretBack: 1 },
+  { label: 'cot', insert: 'cot()', caretBack: 1 },
   { label: 'π', insert: 'π' },
   { label: '°', insert: '°' },
   { label: '≤', insert: '≤' },
@@ -96,6 +106,7 @@ export function ProblemInput({
   showPalette?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
 
   function insert(key: Key) {
     const el = ref.current;
@@ -116,7 +127,7 @@ export function ProblemInput({
   const trimmed = (preview ?? value).trim();
 
   return (
-    <div>
+    <div className="problem-input-shell">
       <label className="field-label" htmlFor="problem">
         Your problem
       </label>
@@ -136,17 +147,30 @@ export function ProblemInput({
       />
 
       {showPalette && (
-        <div className="palette" role="group" aria-label="Insert symbol">
-          {KEYS.map((k) => (
+        <div className="input-tools">
+          <div className="palette" role="group" aria-label="Insert symbol">
+            {KEYS.map((k) => (
+              <button
+                key={k.label}
+                type="button"
+                className="palette-key"
+                onClick={() => insert(k)}
+              >
+                {k.label}
+              </button>
+            ))}
             <button
-              key={k.label}
               type="button"
-              className="palette-key"
-              onClick={() => insert(k)}
+              className="palette-key palette-key--calculator"
+              aria-expanded={calculatorOpen}
+              onClick={() => setCalculatorOpen((open) => !open)}
             >
-              {k.label}
+              Calculator
             </button>
-          ))}
+          </div>
+          {calculatorOpen && (
+            <BasicCalculator onClose={() => setCalculatorOpen(false)} />
+          )}
         </div>
       )}
 

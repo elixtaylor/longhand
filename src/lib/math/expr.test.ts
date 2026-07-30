@@ -35,6 +35,14 @@ describe('parseExpr', () => {
     expect(evaluateExpr(parseExpr('π'))).toBeCloseTo(Math.PI, 10);
     expect(evaluateExpr(parseExpr('2*π'))).toBeCloseTo(2 * Math.PI, 10);
   });
+  it('evaluates trigonometric functions in degrees when requested', () => {
+    expect(
+      evaluateExpr(parseExpr('tan(45)'), {}, { angleMode: 'degrees' }),
+    ).toBeCloseTo(1, 10);
+    expect(
+      evaluateExpr(parseExpr('arctan(1)'), {}, { angleMode: 'degrees' }),
+    ).toBeCloseTo(45, 10);
+  });
   it('reads inverse, reciprocal and hyperbolic functions', () => {
     expect(show('arctan x')).toBe('\\arctan x');
     expect(show('csc x')).toBe('\\csc x');

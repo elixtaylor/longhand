@@ -36,4 +36,24 @@ describe('ProblemInput', () => {
 
     expect(screen.queryByRole('group', { name: 'Insert symbol' })).toBeNull();
   });
+
+  it('offers direct and inverse trig shortcuts for triangle work', () => {
+    render(<Harness />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'tan⁻¹' }));
+
+    expect(
+      (screen.getByLabelText('Your problem') as HTMLInputElement).value,
+    ).toBe('arctan()');
+  });
+
+  it('opens the basic calculator from the input tools', () => {
+    render(<Harness />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Calculator' }));
+
+    expect(
+      screen.getByRole('dialog', { name: 'Basic calculator' }),
+    ).toBeTruthy();
+  });
 });
