@@ -484,6 +484,15 @@ button {
 .structured-form--diagram .calculator-layout {
   grid-template-columns: 1fr;
 }
+.structured-method-picker {
+  width: min(100%, 720px);
+}
+.structured-method-picker .methods {
+  align-items: center;
+}
+.structured-method-picker .panel-title {
+  text-align: center;
+}
 .calculator-reference {
   display: grid;
   place-items: center;

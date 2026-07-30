@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import type {
   FieldSchema,
   Method,
@@ -44,10 +45,12 @@ export function StructuredInputForm({
   method,
   solver,
   onSubmit,
+  methodPicker,
 }: {
   method: Method;
   solver?: Solver;
   onSubmit: (serialized: string) => void;
+  methodPicker?: ReactNode;
 }) {
   const fields = useMemo(() => method.fields ?? [], [method]);
   const hasPoint = fields.some((f) => f.kind === 'point');
@@ -305,6 +308,8 @@ export function StructuredInputForm({
           )}
         </div>
       </div>
+
+      {methodPicker}
 
       <CalculatorPreview result={liveResult} />
 

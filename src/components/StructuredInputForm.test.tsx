@@ -169,4 +169,31 @@ describe('StructuredInputForm calculators', () => {
     });
     expect(screen.getByText('Answer')).toBeTruthy();
   });
+
+  it('places a supplied method picker after the calculator inputs', () => {
+    const method = circleGeometrySolver.methods.find(
+      (candidate) => candidate.id === 'measurements',
+    )!;
+    render(
+      <StructuredInputForm
+        method={method}
+        solver={circleGeometrySolver}
+        methodPicker={
+          <label>
+            Method
+            <select aria-label="Choose a method">
+              <option>Circle measurements</option>
+            </select>
+          </label>
+        }
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText('Radius r');
+    const select = screen.getByRole('combobox', { name: 'Choose a method' });
+    expect(
+      input.compareDocumentPosition(select) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });

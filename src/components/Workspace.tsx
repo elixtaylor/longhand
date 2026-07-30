@@ -487,6 +487,20 @@ export function Workspace({
                 key={structuredMethod.fields!.map((f) => f.id).join('|')}
                 method={structuredMethod}
                 solver={solver}
+                methodPicker={
+                  solver.id === 'circle-geometry' ? (
+                    <div className="structured-method-picker">
+                      <TopicMethodPicker
+                        solverId={solver.id}
+                        input={input}
+                        methodId={methodId}
+                        onSelectMethod={chooseMethod}
+                        forceAll
+                        showDescription={false}
+                      />
+                    </div>
+                  ) : undefined
+                }
                 onSubmit={(serialized) => {
                   setInput(serialized);
                   commit(serialized, pin);
@@ -726,18 +740,20 @@ function SolutionView({
   const structured =
     pinned && !!(currentMethod?.fields || currentMethod?.opForm);
 
-  const methodPicker = solver.methods.length > 1 && (
-    <div className="solution-methods">
-      <TopicMethodPicker
-        solverId={solverId}
-        input={input}
-        methodId={methodId}
-        onSelectMethod={onSelectMethod}
-        forceAll={hasStructuredMethod}
-        showDescription={false}
-      />
-    </div>
-  );
+  const methodPicker =
+    solver.methods.length > 1 &&
+    !(solverId === 'circle-geometry' && hasStructuredMethod) ? (
+      <div className="solution-methods">
+        <TopicMethodPicker
+          solverId={solverId}
+          input={input}
+          methodId={methodId}
+          onSelectMethod={onSelectMethod}
+          forceAll={hasStructuredMethod}
+          showDescription={false}
+        />
+      </div>
+    ) : null;
 
   if (structured) {
     return (
