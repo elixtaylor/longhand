@@ -61,6 +61,7 @@ export function TopicMethodPicker({
   }, [methods, methodId]);
 
   const current = methods.find((m) => m.id === methodId) ?? methods[0];
+  const useDropdown = methods.length > 4;
 
   return (
     <div className="methods">
@@ -69,24 +70,41 @@ export function TopicMethodPicker({
       </div>
       {methods.length > 1 ? (
         <>
-          <div
-            className="method-tabs"
-            role="tablist"
-            aria-label="Choose a method"
-          >
-            {methods.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                role="tab"
-                aria-selected={m.id === current?.id}
-                className={`method-tab${m.id === highlightedMethodId ? ' method-tab--changed' : ''}`}
-                onClick={() => onSelectMethod(m.id)}
+          {useDropdown ? (
+            <label className="method-select-wrap">
+              <select
+                className="method-select"
+                aria-label="Choose a method"
+                value={current?.id ?? ''}
+                onChange={(event) => onSelectMethod(event.target.value)}
               >
-                {m.name}
-              </button>
-            ))}
-          </div>
+                {methods.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div
+              className="method-tabs"
+              role="tablist"
+              aria-label="Choose a method"
+            >
+              {methods.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={m.id === current?.id}
+                  className={`method-tab${m.id === highlightedMethodId ? ' method-tab--changed' : ''}`}
+                  onClick={() => onSelectMethod(m.id)}
+                >
+                  {m.name}
+                </button>
+              ))}
+            </div>
+          )}
           {showDescription && <p className="method-blurb">{current?.blurb}</p>}
         </>
       ) : (
