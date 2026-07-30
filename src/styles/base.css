@@ -119,14 +119,10 @@ button {
   font-size: 0.7em;
   font-family: var(--font-mono);
   font-weight: 600;
-  /* The inherited line-height is taller than this box, and an "L" has no
-     descender to fill the space under its baseline — between them the glyph
-     was pushed below the bottom border. Collapsing the line box to the font
-     size lets the flex centring act on the letter itself; the padding is the
-     last ~1.5px of optical correction, since centring a line box still leaves
-     the cap-height slightly high. */
+  /* Collapse the line box to the font size so flex centring acts on the
+     letter itself rather than leaving extra baseline space below the L. */
   line-height: 1;
-  padding-top: 0.1em;
+  padding: 0;
 }
 .masthead-meta {
   display: flex;
