@@ -85,7 +85,7 @@ Covering SACE Stage 1 and Stage 2 (Years 11–12).
 |                 | Right-angled triangles               | Pythagoras · SOH CAH TOA                                                                                                  |
 |                 | Sine & cosine rules                  | Sine rule · Cosine rule · Area (½ab sin C, Heron)                                                                         |
 |                 | Statistics                           | Full summary · Centre · Spread · Five-number summary                                                                      |
-|                 | Matrices                             | Add · Multiply · Determinant · Inverse                                                                                    |
+|                 | Matrices                             | Add · Subtract · Multiply · Determinant · Inverse · Transpose · Matrix systems                                            |
 | **Methods**     | Gradients, tangents & turning points | Stationary points · Gradient at a point · Tangent · Normal                                                                |
 |                 | Inequalities                         | Balancing (with sign flip) · Sign diagram                                                                                 |
 |                 | Quadratic equations                  | Factorising · Completing the square · Quadratic formula                                                                   |
@@ -95,7 +95,7 @@ Covering SACE Stage 1 and Stage 2 (Years 11–12).
 |                 | Trigonometric equations              | Unit circle                                                                                                               |
 |                 | Differentiation                      | Power rule · Product/quotient/chain · First principles                                                                    |
 |                 | Integration                          | Reverse power rule · Definite integral · Substitution · Integration by parts · Area between curves · Volume of revolution |
-|                 | Geometric proof                      | Triangle angle sum · Parallel lines · Isosceles · Congruence                                                              |
+|                 | Geometric proof                      | Triangle angle sum · Parallel lines · Isosceles · Congruence · Circle theorems                                            |
 |                 | Probability                          | Single event · Union · Intersection · Conditional                                                                         |
 |                 | Counting & combinations              | Combination (nCr) · Permutation (nPr) · Factorial                                                                         |
 |                 | Binomial expansion                   | Binomial theorem                                                                                                          |

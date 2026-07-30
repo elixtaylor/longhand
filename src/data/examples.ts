@@ -450,6 +450,64 @@ export const examples: Example[] = [
     label: 'inverse [[1,2],[3,4]]',
     subject: 'Specialist',
   },
+  {
+    solverId: 'matrices',
+    methodId: 'transpose',
+    input: 'transpose [[1,2,3],[4,5,6]]',
+    label: 'transpose [[1,2,3],[4,5,6]]',
+    subject: 'Specialist',
+  },
+  {
+    solverId: 'matrices',
+    methodId: 'system',
+    input: 'solve [[2,1,5],[1,-1,1]]',
+    label: 'solve [[2,1,5],[1,−1,1]]',
+    subject: 'Specialist',
+  },
+
+  // ------------------------------------------------------------ Circle geometry
+  {
+    solverId: 'circle-geometry',
+    methodId: 'measurements',
+    input: 'measure r=5',
+    label: 'circle measures, r = 5',
+    subject: 'Specialist',
+  },
+  {
+    solverId: 'circle-geometry',
+    methodId: 'arc-sector',
+    input: 'arc r=6 theta=60',
+    label: 'arc and sector, r = 6, θ = 60°',
+    subject: 'Specialist',
+  },
+  {
+    solverId: 'circle-geometry',
+    methodId: 'chord',
+    input: 'chord r=10 theta=60',
+    label: 'chord, r = 10, θ = 60°',
+    subject: 'Specialist',
+  },
+  {
+    solverId: 'circle-geometry',
+    methodId: 'centre-angle',
+    input: 'theorem circumference=34',
+    label: 'angle at circumference = 34°',
+    subject: 'Specialist',
+  },
+  {
+    solverId: 'circle-geometry',
+    methodId: 'cyclic',
+    input: 'cyclic a=112',
+    label: 'cyclic quadrilateral, a = 112°',
+    subject: 'Specialist',
+  },
+  {
+    solverId: 'circle-geometry',
+    methodId: 'tangent-chord',
+    input: 'tangent-chord alternate=47',
+    label: 'tangent-chord angle = 47°',
+    subject: 'Specialist',
+  },
 
   // --------------------------------------------------------------------- Vectors
   {

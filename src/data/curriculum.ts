@@ -128,7 +128,7 @@ export const SACE_CURRICULUM: CurriculumTopic[] = [
     stage: 'Stage 1',
     course: 'Specialist',
     topic: 'Geometry and Proof',
-    solverIds: ['geometry-proof'],
+    solverIds: ['geometry-proof', 'circle-geometry'],
   },
   {
     stage: 'Stage 1',

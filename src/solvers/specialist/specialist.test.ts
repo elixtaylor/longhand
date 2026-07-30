@@ -206,6 +206,14 @@ describe('matricesSolver', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain('finite number');
   });
+  it('uses the selected calculator method for a lone matrix', () => {
+    expect(
+      sol(matricesSolver, '[[1,2,3],[4,5,6]]', 'transpose').answerLatex,
+    ).toContain('1 & 4');
+    expect(
+      sol(matricesSolver, '[[2,1,5],[1,-1,1]]', 'system').answerLatex,
+    ).toContain('(2, 1)');
+  });
 });
 
 describe('inductionSolver', () => {

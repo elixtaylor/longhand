@@ -61,6 +61,18 @@ const additionalCases: Record<string, string> = {
   'vectors / collinear': 'collinear (1,2) (3,6) (5,10)',
   'vectors / ratio': 'ratio (1,2) (7,8) 2:1',
   'general-equation / numerical': 'sin(x) = x/2',
+  'matrices / determinant': 'det [[1,2],[3,4]]',
+  'matrices / inverse': 'inverse [[1,2],[3,4]]',
+  'matrices / transpose': 'transpose [[1,2,3],[4,5,6]]',
+  'matrices / system': 'solve [[2,1,5],[1,-1,1]]',
+  'circle-geometry / measurements': 'measure r=5',
+  'circle-geometry / arc-sector': 'arc r=6 theta=60',
+  'circle-geometry / chord': 'chord r=10 theta=60',
+  'circle-geometry / centre-angle': 'theorem circumference=34',
+  'circle-geometry / cyclic': 'cyclic a=112',
+  'circle-geometry / tangent-chord': 'tangent-chord alternate=47',
+  'circle-geometry / chord-distance': 'chord-distance r=5 c=6',
+  'circle-geometry / tangent-length': 'tangent-length r=5 distance=13',
 };
 
 describe('method coverage', () => {

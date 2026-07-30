@@ -31,7 +31,10 @@ function parseMatrix(s: string): Matrix {
 }
 
 /** Split "[[…]] op [[…]]" into the two matrices and the operator. */
-function splitMatrices(input: string): {
+function splitMatrices(
+  input: string,
+  preferredOp?: string,
+): {
   a: Matrix;
   b?: Matrix;
   op: string;
@@ -44,6 +47,12 @@ function splitMatrices(input: string): {
 
   const inv = s.match(/^(?:inv|inverse)\s*(.+)$/i);
   if (inv) return { a: parseMatrix(inv[1]), op: 'inverse' };
+
+  const system = s.match(/^(?:solve|system)\s*(\[\[.*\]\])$/i);
+  if (system) return { a: parseMatrix(system[1]), op: 'system' };
+
+  const transpose = s.match(/^(?:transpose|trans|t)\s*(\[\[.*\]\])$/i);
+  if (transpose) return { a: parseMatrix(transpose[1]), op: 'transpose' };
 
   const scalar = s.match(/^(-?\d*\.?\d+)\s*[*×]?\s*(\[\[.+\]\])$/);
   if (scalar)
@@ -58,8 +67,11 @@ function splitMatrices(input: string): {
     };
   }
 
-  // A lone matrix: show its determinant if square.
-  if (/^\[\[.*\]\]$/.test(s)) return { a: parseMatrix(s), op: 'det' };
+  // A lone matrix defaults to a determinant, unless a calculator method has
+  // already told us which single-matrix operation the student chose.
+  if (/^\[\[.*\]\]$/.test(s)) {
+    return { a: parseMatrix(s), op: preferredOp ?? 'det' };
+  }
 
   throw new Error(
     'Try  [[1,2],[3,4]] * [[5,6],[7,8]],  det [[1,2],[3,4]]  or  inverse [[1,2],[3,4]].',
@@ -86,9 +98,28 @@ export const matricesSolver: Solver = {
   methods: [
     {
       id: 'standard',
-      name: 'Standard operations',
-      blurb:
-        'Row-by-column multiplication, and the ad − bc rule for 2×2 determinants.',
+      name: 'Matrix arithmetic',
+      blurb: 'Add, subtract, scale, or multiply matrices row by column.',
+    },
+    {
+      id: 'determinant',
+      name: 'Determinants',
+      blurb: 'Find 2×2 or larger determinants by expansion.',
+    },
+    {
+      id: 'inverse',
+      name: 'Inverse matrices',
+      blurb: 'Find a 2×2 inverse using the determinant and adjugate.',
+    },
+    {
+      id: 'transpose',
+      name: 'Transpose',
+      blurb: 'Reflect a matrix across its main diagonal.',
+    },
+    {
+      id: 'system',
+      name: 'Matrix systems',
+      blurb: 'Solve a two-variable linear system from an augmented matrix.',
     },
   ],
   defaultMethodId: 'standard',
@@ -101,10 +132,20 @@ export const matricesSolver: Solver = {
       return 0;
     }
   },
-  solve(input): SolveResult {
+  solve(input, methodId): SolveResult {
     let parsed: { a: Matrix; b?: Matrix; op: string; k?: number };
     try {
-      parsed = splitMatrices(input);
+      const preferredOp =
+        methodId === 'determinant'
+          ? 'det'
+          : methodId === 'inverse'
+            ? 'inverse'
+            : methodId === 'transpose'
+              ? 'transpose'
+              : methodId === 'system'
+                ? 'system'
+                : undefined;
+      parsed = splitMatrices(input, preferredOp);
     } catch (e) {
       return {
         ok: false,
@@ -214,6 +255,73 @@ export const matricesSolver: Solver = {
             },
           ],
           answerLatex: mTex(out),
+        },
+      };
+    }
+
+    if (op === 'transpose') {
+      const out = a[0].map((_, column) => a.map((row) => row[column]));
+      return {
+        ok: true,
+        solution: {
+          headline: `Transpose $${mTex(a)}$`,
+          methodName: 'Transpose',
+          steps: [
+            {
+              note: 'Swap rows and columns across the main diagonal.',
+              latex: `${mTex(a)}^{T} = ${mTex(out)}`,
+              annotation: 'transpose',
+            },
+          ],
+          answerLatex: mTex(out),
+        },
+      };
+    }
+
+    if (op === 'system') {
+      if (a.length !== 2 || a[0].length !== 3) {
+        return {
+          ok: false,
+          error:
+            'A two-variable system needs an augmented 2×3 matrix [[a,b,c],[d,e,f]].',
+        };
+      }
+      const [[aa, bb, cc], [dd, ee, ff]] = a;
+      const detCoefficients = aa * ee - bb * dd;
+      if (Math.abs(detCoefficients) < 1e-12) {
+        return {
+          ok: false,
+          error:
+            'This system has no unique solution because its determinant is zero.',
+        };
+      }
+      const x = (cc * ee - bb * ff) / detCoefficients;
+      const y = (aa * ff - cc * dd) / detCoefficients;
+      return {
+        ok: true,
+        solution: {
+          headline: `Solve the system represented by $${mTex(a)}$`,
+          methodName: 'Cramer’s rule',
+          steps: [
+            {
+              note: 'Read the augmented matrix as two linear equations.',
+              latex: `${fmt(aa)}x + ${fmt(bb)}y = ${fmt(cc)},\\quad ${fmt(dd)}x + ${fmt(ee)}y = ${fmt(ff)}`,
+            },
+            {
+              note: 'Find the coefficient determinant.',
+              latex: `D = ${fmt(aa)}(${fmt(ee)}) - ${fmt(bb)}(${fmt(dd)}) = ${fmt(detCoefficients)}`,
+            },
+            {
+              note: 'Apply Cramer’s rule to x and y.',
+              latex: `x = \\dfrac{${fmt(cc)}(${fmt(ee)}) - ${fmt(bb)}(${fmt(ff)})}{${fmt(detCoefficients)}} = ${fmt(x)},\\quad y = \\dfrac{${fmt(aa)}(${fmt(ff)}) - ${fmt(cc)}(${fmt(dd)})}{${fmt(detCoefficients)}} = ${fmt(y)}`,
+            },
+            {
+              note: 'State the solution.',
+              latex: `(x,y) = (${fmt(x)}, ${fmt(y)})`,
+              annotation: 'answer',
+            },
+          ],
+          answerLatex: `(x,y) = (${fmt(x)}, ${fmt(y)})`,
         },
       };
     }

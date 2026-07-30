@@ -94,6 +94,94 @@ export const CALCULATORS: CalculatorGroup[] = [
     ],
   },
   {
+    heading: 'Matrices',
+    items: [
+      {
+        solverId: 'matrices',
+        methodId: 'standard',
+        label: 'Matrix arithmetic',
+        blurb: 'Add, subtract, scale or multiply matrices.',
+      },
+      {
+        solverId: 'matrices',
+        methodId: 'determinant',
+        label: 'Determinants',
+        blurb: 'Find 2×2 or larger determinants.',
+      },
+      {
+        solverId: 'matrices',
+        methodId: 'inverse',
+        label: 'Inverse matrices',
+        blurb: 'Find the inverse of a 2×2 matrix.',
+      },
+      {
+        solverId: 'matrices',
+        methodId: 'transpose',
+        label: 'Transpose',
+        blurb: 'Swap the rows and columns of a matrix.',
+      },
+      {
+        solverId: 'matrices',
+        methodId: 'system',
+        label: 'Matrix systems',
+        blurb: 'Solve a two-variable system from an augmented matrix.',
+      },
+    ],
+  },
+  {
+    heading: 'Circle geometry',
+    items: [
+      {
+        solverId: 'circle-geometry',
+        methodId: 'measurements',
+        label: 'Circle measurements',
+        blurb: 'Area and circumference from radius or diameter.',
+      },
+      {
+        solverId: 'circle-geometry',
+        methodId: 'arc-sector',
+        label: 'Arcs and sectors',
+        blurb: 'Arc length and sector area.',
+      },
+      {
+        solverId: 'circle-geometry',
+        methodId: 'chord',
+        label: 'Chords and segments',
+        blurb: 'Chord length, distance and segment area.',
+      },
+      {
+        solverId: 'circle-geometry',
+        methodId: 'centre-angle',
+        label: 'Centre and circumference angles',
+        blurb: 'Use the angle at the centre theorem.',
+      },
+      {
+        solverId: 'circle-geometry',
+        methodId: 'cyclic',
+        label: 'Cyclic quadrilaterals',
+        blurb: 'Opposite angles add to 180°.',
+      },
+      {
+        solverId: 'circle-geometry',
+        methodId: 'tangent-chord',
+        label: 'Tangent-chord theorem',
+        blurb: 'Match tangent-chord and alternate-segment angles.',
+      },
+      {
+        solverId: 'circle-geometry',
+        methodId: 'chord-distance',
+        label: 'Perpendicular chord distance',
+        blurb: 'Use the centre-to-chord right triangle.',
+      },
+      {
+        solverId: 'circle-geometry',
+        methodId: 'tangent-length',
+        label: 'Tangent lengths',
+        blurb: 'Find a tangent from an external point.',
+      },
+    ],
+  },
+  {
     heading: 'Probability',
     items: [
       {

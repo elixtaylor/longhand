@@ -536,7 +536,9 @@ export function Workspace({
                     setPartMethodOverrides({});
                     setChangedPart(null);
                   }}
-                  placeholder="e.g. x^2 + 5x + 6 = 0"
+                  placeholder={
+                    pin ? solver.placeholder : 'e.g. x^2 + 5x + 6 = 0'
+                  }
                   preview={reading}
                   showPalette={showPalette}
                 />

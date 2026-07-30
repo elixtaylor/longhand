@@ -36,6 +36,7 @@ import { networksSolver } from '../../solvers/networks';
 import { ratesSolver } from '../../solvers/calculus/rates';
 import { calculusApplicationsSolver } from '../../solvers/calculus/applications';
 import { geometricProofSolver } from '../../solvers/geometry/proofs';
+import { circleGeometrySolver } from '../../solvers/geometry/circles';
 import { generalSolver } from '../../solvers/algebra/general';
 
 /**
@@ -69,6 +70,7 @@ export const solvers: Solver[] = [
   differentiationSolver,
   integrationSolver,
   geometricProofSolver,
+  circleGeometrySolver,
   calculusApplicationsSolver,
   ratesSolver,
   statisticsSolver,

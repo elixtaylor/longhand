@@ -1,0 +1,579 @@
+import { deg2rad, formatParams, fmt, parseParams } from '../../lib/math/num';
+import type {
+  FieldSchema,
+  SolveResult,
+  Solver,
+  Step,
+} from '../../lib/engine/types';
+
+/**
+ * Circle geometry for SACE Methods and Specialist mathematics.
+ *
+ * Angles are entered in degrees, matching the convention used in school
+ * geometry. The solver keeps the theorem visible in the working so the
+ * calculator is useful for both measurement and proof-style questions.
+ */
+
+const DEG = '^{\\circ}';
+
+function fields(ids: Array<[string, string, boolean]>): FieldSchema[] {
+  return ids.map(([id, label, optional]) => ({
+    id,
+    label,
+    kind: 'number',
+    ...(optional ? { optional: true } : {}),
+  }));
+}
+
+function positive(value: number | undefined, label: string): string | null {
+  if (value === undefined) return null;
+  return value > 0 ? null : `${label} must be greater than zero.`;
+}
+
+function angle(
+  value: number | undefined,
+  label: string,
+  max = 360,
+): string | null {
+  if (value === undefined) return null;
+  return value > 0 && value <= max
+    ? null
+    : `${label} must be between 0° and ${max}°.`;
+}
+
+function solveMeasurement(input: string): SolveResult {
+  const p = parseParams(input);
+  let r = p.r;
+  let d = p.d;
+  if (r === undefined && d === undefined) {
+    return { ok: false, error: 'Give a radius r=… or diameter d=….' };
+  }
+  if (r !== undefined && d !== undefined && Math.abs(d - 2 * r) > 1e-8) {
+    return { ok: false, error: 'The diameter must be twice the radius.' };
+  }
+  if (r === undefined) r = d! / 2;
+  if (d === undefined) d = 2 * r;
+  const invalid = positive(r, 'The radius');
+  if (invalid) return { ok: false, error: invalid };
+  const circumference = 2 * Math.PI * r;
+  const area = Math.PI * r * r;
+  const steps: Step[] = [
+    {
+      note: 'Relate the radius and diameter.',
+      latex: `d = 2r = 2 \\times ${fmt(r)} = ${fmt(d!)}`,
+    },
+    {
+      note: 'Use the circumference formula.',
+      latex: 'C = 2\\pi r',
+    },
+    {
+      note: 'Substitute the radius.',
+      latex: `C = 2\\pi \\times ${fmt(r)} = ${fmt(circumference)}`,
+    },
+    {
+      note: 'Use the area formula.',
+      latex: 'A = \\pi r^{2}',
+    },
+    {
+      note: 'Substitute the radius and simplify.',
+      latex: `A = \\pi \\times ${fmt(r)}^{2} = ${fmt(area)}`,
+      annotation: 'circle measures',
+    },
+  ];
+  return {
+    ok: true,
+    solution: {
+      headline: `Measure a circle with radius $r=${fmt(r)}$`,
+      methodName: 'Circle measurements',
+      steps,
+      answerLatex: `C = ${fmt(circumference)},\\quad A = ${fmt(area)}`,
+      derivedValues: { r, d },
+    },
+  };
+}
+
+function solveArcSector(input: string): SolveResult {
+  const { r, theta } = parseParams(input);
+  const invalidRadius = positive(r, 'The radius');
+  const invalidAngle = angle(theta, 'The central angle');
+  if (invalidRadius || invalidAngle || r === undefined || theta === undefined) {
+    return {
+      ok: false,
+      error:
+        invalidRadius ??
+        invalidAngle ??
+        'Give both r=… and theta=… in degrees.',
+    };
+  }
+  const fraction = theta / 360;
+  const arc = fraction * 2 * Math.PI * r;
+  const sector = fraction * Math.PI * r * r;
+  return {
+    ok: true,
+    solution: {
+      headline: `Find the arc and sector for $r=${fmt(r)},\\;\\theta=${fmt(theta)}${DEG}$`,
+      methodName: 'Arc length and sector area',
+      steps: [
+        {
+          note: 'Use the fraction of a full turn made by the central angle.',
+          latex: `\\text{fraction} = \\dfrac{${fmt(theta)}}{360}`,
+        },
+        {
+          note: 'Find the arc length from the circumference fraction.',
+          latex: `L = \\dfrac{\\theta}{360}2\\pi r = \\dfrac{${fmt(theta)}}{360} \\times 2\\pi \\times ${fmt(r)} = ${fmt(arc)}`,
+        },
+        {
+          note: 'Find the sector area from the same fraction of the circle.',
+          latex: `A_{sector} = \\dfrac{${fmt(theta)}}{360}\\pi(${fmt(r)})^{2} = ${fmt(sector)}`,
+          annotation: 'arc and sector',
+        },
+      ],
+      answerLatex: `L = ${fmt(arc)},\\quad A_{sector} = ${fmt(sector)}`,
+    },
+  };
+}
+
+function solveChord(input: string): SolveResult {
+  const { r, theta } = parseParams(input);
+  const invalidRadius = positive(r, 'The radius');
+  const invalidAngle = angle(theta, 'The central angle');
+  if (invalidRadius || invalidAngle || r === undefined || theta === undefined) {
+    return {
+      ok: false,
+      error:
+        invalidRadius ??
+        invalidAngle ??
+        'Give both r=… and theta=… in degrees.',
+    };
+  }
+  const chord = 2 * r * Math.sin(deg2rad(theta / 2));
+  const distance = r * Math.cos(deg2rad(theta / 2));
+  const segment =
+    (theta / 360) * Math.PI * r * r - 0.5 * r * r * Math.sin(deg2rad(theta));
+  return {
+    ok: true,
+    solution: {
+      headline: `Find the chord for $r=${fmt(r)},\\;\\theta=${fmt(theta)}${DEG}$`,
+      methodName: 'Chord and segment geometry',
+      steps: [
+        {
+          note: 'Drop a perpendicular from the centre to the chord. It bisects the chord.',
+          latex: `d = r\\cos\\left(\\dfrac{\\theta}{2}\\right),\\quad \\dfrac{c}{2} = r\\sin\\left(\\dfrac{\\theta}{2}\\right)`,
+        },
+        {
+          note: 'Find the full chord length.',
+          latex: `c = 2r\\sin\\left(\\dfrac{${fmt(theta)}}{2}\\right) = ${fmt(chord)}`,
+        },
+        {
+          note: 'Find the centre-to-chord distance.',
+          latex: `d = ${fmt(r)}\\cos\\left(\\dfrac{${fmt(theta)}}{2}\\right) = ${fmt(distance)}`,
+        },
+        {
+          note: 'Subtract the isosceles triangle from the sector for the minor segment.',
+          latex: `A_{segment} = A_{sector} - \\tfrac12r^{2}\\sin\\theta = ${fmt(segment)}`,
+          annotation: 'chord theorem',
+        },
+      ],
+      answerLatex: `c = ${fmt(chord)},\\quad d = ${fmt(distance)},\\quad A_{segment} = ${fmt(segment)}`,
+    },
+  };
+}
+
+function solveCentreAngle(input: string): SolveResult {
+  const p = parseParams(input);
+  let centre = p.centre;
+  let circumference = p.circumference;
+  if (centre === undefined && circumference === undefined) {
+    return { ok: false, error: 'Give centre=… or circumference=….' };
+  }
+  const invalidCentre = angle(centre, 'The angle at the centre');
+  const invalidCircumference = angle(
+    circumference,
+    'The angle at the circumference',
+    180,
+  );
+  if (invalidCentre || invalidCircumference) {
+    return { ok: false, error: invalidCentre ?? invalidCircumference! };
+  }
+  if (centre !== undefined && circumference !== undefined) {
+    if (Math.abs(centre - 2 * circumference) > 1e-8) {
+      return {
+        ok: false,
+        error:
+          'The angle at the centre must be twice the angle at the circumference.',
+      };
+    }
+  } else if (centre !== undefined) circumference = centre / 2;
+  else centre = circumference! * 2;
+  return {
+    ok: true,
+    solution: {
+      headline: 'Use the angle at the centre theorem',
+      methodName: 'Angle at centre is twice angle at circumference',
+      steps: [
+        {
+          note: 'Angles standing on the same chord satisfy the circle theorem.',
+          latex: `\\angle_{centre} = 2\\angle_{circumference}`,
+        },
+        {
+          note: 'Substitute the known angle and calculate the missing angle.',
+          latex: `\\angle_{centre} = 2 \\times ${fmt(circumference!)}${DEG} = ${fmt(centre!)}${DEG}`,
+          annotation: 'circle theorem',
+        },
+      ],
+      answerLatex: `\\angle_{centre} = ${fmt(centre!)}${DEG},\\quad \\angle_{circumference} = ${fmt(circumference!)}${DEG}`,
+      derivedValues: { centre: centre!, circumference: circumference! },
+    },
+  };
+}
+
+function solveCyclic(input: string): SolveResult {
+  const p = parseParams(input);
+  let a = p.a;
+  let b = p.b;
+  if (a === undefined && b === undefined) {
+    return { ok: false, error: 'Give one opposite angle, a=… or b=….' };
+  }
+  const invalidA = angle(a, 'Angle a', 180);
+  const invalidB = angle(b, 'Angle b', 180);
+  if (invalidA || invalidB) return { ok: false, error: invalidA ?? invalidB! };
+  if (a !== undefined && b !== undefined && Math.abs(a + b - 180) > 1e-8) {
+    return {
+      ok: false,
+      error: 'Opposite angles in a cyclic quadrilateral add to 180°.',
+    };
+  }
+  if (a === undefined) a = 180 - b!;
+  if (b === undefined) b = 180 - a;
+  return {
+    ok: true,
+    solution: {
+      headline: 'Find an angle in a cyclic quadrilateral',
+      methodName: 'Opposite angles in a cyclic quadrilateral',
+      steps: [
+        {
+          note: 'Opposite angles in a cyclic quadrilateral are supplementary.',
+          latex: `a + b = 180${DEG}`,
+        },
+        {
+          note: 'Substitute the known angle and solve for the opposite angle.',
+          latex: `b = 180${DEG} - ${fmt(a)}${DEG} = ${fmt(b)}${DEG}`,
+          annotation: 'cyclic quadrilateral',
+        },
+      ],
+      answerLatex: `a = ${fmt(a)}${DEG},\\quad b = ${fmt(b)}${DEG}`,
+      derivedValues: { a, b },
+    },
+  };
+}
+
+function solveTangentChord(input: string): SolveResult {
+  const p = parseParams(input);
+  let tangent = p.tangent;
+  let alternate = p.alternate;
+  if (tangent === undefined && alternate === undefined) {
+    return { ok: false, error: 'Give tangent=… or alternate=….' };
+  }
+  const invalidTangent = angle(tangent, 'The tangent-chord angle', 180);
+  const invalidAlternate = angle(alternate, 'The alternate-segment angle', 180);
+  if (invalidTangent || invalidAlternate) {
+    return { ok: false, error: invalidTangent ?? invalidAlternate! };
+  }
+  if (
+    tangent !== undefined &&
+    alternate !== undefined &&
+    Math.abs(tangent - alternate) > 1e-8
+  ) {
+    return {
+      ok: false,
+      error:
+        'The tangent-chord angle equals the angle in the alternate segment.',
+    };
+  }
+  if (tangent === undefined) tangent = alternate;
+  if (alternate === undefined) alternate = tangent;
+  return {
+    ok: true,
+    solution: {
+      headline: 'Use the tangent-chord theorem',
+      methodName: 'Tangent-chord theorem',
+      steps: [
+        {
+          note: 'The angle between a tangent and a chord equals the angle in the alternate segment.',
+          latex: `\\angle_{tangent-chord} = \\angle_{alternate\\ segment}`,
+        },
+        {
+          note: 'Transfer the known angle to the matching angle.',
+          latex: `\\angle_{alternate\\ segment} = ${fmt(alternate!)}${DEG}`,
+          annotation: 'tangent theorem',
+        },
+      ],
+      answerLatex: `\\angle_{tangent-chord} = ${fmt(tangent!)}${DEG},\\quad \\angle_{alternate\\ segment} = ${fmt(alternate!)}${DEG}`,
+      derivedValues: { tangent: tangent!, alternate: alternate! },
+    },
+  };
+}
+
+function solveChordDistance(input: string): SolveResult {
+  const p = parseParams(input);
+  let r = p.r;
+  let c = p.c;
+  let distance = p.distance;
+  const known = [r, c, distance].filter((value) => value !== undefined).length;
+  if (known < 2)
+    return { ok: false, error: 'Give any two of r=…, c=… and distance=….' };
+  if (r !== undefined && positive(r, 'The radius'))
+    return { ok: false, error: positive(r, 'The radius')! };
+  if (c !== undefined && positive(c, 'The chord length'))
+    return { ok: false, error: positive(c, 'The chord length')! };
+  if (distance !== undefined && distance < 0)
+    return {
+      ok: false,
+      error: 'The centre-to-chord distance cannot be negative.',
+    };
+  if (r !== undefined && c !== undefined && distance === undefined) {
+    if (c > 2 * r)
+      return {
+        ok: false,
+        error: 'A chord cannot be longer than the diameter.',
+      };
+    distance = Math.sqrt(Math.max(0, r * r - (c / 2) ** 2));
+  } else if (r !== undefined && distance !== undefined && c === undefined) {
+    if (distance > r)
+      return {
+        ok: false,
+        error: 'The centre-to-chord distance cannot exceed the radius.',
+      };
+    c = 2 * Math.sqrt(Math.max(0, r * r - distance * distance));
+  } else if (c !== undefined && distance !== undefined && r === undefined) {
+    r = Math.sqrt((c / 2) ** 2 + distance * distance);
+  } else if (r === undefined || c === undefined || distance === undefined) {
+    return { ok: false, error: 'Give any two valid chord measurements.' };
+  }
+  return {
+    ok: true,
+    solution: {
+      headline: 'Find the distance from the centre to a chord',
+      methodName: 'Perpendicular from centre bisects chord',
+      steps: [
+        {
+          note: 'The perpendicular from the centre to a chord bisects the chord.',
+          latex: `r^{2} = d^{2} + \\left(\\dfrac{c}{2}\\right)^{2}`,
+        },
+        {
+          note: 'Substitute the two known measurements and rearrange if needed.',
+          latex: `r = ${fmt(r!)}\\quad c = ${fmt(c!)}\\quad d = ${fmt(distance!)}`,
+          annotation: 'chord theorem',
+        },
+      ],
+      answerLatex: `r = ${fmt(r!)},\\quad c = ${fmt(c!)},\\quad d = ${fmt(distance!)}`,
+      derivedValues: { r: r!, c: c!, distance: distance! },
+    },
+  };
+}
+
+function solveTangentLength(input: string): SolveResult {
+  const p = parseParams(input);
+  let r = p.r;
+  let distance = p.distance;
+  let tangent = p.tangent;
+  const known = [r, distance, tangent].filter(
+    (value) => value !== undefined,
+  ).length;
+  if (known < 2)
+    return {
+      ok: false,
+      error: 'Give any two of r=…, distance=… and tangent=….',
+    };
+  if (
+    [r, distance, tangent].some((value) => value !== undefined && value < 0)
+  ) {
+    return { ok: false, error: 'Lengths cannot be negative.' };
+  }
+  if (r !== undefined && distance !== undefined && tangent === undefined) {
+    if (distance < r)
+      return {
+        ok: false,
+        error:
+          'The external point must be at least one radius from the centre.',
+      };
+    tangent = Math.sqrt(Math.max(0, distance * distance - r * r));
+  } else if (
+    r !== undefined &&
+    tangent !== undefined &&
+    distance === undefined
+  ) {
+    distance = Math.sqrt(r * r + tangent * tangent);
+  } else if (
+    distance !== undefined &&
+    tangent !== undefined &&
+    r === undefined
+  ) {
+    if (tangent > distance)
+      return {
+        ok: false,
+        error: 'The tangent length cannot exceed the centre-to-point distance.',
+      };
+    r = Math.sqrt(distance * distance - tangent * tangent);
+  } else if (
+    r === undefined ||
+    distance === undefined ||
+    tangent === undefined
+  ) {
+    return { ok: false, error: 'Give any two valid tangent measurements.' };
+  }
+  return {
+    ok: true,
+    solution: {
+      headline: 'Find a tangent length from an external point',
+      methodName: 'Radius is perpendicular to tangent',
+      steps: [
+        {
+          note: 'The radius to the point of contact is perpendicular to the tangent.',
+          latex: `OP^{2} = OT^{2} + PT^{2}`,
+        },
+        {
+          note: 'Substitute the known lengths and rearrange.',
+          latex: `(${fmt(distance!)})^{2} = (${fmt(r!)})^{2} + (${fmt(tangent!)})^{2}`,
+          annotation: 'tangent theorem',
+        },
+      ],
+      answerLatex: `r = ${fmt(r!)},\\quad OP = ${fmt(distance!)},\\quad PT = ${fmt(tangent!)}`,
+      derivedValues: { r: r!, distance: distance!, tangent: tangent! },
+    },
+  };
+}
+
+const measurementFields = fields([
+  ['r', 'Radius r', true],
+  ['d', 'Diameter d', true],
+]);
+const theoremAngleFields = fields([
+  ['centre', 'Angle at centre', true],
+  ['circumference', 'Angle at circumference', true],
+]);
+const oppositeAngleFields = fields([
+  ['a', 'Angle a', true],
+  ['b', 'Opposite angle b', true],
+]);
+const tangentAngleFields = fields([
+  ['tangent', 'Tangent-chord angle', true],
+  ['alternate', 'Alternate-segment angle', true],
+]);
+const chordDistanceFields = fields([
+  ['r', 'Radius r', true],
+  ['c', 'Chord c', true],
+  ['distance', 'Centre distance d', true],
+]);
+const tangentLengthFields = fields([
+  ['r', 'Radius r', true],
+  ['distance', 'Centre distance OP', true],
+  ['tangent', 'Tangent length PT', true],
+]);
+
+export const circleGeometrySolver: Solver = {
+  id: 'circle-geometry',
+  title: 'Circle geometry',
+  subjects: ['Methods', 'Specialist'],
+  blurb: 'Circle measures, arcs, chords, sectors and circle theorems.',
+  placeholder: 'e.g. angle at centre=86',
+  methods: [
+    {
+      id: 'measurements',
+      name: 'Circle measurements',
+      blurb: 'Find area and circumference from a radius or diameter.',
+      fields: measurementFields,
+      serialize: formatParams,
+    },
+    {
+      id: 'arc-sector',
+      name: 'Arcs and sectors',
+      blurb: 'Find arc length and sector area from r and a central angle.',
+      fields: fields([
+        ['r', 'Radius r', false],
+        ['theta', 'Central angle θ°', false],
+      ]),
+      serialize: (values) => `arc ${formatParams(values)}`,
+    },
+    {
+      id: 'chord',
+      name: 'Chords and segments',
+      blurb: 'Find a chord, centre distance and minor segment area.',
+      fields: fields([
+        ['r', 'Radius r', false],
+        ['theta', 'Central angle θ°', false],
+      ]),
+      serialize: (values) => `chord ${formatParams(values)}`,
+    },
+    {
+      id: 'centre-angle',
+      name: 'Centre and circumference angles',
+      blurb: 'Use the angle at the centre theorem for the same chord.',
+      fields: theoremAngleFields,
+      serialize: (values) => `theorem ${formatParams(values)}`,
+    },
+    {
+      id: 'cyclic',
+      name: 'Cyclic quadrilaterals',
+      blurb: 'Find opposite angles using supplementary angles.',
+      fields: oppositeAngleFields,
+      serialize: (values) => `cyclic ${formatParams(values)}`,
+    },
+    {
+      id: 'tangent-chord',
+      name: 'Tangent-chord theorem',
+      blurb: 'Transfer an angle to the alternate segment.',
+      fields: tangentAngleFields,
+      serialize: (values) => `tangent-chord ${formatParams(values)}`,
+    },
+    {
+      id: 'chord-distance',
+      name: 'Perpendicular chord distance',
+      blurb: 'Use the perpendicular from the centre that bisects a chord.',
+      fields: chordDistanceFields,
+      serialize: (values) => `chord-distance ${formatParams(values)}`,
+    },
+    {
+      id: 'tangent-length',
+      name: 'Tangent lengths',
+      blurb: 'Find a tangent using the right angle between radius and tangent.',
+      fields: tangentLengthFields,
+      serialize: (values) => `tangent-length ${formatParams(values)}`,
+    },
+  ],
+  defaultMethodId: 'measurements',
+  detect(input) {
+    const circleSignal =
+      /\bcircles?\b|\barcs?\b|\bsectors?\b|\bchords?\b|\bcyclic\b|tangent[- ]chord|tangent\s+length|alternate\s+segment|angle\s+at\s+(?:the\s+)?(?:centre|circumference)|same\s+segment/i;
+    if (!circleSignal.test(input)) return 0;
+    if (
+      /\barcs?\b|\bsectors?\b|\bchords?\b|\bcyclic\b|tangent[- ]chord|tangent\s+length|alternate\s+segment|same\s+segment|angle\s+at/i.test(
+        input,
+      )
+    )
+      return 0.96;
+    return 0.34;
+  },
+  solve(input, methodId): SolveResult {
+    switch (methodId) {
+      case 'measurements':
+        return solveMeasurement(input);
+      case 'arc-sector':
+        return solveArcSector(input);
+      case 'chord':
+        return solveChord(input);
+      case 'centre-angle':
+        return solveCentreAngle(input);
+      case 'cyclic':
+        return solveCyclic(input);
+      case 'tangent-chord':
+        return solveTangentChord(input);
+      case 'chord-distance':
+        return solveChordDistance(input);
+      case 'tangent-length':
+        return solveTangentLength(input);
+      default:
+        return { ok: false, error: 'Choose a circle-geometry method first.' };
+    }
+  },
+};

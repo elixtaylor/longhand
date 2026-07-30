@@ -3,6 +3,7 @@ import { rightTriangleSolver } from '../solvers/trigonometry/right-triangle';
 import { triangleRulesSolver } from '../solvers/trigonometry/triangle-rules';
 import { distributionsSolver } from '../solvers/statistics/distributions';
 import { vectorsSolver } from '../solvers/specialist/vectors';
+import { circleGeometrySolver } from '../solvers/geometry/circles';
 import { StructuredInputForm } from './StructuredInputForm';
 
 describe('StructuredInputForm calculators', () => {
@@ -143,5 +144,29 @@ describe('StructuredInputForm calculators', () => {
         (screen.getByLabelText('Confidence %') as HTMLInputElement).value,
       ).toBe('95');
     });
+  });
+
+  it('fills the missing circle diameter from a radius', async () => {
+    const method = circleGeometrySolver.methods.find(
+      (candidate) => candidate.id === 'measurements',
+    )!;
+    render(
+      <StructuredInputForm
+        method={method}
+        solver={circleGeometrySolver}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Radius r'), {
+      target: { value: '5' },
+    });
+
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText('Diameter d') as HTMLInputElement).value,
+      ).toBe('10');
+    });
+    expect(screen.getByText('Answer')).toBeTruthy();
   });
 });
