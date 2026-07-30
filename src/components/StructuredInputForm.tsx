@@ -169,6 +169,14 @@ export function StructuredInputForm({
     'sine-rule',
     'cosine-rule',
     'area',
+    'measurements',
+    'arc-sector',
+    'chord',
+    'centre-angle',
+    'cyclic',
+    'tangent-chord',
+    'chord-distance',
+    'tangent-length',
   ].includes(method.id);
   const isTriangle = [
     'pythagoras',
