@@ -76,7 +76,6 @@ export function CalculatorsPage({
           />
         </div>
         <label className="calculator-filter">
-          <span className="sr-only">Filter calculators</span>
           <select
             aria-label="Filter calculators"
             value={topic}

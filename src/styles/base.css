@@ -2010,14 +2010,14 @@ button {
   grid-auto-rows: minmax(48px, 1fr);
   align-items: stretch;
   gap: 7px;
-  width: min(1240px, 100%);
+  width: 100%;
   margin: var(--sp-3) auto 0;
 }
 .calculator-directory-tools {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  width: min(1240px, 100%);
+  width: 100%;
   margin: var(--sp-3) auto 0;
 }
 .calculator-search {
