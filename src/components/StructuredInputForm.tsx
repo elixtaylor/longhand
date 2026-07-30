@@ -177,9 +177,16 @@ export function StructuredInputForm({
     'chord',
     'centre-angle',
     'cyclic',
+    'same-segment',
+    'semicircle',
+    'tangent-radius',
+    'equal-tangents',
+    'equal-chords',
     'tangent-chord',
     'chord-distance',
     'tangent-length',
+    'intersecting-chords',
+    'power-of-point',
   ].includes(method.id);
   const isTriangle = [
     'pythagoras',
@@ -309,9 +316,9 @@ export function StructuredInputForm({
         </div>
       </div>
 
-      {methodPicker}
-
       <CalculatorPreview result={liveResult} />
+
+      {methodPicker}
 
       <div className="calculator-actions">
         <button type="submit" className="btn-primary" disabled={!complete}>

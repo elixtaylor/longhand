@@ -70,9 +70,17 @@ const additionalCases: Record<string, string> = {
   'circle-geometry / chord': 'chord r=10 theta=60',
   'circle-geometry / centre-angle': 'theorem circumference=34',
   'circle-geometry / cyclic': 'cyclic a=112',
+  'circle-geometry / same-segment': 'same-segment angle1=42',
+  'circle-geometry / semicircle': 'semicircle diameter=10',
+  'circle-geometry / tangent-radius': 'tangent-radius radius=5',
+  'circle-geometry / equal-tangents': 'equal-tangents tangent1=12',
+  'circle-geometry / equal-chords': 'equal-chords chord1=8',
   'circle-geometry / tangent-chord': 'tangent-chord alternate=47',
   'circle-geometry / chord-distance': 'chord-distance r=5 c=6',
   'circle-geometry / tangent-length': 'tangent-length r=5 distance=13',
+  'circle-geometry / intersecting-chords':
+    'intersecting-chords segment1=3 segment2=8 segment3=4',
+  'circle-geometry / power-of-point': 'power-of-point tangent=12 external=9',
 };
 
 describe('method coverage', () => {

@@ -39,6 +39,31 @@ describe('circleGeometrySolver', () => {
     expect(result.derivedValues?.b).toBe(68);
   });
 
+  it('matches angles standing on the same chord', () => {
+    const result = solution('same-segment angle1=42', 'same-segment');
+    expect(result.derivedValues?.angle2).toBe(42);
+  });
+
+  it('finds the right angle in a semicircle', () => {
+    const result = solution('semicircle diameter=10', 'semicircle');
+    expect(result.derivedValues?.angle).toBe(90);
+  });
+
+  it('uses the radius and tangent theorem', () => {
+    const result = solution('tangent-radius radius=5', 'tangent-radius');
+    expect(result.derivedValues?.angle).toBe(90);
+  });
+
+  it('matches the two tangents from an external point', () => {
+    const result = solution('equal-tangents tangent1=12', 'equal-tangents');
+    expect(result.derivedValues?.tangent2).toBe(12);
+  });
+
+  it('matches equal chords and central angles', () => {
+    const result = solution('equal-chords chord1=8', 'equal-chords');
+    expect(result.derivedValues?.chord2).toBe(8);
+  });
+
   it('matches tangent-chord and alternate-segment angles', () => {
     const result = solution('tangent-chord alternate=47', 'tangent-chord');
     expect(result.derivedValues?.tangent).toBe(47);
@@ -52,6 +77,22 @@ describe('circleGeometrySolver', () => {
   it('finds a tangent length from the radius and centre distance', () => {
     const result = solution('tangent-length r=5 distance=13', 'tangent-length');
     expect(result.derivedValues?.tangent).toBe(12);
+  });
+
+  it('solves an intersecting-chords product', () => {
+    const result = solution(
+      'intersecting-chords segment1=3 segment2=8 segment3=4',
+      'intersecting-chords',
+    );
+    expect(result.derivedValues?.segment4).toBe(6);
+  });
+
+  it('solves the tangent-secant power relation', () => {
+    const result = solution(
+      'power-of-point tangent=12 external=9',
+      'power-of-point',
+    );
+    expect(result.derivedValues?.whole).toBe(16);
   });
 
   it('rejects an impossible chord', () => {
