@@ -7,7 +7,25 @@ interface CalculatorKey {
   action?: 'clear' | 'backspace' | 'equals';
 }
 
+const FUNCTION_KEYS: CalculatorKey[] = [
+  { label: 'sin', insert: 'sin(' },
+  { label: 'cos', insert: 'cos(' },
+  { label: 'tan', insert: 'tan(' },
+  { label: '√', insert: 'sqrt(' },
+  { label: 'sin⁻¹', insert: 'arcsin(' },
+  { label: 'cos⁻¹', insert: 'arccos(' },
+  { label: 'tan⁻¹', insert: 'arctan(' },
+  { label: 'π', insert: 'π' },
+  { label: 'sec', insert: 'sec(' },
+  { label: 'csc', insert: 'csc(' },
+  { label: 'cot', insert: 'cot(' },
+];
+
 const KEYS: CalculatorKey[] = [
+  { label: 'C', action: 'clear' },
+  { label: '⌫', action: 'backspace' },
+  { label: '(', insert: '(' },
+  { label: ')', insert: ')' },
   { label: '7', insert: '7' },
   { label: '8', insert: '8' },
   { label: '9', insert: '9' },
@@ -22,22 +40,7 @@ const KEYS: CalculatorKey[] = [
   { label: '−', insert: '-' },
   { label: '0', insert: '0' },
   { label: '.', insert: '.' },
-  { label: '(', insert: '(' },
-  { label: ')', insert: ')' },
   { label: '+', insert: '+' },
-  { label: 'π', insert: 'π' },
-  { label: '√', insert: 'sqrt(' },
-  { label: 'sin', insert: 'sin(' },
-  { label: 'cos', insert: 'cos(' },
-  { label: 'tan', insert: 'tan(' },
-  { label: 'sin⁻¹', insert: 'arcsin(' },
-  { label: 'cos⁻¹', insert: 'arccos(' },
-  { label: 'tan⁻¹', insert: 'arctan(' },
-  { label: 'sec', insert: 'sec(' },
-  { label: 'csc', insert: 'csc(' },
-  { label: 'cot', insert: 'cot(' },
-  { label: 'C', action: 'clear' },
-  { label: '⌫', action: 'backspace' },
   { label: '=', action: 'equals' },
 ];
 
@@ -95,7 +98,7 @@ export function BasicCalculator({
       aria-label="Basic calculator"
     >
       <div className="basic-calculator-head">
-        <strong>Calculator</strong>
+        <strong>Simple calculator</strong>
         <button
           type="button"
           className="basic-calculator-close"
@@ -132,6 +135,17 @@ export function BasicCalculator({
             onClick={() => setAngleMode(mode)}
           >
             {mode === 'degrees' ? 'Degrees' : 'Radians'}
+          </button>
+        ))}
+      </div>
+      <div
+        className="basic-calculator-functions"
+        role="group"
+        aria-label="Calculator functions"
+      >
+        {FUNCTION_KEYS.map((key) => (
+          <button key={key.label} type="button" onClick={() => press(key)}>
+            {key.label}
           </button>
         ))}
       </div>

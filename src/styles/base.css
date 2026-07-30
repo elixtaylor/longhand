@@ -328,11 +328,16 @@ button {
   background: var(--accent-soft);
   border-color: var(--accent);
 }
+.basic-calculator-functions,
 .basic-calculator-keys {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
 }
+.basic-calculator-functions {
+  margin-bottom: 5px;
+}
+.basic-calculator-functions button,
 .basic-calculator-keys button {
   min-height: 32px;
   padding: 4px 3px;
@@ -344,12 +349,12 @@ button {
   font-size: 0.72rem;
   font-weight: 650;
 }
+.basic-calculator-functions button:hover,
 .basic-calculator-keys button:hover {
   color: var(--accent);
   background: var(--accent-soft);
 }
 .basic-calculator-keys .basic-calculator-equals {
-  grid-column: span 2;
   color: var(--accent-ink);
   background: var(--accent);
   border-color: var(--accent);

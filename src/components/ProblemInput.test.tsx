@@ -24,7 +24,7 @@ describe('ProblemInput', () => {
     ).toBe('x');
   });
 
-  it('can hide the symbol palette', () => {
+  it('can hide the symbol palette while keeping the calculator available', () => {
     render(
       <ProblemInput
         value=""
@@ -35,6 +35,9 @@ describe('ProblemInput', () => {
     );
 
     expect(screen.queryByRole('group', { name: 'Insert symbol' })).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Simple calculator' }),
+    ).toBeTruthy();
   });
 
   it('offers direct and inverse trig shortcuts for triangle work', () => {
@@ -47,10 +50,10 @@ describe('ProblemInput', () => {
     ).toBe('arctan()');
   });
 
-  it('opens the basic calculator from the input tools', () => {
+  it('opens the basic calculator from the input heading', () => {
     render(<Harness />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Calculator' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Simple calculator' }));
 
     expect(
       screen.getByRole('dialog', { name: 'Basic calculator' }),

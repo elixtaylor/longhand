@@ -132,25 +132,23 @@ export function ProblemInput({
         <label className="field-label" htmlFor="problem">
           Your problem
         </label>
-        {showPalette && (
-          <div className="calculator-anchor">
-            <button
-              type="button"
-              className="calculator-trigger"
-              aria-expanded={calculatorOpen}
-              aria-controls="equation-calculator"
-              onClick={() => setCalculatorOpen((open) => !open)}
-            >
-              Calculator
-            </button>
-            {calculatorOpen && (
-              <BasicCalculator
-                id="equation-calculator"
-                onClose={() => setCalculatorOpen(false)}
-              />
-            )}
-          </div>
-        )}
+        <div className="calculator-anchor">
+          <button
+            type="button"
+            className="calculator-trigger"
+            aria-expanded={calculatorOpen}
+            aria-controls="equation-calculator"
+            onClick={() => setCalculatorOpen((open) => !open)}
+          >
+            Simple calculator
+          </button>
+          {calculatorOpen && (
+            <BasicCalculator
+              id="equation-calculator"
+              onClose={() => setCalculatorOpen(false)}
+            />
+          )}
+        </div>
       </div>
       <input
         id="problem"
