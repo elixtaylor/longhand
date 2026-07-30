@@ -266,7 +266,7 @@ button {
   padding: var(--sp-3);
   background: var(--surface-raised);
   border-radius: var(--control-radius);
-  box-shadow: var(--shadow-2);
+  box-shadow: 0 14px 34px rgba(17, 17, 17, 0.2);
 }
 .basic-calculator-head,
 .basic-calculator-display,
