@@ -47,7 +47,13 @@ function display(value: number): string {
   return String(Number(value.toPrecision(10)));
 }
 
-export function BasicCalculator({ onClose }: { onClose: () => void }) {
+export function BasicCalculator({
+  id,
+  onClose,
+}: {
+  id?: string;
+  onClose: () => void;
+}) {
   const [expression, setExpression] = useState('');
   const [answer, setAnswer] = useState<string | null>(null);
   const [angleMode, setAngleMode] = useState<AngleMode>('degrees');
@@ -84,6 +90,7 @@ export function BasicCalculator({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="basic-calculator"
+      id={id}
       role="dialog"
       aria-label="Basic calculator"
     >

@@ -221,19 +221,48 @@ button {
 .problem-input-shell {
   position: relative;
 }
-.input-tools {
+.problem-input-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
   position: relative;
 }
-.palette-key--calculator {
+.problem-input-heading .field-label {
+  margin-bottom: var(--sp-2);
+}
+.calculator-anchor {
+  position: relative;
+  margin-bottom: var(--sp-2);
+}
+.calculator-trigger {
+  padding: 5px 9px;
   color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--control-radius);
+  font-size: 0.74rem;
   font-weight: 700;
+  line-height: 1.2;
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.calculator-trigger:hover,
+.calculator-trigger[aria-expanded='true'] {
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+.input-tools {
+  position: relative;
 }
 .basic-calculator {
   position: absolute;
   top: calc(100% + var(--sp-2));
   right: 0;
   z-index: 12;
-  width: min(310px, 100%);
+  width: 310px;
+  max-width: calc(100vw - 32px);
   padding: var(--sp-3);
   background: var(--surface-raised);
   border: 1px solid var(--line-strong);
