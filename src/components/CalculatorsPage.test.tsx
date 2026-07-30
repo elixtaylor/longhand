@@ -22,4 +22,23 @@ describe('CalculatorsPage', () => {
     fireEvent.click(screen.getAllByRole('button')[1]);
     expect(onOpenCalculator).toHaveBeenCalledWith(CALCULATORS[0].items[0]);
   });
+
+  it('filters the dense directory by search text and topic', () => {
+    render(<CalculatorsPage onReturn={vi.fn()} onOpenCalculator={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('Search calculators'), {
+      target: { value: 'semicircle' },
+    });
+    expect(screen.getByText('Angle in a semicircle')).toBeTruthy();
+    expect(screen.queryByText('Circle measurements')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Search calculators'), {
+      target: { value: '' },
+    });
+    fireEvent.change(screen.getByLabelText('Filter calculators'), {
+      target: { value: 'Circle geometry' },
+    });
+    expect(screen.getByText('Tangent-secant power')).toBeTruthy();
+    expect(screen.queryByText('Right-angled triangle')).toBeNull();
+  });
 });
