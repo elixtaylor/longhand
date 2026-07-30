@@ -334,7 +334,9 @@ button {
   gap: 5px;
 }
 .basic-calculator-functions {
-  margin-bottom: 5px;
+  padding-bottom: 7px;
+  margin-bottom: 7px;
+  border-bottom: 1px solid var(--line);
 }
 .basic-calculator-functions button,
 .basic-calculator-keys button {

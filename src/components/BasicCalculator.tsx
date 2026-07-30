@@ -16,9 +16,6 @@ const FUNCTION_KEYS: CalculatorKey[] = [
   { label: 'cos⁻¹', insert: 'arccos(' },
   { label: 'tan⁻¹', insert: 'arctan(' },
   { label: 'π', insert: 'π' },
-  { label: 'sec', insert: 'sec(' },
-  { label: 'csc', insert: 'csc(' },
-  { label: 'cot', insert: 'cot(' },
 ];
 
 const KEYS: CalculatorKey[] = [

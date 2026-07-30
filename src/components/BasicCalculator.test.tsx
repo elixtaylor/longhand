@@ -2,6 +2,16 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { BasicCalculator } from './BasicCalculator';
 
 describe('BasicCalculator', () => {
+  it('keeps the keypad focused on standard triangle functions', () => {
+    render(<BasicCalculator onClose={vi.fn()} />);
+
+    expect(screen.queryByRole('button', { name: 'sec' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'csc' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'cot' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'sin' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'tan⁻¹' })).toBeTruthy();
+  });
+
   it('evaluates triangle functions in degrees by default', () => {
     render(<BasicCalculator onClose={vi.fn()} />);
 
