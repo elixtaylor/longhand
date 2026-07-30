@@ -239,7 +239,7 @@ button {
   padding: 5px 9px;
   color: var(--accent);
   background: var(--accent-soft);
-  border: 1px solid var(--accent);
+  border: none;
   border-radius: var(--control-radius);
   font-size: 0.74rem;
   font-weight: 700;
@@ -265,7 +265,6 @@ button {
   max-width: calc(100vw - 32px);
   padding: var(--sp-3);
   background: var(--surface-raised);
-  border: 1px solid var(--line-strong);
   border-radius: var(--control-radius);
   box-shadow: var(--shadow-2);
 }
