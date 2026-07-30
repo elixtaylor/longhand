@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { StepList } from './StepList';
+import { StepList, workingSteps } from './StepList';
+import { quadraticsSolver } from '../solvers/quadratics';
 
 describe('StepList annotations', () => {
   it('keeps operation annotations out of the equation line', () => {
@@ -39,5 +40,42 @@ describe('StepList annotations', () => {
       'step-operation',
     );
     expect(screen.queryByText('same to both sides')).toBeNull();
+  });
+
+  it('does not repeat a multi-answer result after the final working line', () => {
+    const solution = {
+      headline: 'Solve x² = 4',
+      methodName: 'Completing the square',
+      steps: [
+        { latex: 'x = \\pm 2' },
+        { latex: 'x = 2 \\quad\\text{or}\\quad x = -2' },
+      ],
+      answerLatex: 'x = 2 \\quad\\text{or}\\quad x = -2',
+    };
+    expect(workingSteps(solution).map((step) => step.latex)).toEqual([
+      'x = \\pm 2',
+    ]);
+  });
+
+  it('keeps both distinct roots while collapsing an unchanged duplicate line', () => {
+    const solution = {
+      headline: 'Solve |x| = 5',
+      methodName: 'Case split',
+      steps: [{ latex: 'x = 5' }, { latex: 'x = 5' }, { latex: 'x = -5' }],
+      answerLatex: 'x = 5 \\quad\\text{or}\\quad x = -5',
+    };
+    expect(workingSteps(solution).map((step) => step.latex)).toEqual([
+      'x = 5',
+      'x = -5',
+    ]);
+  });
+
+  it('removes the repeated explicit answer from quadratic working', () => {
+    const result = quadraticsSolver.solve('x^2 = 4', 'complete-square');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const lines = workingSteps(result.solution).map((step) => step.latex);
+    expect(lines).toContain('x + 0 = \\pm\\sqrt{4}');
+    expect(lines).not.toContain(result.solution.answerLatex);
   });
 });

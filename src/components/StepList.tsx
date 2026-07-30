@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Solution } from '../lib/engine/types';
+import type { Solution, Step } from '../lib/engine/types';
 import type { RevealMode } from '../lib/ui';
 import { TeX, RichText } from './TeX';
 import { StepVisualView } from './visuals';
@@ -8,6 +8,60 @@ import { StepVisualView } from './visuals';
  * see measureGrid's own doc comment below for why it can't be. */
 const RULE = 24;
 const COMPACT_EQUATION_WIDTH = 640;
+
+/**
+ * Keep the working readable when a multi-answer method reaches the same line
+ * that is already shown in the answer card. Some quadratic and case-split
+ * solvers also emit an unchanged equation twice while opening the branches.
+ * Neither repetition adds maths, so collapse only exact duplicate lines and
+ * an exact trailing copy of a multi-answer result. Distinct roots remain
+ * untouched.
+ */
+export function workingSteps(solution: Solution): Step[] {
+  const normalise = (latex: string) =>
+    latex.replace(/\\left|\\right/g, '').replace(/\s+/g, '');
+  const out: Step[] = [];
+
+  for (const step of solution.steps) {
+    const previous = out[out.length - 1];
+    if (
+      step.latex &&
+      previous?.latex &&
+      normalise(previous.latex) === normalise(step.latex)
+    ) {
+      // Keep the latest explanation/annotation, since it describes why the
+      // line is being reached now, while rendering the equation only once.
+      out[out.length - 1] = {
+        ...previous,
+        note: step.note ?? previous.note,
+        annotation: step.annotation ?? previous.annotation,
+        visual: step.visual ?? previous.visual,
+      };
+      continue;
+    }
+    out.push(step);
+  }
+
+  const answer = solution.answerLatex;
+  let lastLatexIndex = -1;
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i].latex) {
+      lastLatexIndex = i;
+      break;
+    }
+  }
+  const last = lastLatexIndex >= 0 ? out[lastLatexIndex] : undefined;
+  const multiAnswer = answer && /\\pm|\\text\{or\}|\\quad/.test(answer);
+  if (
+    multiAnswer &&
+    answer &&
+    last?.latex &&
+    normalise(last.latex) === normalise(answer)
+  ) {
+    out.splice(lastLatexIndex, 1);
+  }
+  return out;
+}
 
 export function StepList({
   solution,
@@ -28,7 +82,8 @@ export function StepList({
   onCopyLink?: () => void;
   copied?: boolean;
 }) {
-  const total = solution.steps.length;
+  const steps = workingSteps(solution);
+  const total = steps.length;
   const [revealed, setRevealed] = useState(total);
   const [wide, setWide] = useState(false);
   const listRef = useRef<HTMLOListElement>(null);
@@ -170,7 +225,7 @@ export function StepList({
   const allShown = revealed >= total;
 
   async function copyWorking() {
-    const lines = workingText(solution, showNotes);
+    const lines = workingText(solution, steps, showNotes);
     try {
       await navigator.clipboard.writeText(lines.join('\n'));
     } catch {
@@ -181,7 +236,7 @@ export function StepList({
   return (
     <div>
       <ol className={`steps${wide ? ' steps-wide' : ''}`} ref={listRef}>
-        {solution.steps.map((step, i) => {
+        {steps.map((step, i) => {
           const hidden = i >= revealed;
           return (
             <li key={i} className={`step${hidden ? ' is-hidden' : ''}`}>
@@ -255,9 +310,13 @@ function stripMath(text: string): string {
   return text.replace(/\$/g, '');
 }
 
-function workingText(solution: Solution, showNotes: boolean): string[] {
+function workingText(
+  solution: Solution,
+  steps: Step[],
+  showNotes: boolean,
+): string[] {
   const lines = [stripMath(solution.headline)];
-  solution.steps.forEach((s, i) => {
+  steps.forEach((s, i) => {
     if (s.note && showNotes) lines.push(`${i + 1}. ${stripMath(s.note)}`);
     if (s.latex) lines.push(showNotes ? `    ${s.latex}` : s.latex);
   });
