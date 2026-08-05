@@ -170,27 +170,35 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
     };
   const f = simplify(difference(left, right));
   if (!hasVariable(f)) {
-    const residual = evaluateExpr(f);
+    const leftValue = evaluateExpr(left);
+    const rightValue = evaluateExpr(right);
+    const residual = leftValue - rightValue;
     const trueStatement =
       Number.isFinite(residual) && Math.abs(residual) < 1e-10;
+    const leftLatex = toLatex(left);
+    const rightLatex = toLatex(right);
     return {
       ok: true,
       solution: {
-        headline: `${toLatex(left)} = ${toLatex(right)}`,
+        headline: `${leftLatex} = ${rightLatex}`,
         methodName: 'Numerical equation solver',
         steps: [
           {
-            note: 'Evaluate both sides of the equation.',
-            latex: `${toLatex(left)} - ${toLatex(right)} = ${fmt(residual, 8)}`,
+            note: 'Evaluate the left-hand side and right-hand side separately.',
+            latex: `${leftLatex} = ${fmt(leftValue, 8)} \\quad\\text{and}\\quad ${rightLatex} = ${fmt(rightValue, 8)}`,
           },
           {
             note: trueStatement
-              ? 'The statement is true.'
-              : 'The statement is false.',
-            latex: trueStatement ? '\\text{true}' : '\\text{false}',
+              ? 'Both sides have the same value, so the equation is true.'
+              : 'The two sides have different values, so the equation is false.',
+            latex: trueStatement
+              ? `${leftLatex} = ${rightLatex}`
+              : `${fmt(leftValue, 8)} \\ne ${fmt(rightValue, 8)}`,
           },
         ],
-        answerLatex: trueStatement ? '\\text{true}' : '\\text{false}',
+        answerLatex: trueStatement
+          ? `${leftLatex} = ${rightLatex}`
+          : '\\text{false}',
       },
     };
   }

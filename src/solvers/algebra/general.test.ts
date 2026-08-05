@@ -33,4 +33,15 @@ describe('general equation fallback', () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.solution.answerLatex).toBe('5');
   });
+
+  it('shows both sides of a true numeric identity instead of only true', () => {
+    const result = generalSolver.solve('ln(32e^5) = 5(ln2 + 1)', 'numerical');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.answerLatex).not.toBe('\\text{true}');
+      expect(result.solution.answerLatex).toContain('=');
+      const last = result.solution.steps[result.solution.steps.length - 1];
+      expect(last?.latex).toContain('=');
+    }
+  });
 });
