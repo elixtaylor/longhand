@@ -145,7 +145,7 @@ describe('solving by undoing', () => {
     expect(steps.some((l) => /x \+ 5 = e\^\{5\}/.test(l))).toBe(true);
     expect(
       steps.some((l) =>
-        l.includes('- \\color{red}{5} = e^{5} - \\color{red}{5}'),
+        l.includes('\\color{red}{- 5} = e^{5} \\color{red}{- 5}'),
       ),
     ).toBe(true);
   });
@@ -156,7 +156,7 @@ describe('solving by undoing', () => {
     );
     expect(
       subtraction.some(
-        (line) => (line.match(/\\color\{red\}\{5\}/g) ?? []).length === 2,
+        (line) => (line.match(/\\color\{red\}\{- 5\}/g) ?? []).length === 2,
       ),
     ).toBe(true);
 

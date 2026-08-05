@@ -1,7 +1,7 @@
 import { Rational } from '../../lib/math/rational';
 import { parseEquation, Poly, ParseError } from '../../lib/math/parse';
 import { rl, polyLatex, connectTerm } from '../../lib/math/format';
-import { redLatex } from '../../lib/math/latex';
+import { redSignedLatex, redLatex } from '../../lib/math/latex';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /** Build a display polynomial  a·x + b. */
@@ -76,7 +76,7 @@ function solveByBalance(lin: Linear): SolveResult {
   const undo = (r: Rational) => (r.isNeg() ? `+ ${rl(r.abs())}` : `- ${rl(r)}`);
   const undoRed = (r: Rational, suffix = '') => {
     const magnitude = suffix === 'x' ? termX(r.abs()) : rl(r.abs());
-    return r.isNeg() ? `+ ${redLatex(magnitude)}` : `- ${redLatex(magnitude)}`;
+    return redSignedLatex(r.isNeg() ? '+' : '-', magnitude);
   };
 
   // Gather the x-terms on the left.

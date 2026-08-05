@@ -7,7 +7,7 @@ import {
   num,
   type Expr,
 } from '../../lib/math/expr';
-import { redLatex } from '../../lib/math/latex';
+import { redSignedLatex, redLatex } from '../../lib/math/latex';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /**
@@ -180,7 +180,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
           // of the loop flips; doing it in one jump would skip the reason.
           steps.push({
             note: `Subtract $${toLatex(other)}$ from both sides, so the term with $x$ is on its own.`,
-            latex: `${toLatex(left)} - ${redLatex(tight(other))} = ${toLatex(right)} - ${redLatex(tight(other))}`,
+            latex: `${toLatex(left)} ${redSignedLatex('-', tight(other))} = ${toLatex(right)} ${redSignedLatex('-', tight(other))}`,
             annotation: 'same to both sides',
           });
           tidy(
@@ -197,11 +197,14 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         const undo =
           subtraction && keepIsFirst ? 'add' : negative ? 'add' : 'subtract';
         const shown = negative ? simplify({ t: 'neg', a: other }) : other;
-        const sign = undo === 'add' ? '+' : '-';
+        const operation = redSignedLatex(
+          undo === 'add' ? '+' : '-',
+          tight(shown),
+        );
 
         steps.push({
           note: `${undo === 'add' ? 'Add' : 'Subtract'} $${toLatex(shown)}$ ${undo === 'add' ? 'to' : 'from'} both sides to undo the ${undo === 'add' ? 'subtraction' : 'addition'}.`,
-          latex: `${toLatex(left)} ${sign} ${redLatex(tight(shown))} = ${toLatex(right)} ${sign} ${redLatex(tight(shown))}`,
+          latex: `${toLatex(left)} ${operation} = ${toLatex(right)} ${operation}`,
           annotation: 'same to both sides',
         });
         tidy(

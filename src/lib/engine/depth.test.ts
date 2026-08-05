@@ -71,10 +71,10 @@ describe('the moves that used to be skipped', () => {
     const ls = lines('3x + 4 = 2x - 5');
     // The line showing the same thing done to both sides, then the tidy-up.
     expect(ls).toContain(
-      '3x + 4 - \\color{red}{2x} = 2x - 5 - \\color{red}{2x}',
+      '3x + 4 \\color{red}{- 2x} = 2x - 5 \\color{red}{- 2x}',
     );
     expect(ls).toContain('x + 4 = -5');
-    expect(ls).toContain('x + 4 - \\color{red}{4} = -5 - \\color{red}{4}');
+    expect(ls).toContain('x + 4 \\color{red}{- 4} = -5 \\color{red}{- 4}');
   });
 
   it('shows the subtraction of one equation from the other', () => {
