@@ -1043,6 +1043,50 @@ button {
   overflow: hidden;
   padding: 4px 0;
 }
+
+/* Operation key -----------------------------------------------------------
+ * The repeated term in a balancing move is the point of the line: colour
+ * the whole operation row so the matching change on both sides is visible at
+ * a glance. The left rail stays readable when the equation is long, while
+ * the equation itself carries the same colour for students scanning quickly.
+ */
+.step-operation .step-line {
+  border-left: 3px solid var(--operation-colour);
+  border-radius: 0 var(--control-radius) var(--control-radius) 0;
+  padding: 4px 12px;
+  background: var(--operation-tint);
+}
+.step-operation .step-expr {
+  color: var(--operation-colour);
+}
+.step-operation-subtract {
+  --operation-colour: #c53b32;
+  --operation-tint: #fff1ef;
+}
+.step-operation-add {
+  --operation-colour: #216e9d;
+  --operation-tint: #eef7fc;
+}
+.step-operation-multiply {
+  --operation-colour: #7046a8;
+  --operation-tint: #f5effc;
+}
+.step-operation-divide {
+  --operation-colour: #a15c18;
+  --operation-tint: #fff6e9;
+}
+.step-operation-power {
+  --operation-colour: #36764a;
+  --operation-tint: #eef8f0;
+}
+.step-operation-log {
+  --operation-colour: #0d7270;
+  --operation-tint: #ebf8f7;
+}
+.step-operation-root {
+  --operation-colour: #9a477e;
+  --operation-tint: #fceff8;
+}
 .step.is-hidden {
   display: none;
 }
