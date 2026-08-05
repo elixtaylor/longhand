@@ -66,6 +66,26 @@ describe('reducing before solving', () => {
     );
   });
 
+  it('substitutes u = ln x when the logarithm itself is squared', () => {
+    const solution = solve('(lnx)^2 = 2lnx + 3');
+    const found = answers(solution.answerLatex);
+    expect(found).toHaveLength(2);
+    expect(found[0]).toBeCloseTo(Math.exp(3), 6);
+    expect(found[1]).toBeCloseTo(Math.exp(-1), 6);
+    expect(
+      solution.steps.some((step) => step.latex?.includes('u^{2} - 2u - 3 = 0')),
+    ).toBe(true);
+    expect(solution.steps.some((step) => step.latex?.includes('u = 3'))).toBe(
+      true,
+    );
+    expect(solution.steps.some((step) => step.latex?.includes('e^{3}'))).toBe(
+      true,
+    );
+    expect(solution.steps.some((step) => step.latex?.includes('e^{-1}'))).toBe(
+      true,
+    );
+  });
+
   it('takes logs of an exponential equation with different bases', () => {
     expect(answers(solve('2^x = 3^x').answerLatex)[0]).toBeCloseTo(0, 6);
     const x = answers(solve('2^(x+1) = 3^x').answerLatex)[0];
@@ -115,6 +135,7 @@ describe('reducing before solving', () => {
     expect(interpret('ln(x^2) + ln(x) = 4').detection?.solver.id).toBe(
       'reduce',
     );
+    expect(interpret('(lnx)^2 = 2lnx + 3').detection?.solver.id).toBe('reduce');
     expect(interpret('2^x = 3^x').detection?.solver.id).toBe('reduce');
   });
 });

@@ -1,4 +1,9 @@
-import { parseExpr, toLatex, evaluateExpr } from '../../lib/math/expr';
+import {
+  parseExpr,
+  toLatex,
+  evaluateExpr,
+  type Expr,
+} from '../../lib/math/expr';
 import { exprToPolyFrac, numericSolutionsOf } from '../../lib/math/expand';
 import { Poly } from '../../lib/math/parse';
 import { Rational } from '../../lib/math/rational';
@@ -199,6 +204,182 @@ function tryLog(sides: [string, string]): {
     };
   }
   return null;
+}
+
+/* ------------------------------------------------------- polynomial in ln x */
+
+/** Coefficients in ascending powers of u, where u = ln(x). */
+type LogPolynomial = number[];
+
+function trimLogPolynomial(coeffs: LogPolynomial): LogPolynomial {
+  const out = [...coeffs];
+  while (out.length > 1 && Math.abs(out[out.length - 1]) < 1e-12) out.pop();
+  return out;
+}
+
+function addLogPolynomials(
+  left: LogPolynomial,
+  right: LogPolynomial,
+  sign: 1 | -1 = 1,
+): LogPolynomial {
+  const length = Math.max(left.length, right.length);
+  return Array.from(
+    { length },
+    (_, power) => (left[power] ?? 0) + sign * (right[power] ?? 0),
+  );
+}
+
+function multiplyLogPolynomials(
+  left: LogPolynomial,
+  right: LogPolynomial,
+): LogPolynomial {
+  const out = new Array(left.length + right.length - 1).fill(0);
+  left.forEach((a, i) =>
+    right.forEach((b, j) => {
+      out[i + j] += a * b;
+    }),
+  );
+  return out;
+}
+
+function scaleLogPolynomial(
+  polynomial: LogPolynomial,
+  factor: number,
+): LogPolynomial {
+  return polynomial.map((coefficient) => coefficient * factor);
+}
+
+function powerLogPolynomial(
+  base: LogPolynomial,
+  exponent: number,
+): LogPolynomial {
+  let result: LogPolynomial = [1];
+  for (let i = 0; i < exponent; i++)
+    result = multiplyLogPolynomials(result, base);
+  return result;
+}
+
+/**
+ * Turn an expression into a polynomial in u = ln(x).
+ *
+ * Only an exact ln(x) node is treated as u. Other x-containing functions are
+ * rejected rather than silently pretending they are constants. This lets the
+ * solver handle `(ln x)^2 = 2 ln x + 3` and similar rearrangements while
+ * leaving genuinely different transcendental equations to the numerical
+ * fallback.
+ */
+function exprToLogPolynomial(expression: Expr): LogPolynomial | null {
+  if (expression.t === 'fn') {
+    if (
+      expression.name === 'ln' &&
+      expression.a.t === 'var' &&
+      expression.a.name === 'x'
+    )
+      return [0, 1];
+
+    // A function with no x is a legitimate numerical constant, for example
+    // ln(e). Any function that contains x must be handled as a different
+    // equation type and is therefore refused here.
+    const value = evaluateExpr(expression);
+    return Number.isFinite(value) ? [value] : null;
+  }
+
+  switch (expression.t) {
+    case 'num':
+      return [expression.v];
+    case 'var': {
+      // e and π are constants in the expression engine; x is the only
+      // variable that can become part of ln(x).
+      const value = evaluateExpr(expression);
+      return Number.isFinite(value) ? [value] : null;
+    }
+    case 'neg': {
+      const inner = exprToLogPolynomial(expression.a);
+      return inner ? scaleLogPolynomial(inner, -1) : null;
+    }
+    case 'add':
+    case 'sub': {
+      const left = exprToLogPolynomial(expression.a);
+      const right = exprToLogPolynomial(expression.b);
+      return left && right
+        ? addLogPolynomials(left, right, expression.t === 'add' ? 1 : -1)
+        : null;
+    }
+    case 'mul': {
+      const left = exprToLogPolynomial(expression.a);
+      const right = exprToLogPolynomial(expression.b);
+      return left && right ? multiplyLogPolynomials(left, right) : null;
+    }
+    case 'div': {
+      const numerator = exprToLogPolynomial(expression.a);
+      const denominator = exprToLogPolynomial(expression.b);
+      // Dividing by a polynomial in u would make this a rational equation,
+      // not a polynomial one. A non-zero constant denominator is safe.
+      if (!numerator || !denominator || denominator.length !== 1) return null;
+      if (Math.abs(denominator[0]) < 1e-12) return null;
+      return scaleLogPolynomial(numerator, 1 / denominator[0]);
+    }
+    case 'pow': {
+      const base = exprToLogPolynomial(expression.a);
+      const exponent = evaluateExpr(expression.b);
+      if (
+        !base ||
+        !Number.isSafeInteger(exponent) ||
+        exponent < 0 ||
+        exponent > 32
+      )
+        return null;
+      return powerLogPolynomial(base, exponent);
+    }
+  }
+}
+
+/** Print a polynomial in a named variable, omitting zero terms cleanly. */
+function polynomialLatex(
+  coefficients: LogPolynomial,
+  variable: string,
+): string {
+  const terms: string[] = [];
+  const trimmed = trimLogPolynomial(coefficients);
+  for (let power = trimmed.length - 1; power >= 0; power--) {
+    const coefficient = trimmed[power] ?? 0;
+    if (Math.abs(coefficient) < 1e-12) continue;
+    const magnitude = Math.abs(coefficient);
+    const variablePart =
+      power === 0 ? '' : power === 1 ? variable : `${variable}^{${power}}`;
+    const body =
+      power === 0
+        ? fmt(magnitude, 6)
+        : Math.abs(magnitude - 1) < 1e-12
+          ? variablePart
+          : `${fmt(magnitude, 6)}${variablePart}`;
+    if (terms.length === 0) terms.push(coefficient < 0 ? `-${body}` : body);
+    else terms.push(coefficient < 0 ? `- ${body}` : `+ ${body}`);
+  }
+  return terms.length ? terms.join(' ') : '0';
+}
+
+function tryLogPolynomial(sides: [string, string]): {
+  coefficients: LogPolynomial;
+  left: LogPolynomial;
+  right: LogPolynomial;
+} | null {
+  let leftExpr: Expr;
+  let rightExpr: Expr;
+  try {
+    leftExpr = parseExpr(sides[0]);
+    rightExpr = parseExpr(sides[1]);
+  } catch {
+    return null;
+  }
+  const left = exprToLogPolynomial(leftExpr);
+  const right = exprToLogPolynomial(rightExpr);
+  if (!left || !right) return null;
+  const coefficients = trimLogPolynomial(addLogPolynomials(left, right, -1));
+  // A genuine equation in ln(x) needs at least a linear term. Identities and
+  // constant-only equations belong to the general equation fallback.
+  if (coefficients.length <= 1) return null;
+  return { coefficients, left, right };
 }
 
 function trimCoefficients(coeffs: number[]): number[] {
@@ -498,6 +679,110 @@ function solveImpl(input: string): SolveResult {
         answerLatex: valid.length
           ? valid.map((v) => `x = ${fmt(v, 6)}`).join(', \\quad ')
           : undefined,
+      },
+    };
+  }
+
+  const logPolynomial = tryLogPolynomial(sides);
+  if (logPolynomial) {
+    const { coefficients, left, right } = logPolynomial;
+    const degree = coefficients.length - 1;
+    steps.push({
+      note: 'Let $u = \\ln x$. This turns the repeated logarithm into one algebraic unknown.',
+      latex: 'u = \\ln x',
+      annotation: 'substitution',
+    });
+    steps.push({
+      note: 'Substitute $u$ for every occurrence of $\\ln x$.',
+      latex: `${polynomialLatex(left, 'u')} = ${polynomialLatex(right, 'u')}`,
+    });
+    steps.push({
+      note:
+        degree === 2
+          ? 'Move everything to one side. This is now a quadratic in $u$.'
+          : degree === 1
+            ? 'Move everything to one side. This is now linear in $u$.'
+            : `Move everything to one side. This is now a degree-${degree} polynomial in $u$.`,
+      latex: `${polynomialLatex(coefficients, 'u')} = 0`,
+    });
+
+    const uRoots = solveNumeric(coefficients);
+    if (!uRoots.length) {
+      steps.push({
+        note: 'That equation has no real values of $u$, so it has no real solution for $x$.',
+        latex: '\\text{No real solution}',
+      });
+      return {
+        ok: true,
+        solution: { headline, methodName: 'Substituting u = ln x', steps },
+      };
+    }
+
+    if (degree === 2) {
+      const [c, b, a] = coefficients;
+      steps.push({
+        note: 'Solve the quadratic in $u$ with the quadratic formula.',
+        latex: `u = \\dfrac{-(${fmt(b, 6)}) \\pm \\sqrt{(${fmt(b, 6)})^{2} - 4(${fmt(a, 6)})(${fmt(c, 6)})}}{2(${fmt(a, 6)})}`,
+        annotation: 'quadratic formula',
+      });
+    } else {
+      steps.push({
+        note: 'Solve the resulting polynomial for its real values of $u$.',
+      });
+    }
+    steps.push({
+      note: 'The real values of $u$ are:',
+      latex: uRoots
+        .map((u) => `u = ${fmt(u, 6)}`)
+        .join(' \\quad\\text{or}\\quad '),
+    });
+
+    const finiteRoots = uRoots
+      .map((u) => ({ u, x: Math.exp(u) }))
+      .filter(({ x }) => Number.isFinite(x) && x > 0)
+      .filter(({ x }) => verifyAgainst(sides, x));
+    if (!finiteRoots.length) {
+      steps.push({
+        note: 'Back-substitution produced no values in the domain of the original logarithm.',
+        latex: '\\text{No real solution}',
+        annotation: 'domain check',
+      });
+      return {
+        ok: true,
+        solution: { headline, methodName: 'Substituting u = ln x', steps },
+      };
+    }
+
+    steps.push({
+      note: 'Substitute the values of $u$ back into $u = \\ln x$.',
+      latex: finiteRoots
+        .map(({ u }) => `\\ln x = ${fmt(u, 6)}`)
+        .join(' \\quad\\text{or}\\quad '),
+    });
+    steps.push({
+      note: 'Raise $e$ to both sides to undo the natural logarithm.',
+      latex: finiteRoots
+        .map(({ u }) => `x = e^{${fmt(u, 6)}}`)
+        .join(' \\quad\\text{or}\\quad '),
+      annotation: 'inverse operation',
+    });
+    steps.push({
+      note: 'Work out the positive values of $x$.',
+      latex: finiteRoots
+        .map(({ x }) => `x = ${fmt(x, 6)}`)
+        .join(' \\quad\\text{or}\\quad '),
+      annotation: 'solved',
+    });
+
+    return {
+      ok: true,
+      solution: {
+        headline,
+        methodName: 'Substituting u = ln x',
+        steps,
+        answerLatex: finiteRoots
+          .map(({ x }) => `x = ${fmt(x, 6)}`)
+          .join(' \\quad\\text{or}\\quad '),
       },
     };
   }
