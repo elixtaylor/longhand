@@ -53,6 +53,19 @@ describe('reducing before solving', () => {
     expect(found[0]).toBeGreaterThan(0);
   });
 
+  it('uses log laws before solving powers inside logarithms', () => {
+    const solution = solve('ln(x^2) + ln(x) = 4');
+    const found = answers(solution.answerLatex);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toBeCloseTo(Math.exp(4 / 3), 6);
+    expect(solution.steps.some((step) => step.latex?.includes('x^{3}'))).toBe(
+      true,
+    );
+    expect(solution.steps.some((step) => step.latex?.includes('e^{4}'))).toBe(
+      true,
+    );
+  });
+
   it('takes logs of an exponential equation with different bases', () => {
     expect(answers(solve('2^x = 3^x').answerLatex)[0]).toBeCloseTo(0, 6);
     const x = answers(solve('2^(x+1) = 3^x').answerLatex)[0];
@@ -97,6 +110,9 @@ describe('reducing before solving', () => {
       'reduce',
     );
     expect(interpret('ln(x) + ln(x+1) = 2').detection?.solver.id).toBe(
+      'reduce',
+    );
+    expect(interpret('ln(x^2) + ln(x) = 4').detection?.solver.id).toBe(
       'reduce',
     );
     expect(interpret('2^x = 3^x').detection?.solver.id).toBe('reduce');

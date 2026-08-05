@@ -117,9 +117,13 @@ function trySqrt(
  * it breaks: that pipeline tries to represent the constant as an exact
  * fraction and the denominator it needs is astronomical.
  */
-function tryLog(
-  sides: [string, string],
-): { coeffs: number[]; domain: string[]; before: string } | null {
+function tryLog(sides: [string, string]): {
+  coeffs: number[];
+  domain: string[];
+  before: string;
+  combinedArgument: string;
+  exponent: number;
+} | null {
   const one = new Poly(new Map([[0, Rational.int(1)]]), 'x');
 
   for (const [lnSide, kSide] of [
@@ -175,28 +179,122 @@ function tryLog(
           `${i === 0 ? (t.sign < 0 ? '-' : '') : t.sign < 0 ? ' - ' : ' + '}\\ln\\left(${toLatex(parseExpr(t.inner as string))}\\right)`,
       )
       .join('');
+    const numeratorTerms = parsed
+      .filter((t) => t.sign === 1)
+      .map((t) => `\\left(${toLatex(parseExpr(t.inner as string))}\\right)`);
+    const denominatorTerms = parsed
+      .filter((t) => t.sign === -1)
+      .map((t) => `\\left(${toLatex(parseExpr(t.inner as string))}\\right)`);
+    const product = (terms: string[]) =>
+      terms.length === 0 ? '1' : terms.join(' \\cdot ');
+    const combinedArgument = denominatorTerms.length
+      ? `\\dfrac{${product(numeratorTerms)}}{${product(denominatorTerms)}}`
+      : product(numeratorTerms);
     return {
       coeffs,
       domain: parsed.map((t) => t.inner as string),
       before: `${beforeTerms} = ${fmt(k)}`,
+      combinedArgument,
+      exponent: k,
     };
   }
   return null;
 }
 
-/** ax² + bx + c = 0 (or lower degree) with plain floats — real roots only. */
-function solveNumeric(coeffs: number[]): number[] {
-  const [c = 0, b = 0, a = 0] = coeffs;
-  if (Math.abs(a) < 1e-12) {
-    if (Math.abs(b) < 1e-12) return [];
-    return [-c / b];
+function trimCoefficients(coeffs: number[]): number[] {
+  const out = [...coeffs];
+  while (out.length > 1 && Math.abs(out[out.length - 1]) < 1e-12) out.pop();
+  return out;
+}
+
+function polynomialValue(coeffs: number[], x: number): number {
+  let value = 0;
+  for (let i = coeffs.length - 1; i >= 0; i--) value = value * x + coeffs[i];
+  return value;
+}
+
+function addNumericRoot(roots: number[], candidate: number): void {
+  if (!Number.isFinite(candidate)) return;
+  if (roots.every((root) => Math.abs(root - candidate) > 1e-7))
+    roots.push(candidate);
+}
+
+function bisectPolynomial(
+  coeffs: number[],
+  left: number,
+  right: number,
+): number {
+  let a = left;
+  let b = right;
+  let fa = polynomialValue(coeffs, a);
+  for (let i = 0; i < 90; i++) {
+    const middle = (a + b) / 2;
+    const fm = polynomialValue(coeffs, middle);
+    if (!Number.isFinite(fm)) return middle;
+    if (Math.abs(fm) < 1e-12) return middle;
+    if (fa * fm <= 0) b = middle;
+    else {
+      a = middle;
+      fa = fm;
+    }
   }
-  const disc = b * b - 4 * a * c;
-  if (disc < -1e-9) return [];
-  const s = Math.sqrt(Math.max(disc, 0));
-  return disc < 1e-9
-    ? [-b / (2 * a)]
-    : [(-b + s) / (2 * a), (-b - s) / (2 * a)];
+  return (a + b) / 2;
+}
+
+/** Find all real roots of a float-coefficient polynomial by its turning points. */
+function polynomialRoots(input: number[]): number[] {
+  const coeffs = trimCoefficients(input);
+  const degree = coeffs.length - 1;
+  if (degree <= 0) return [];
+  if (degree === 1) return [-coeffs[0] / coeffs[1]];
+  if (degree === 2) {
+    const [c, b, a] = coeffs;
+    const disc = b * b - 4 * a * c;
+    if (disc < -1e-9) return [];
+    const s = Math.sqrt(Math.max(disc, 0));
+    return disc < 1e-9
+      ? [-b / (2 * a)]
+      : [(-b + s) / (2 * a), (-b - s) / (2 * a)];
+  }
+
+  const leading = coeffs[degree];
+  const bound = Math.min(
+    1e6,
+    1 + Math.max(...coeffs.slice(0, degree).map((c) => Math.abs(c / leading))),
+  );
+  const derivative = coeffs
+    .slice(1)
+    .map((coefficient, power) => coefficient * (power + 1));
+  const turningPoints = polynomialRoots(derivative)
+    .filter((x) => x > -bound && x < bound)
+    .sort((a, b) => a - b);
+  const points = [-bound, ...turningPoints, bound];
+  const roots: number[] = [];
+  const scale = Math.max(
+    1,
+    ...coeffs.map(
+      (coefficient) => Math.abs(coefficient) * Math.pow(bound, degree),
+    ),
+  );
+  for (const point of turningPoints) {
+    if (Math.abs(polynomialValue(coeffs, point)) < 1e-8 * scale)
+      addNumericRoot(roots, point);
+  }
+  for (let i = 0; i < points.length - 1; i++) {
+    const left = points[i];
+    const right = points[i + 1];
+    const leftValue = polynomialValue(coeffs, left);
+    const rightValue = polynomialValue(coeffs, right);
+    if (Math.abs(leftValue) < 1e-10) addNumericRoot(roots, left);
+    if (leftValue * rightValue < 0)
+      addNumericRoot(roots, bisectPolynomial(coeffs, left, right));
+  }
+  return roots.sort((a, b) => a - b);
+}
+
+/** Polynomial equation with plain floats — real roots only. */
+function solveNumeric(coeffs: number[]): number[] {
+  return polynomialRoots(coeffs);
 }
 
 /* ------------------------------------------------------- a^(px+q)=b^(rx+s) */
@@ -328,6 +426,16 @@ function solveImpl(input: string): SolveResult {
       latex: log.before,
       annotation: 'log laws',
     });
+    steps.push({
+      note: 'Use the product and quotient laws to combine the logarithms into one logarithm.',
+      latex: `\\ln\\left(${log.combinedArgument}\\right) = ${fmt(log.exponent, 6)}`,
+      annotation: 'log laws',
+    });
+    steps.push({
+      note: 'Raise e to both sides to undo the natural logarithm.',
+      latex: `${log.combinedArgument} = e^{${fmt(log.exponent, 6)}}`,
+      annotation: 'inverse operation',
+    });
     const degree = log.coeffs.length - 1;
     const term = (c: number, p: number): string => {
       const varPart = p === 0 ? '' : p === 1 ? 'x' : `x^{${p}}`;
@@ -340,7 +448,9 @@ function solveImpl(input: string): SolveResult {
       note:
         degree <= 1
           ? 'What is left is linear.'
-          : 'What is left is a quadratic — solve it with the formula.',
+          : degree === 2
+            ? 'What is left is a quadratic — solve it with the formula.'
+            : `What is left is a degree-${degree} polynomial — solve it numerically.`,
       latex: `${log.coeffs
         .map(term)
         .reverse()
