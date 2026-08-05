@@ -24,8 +24,10 @@ describe('linearSolver', () => {
     const operation = res.solution.steps.find((step) =>
       step.note?.includes('both sides'),
     );
-    expect(operation?.latex).toContain('\\color{red}{- 4}');
-    expect(operation?.latex?.match(/\\color\{red\}\{- 4\}/g)).toHaveLength(2);
+    expect(operation?.latex).toContain('\\textcolor{red}{- 4}');
+    expect(operation?.latex?.match(/\\textcolor\{red\}\{- 4\}/g)).toHaveLength(
+      2,
+    );
   });
   it('keeps fractional answers exact', () => {
     expect(answerOf(linearSolver, '2x = 3', 'balance')).toBe(

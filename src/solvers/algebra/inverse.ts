@@ -324,7 +324,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         }
         steps.push({
           note: `The unknown is in the index, so take $\\log_{${fmt(base)}}$ of both sides.`,
-          latex: `${redLatex(`\\log_{${fmt(base)}}`)}\\left(${toLatex(left)}\\right) = ${redLatex(`\\log_{${fmt(base)}}`)}\\left(${toLatex(right)}\\right)`,
+          latex: `\\log_{${fmt(base)}}\\left(${toLatex(left)}\\right) = \\log_{${fmt(base)}}\\left(${toLatex(right)}\\right)`,
           annotation: 'same to both sides',
         });
         const exact = wholePower(base, value);
@@ -356,7 +356,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             const shown = left.name === 'ln' ? 'e' : fmt(base);
             steps.push({
               note: `To undo a logarithm, raise $${shown}$ to the power of each side. Doing the same thing to both sides keeps the equation true.`,
-              latex: `${redLatex(shown)}^{\\,${toLatex(left)}} = ${redLatex(shown)}^{\\,${toLatex(right)}}`,
+              latex: `${shown}^{\\,${toLatex(left)}} = ${shown}^{\\,${toLatex(right)}}`,
               annotation: 'same to both sides',
             });
             const raised: Expr =
@@ -383,7 +383,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
               }
               steps.push({
                 note: 'To bring the index down, take the natural logarithm of both sides.',
-                latex: `${redLatex('\\ln')}\\left(${toLatex(left)}\\right) = ${redLatex('\\ln')}\\left(${toLatex(right)}\\right)`,
+                latex: `\\ln\\left(${toLatex(left)}\\right) = \\ln\\left(${toLatex(right)}\\right)`,
                 annotation: 'same to both sides',
               });
               tidy(
@@ -401,7 +401,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             }
             steps.push({
               note: 'Square both sides to undo the square root.',
-              latex: `\\left(${toLatex(left)}\\right)^{${redLatex('2')}} = ${tight(right)}^{${redLatex('2')}}`,
+              latex: `\\left(${toLatex(left)}\\right)^{2} = ${tight(right)}^{2}`,
               annotation: 'same to both sides',
             });
             tidy(

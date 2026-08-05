@@ -139,13 +139,11 @@ describe('solving by undoing', () => {
     const steps = solve('ln(x+5) = 5').steps.map((s) => s.latex ?? '');
     // Raising both sides under an e is the move that makes the cancellation
     // obvious; going straight to x = e^5 - 5 hides it.
-    expect(steps.some((l) => l.includes('\\color{red}{e}^{\\,\\ln'))).toBe(
-      true,
-    );
+    expect(steps.some((l) => l.includes('e^{\\,\\ln'))).toBe(true);
     expect(steps.some((l) => /x \+ 5 = e\^\{5\}/.test(l))).toBe(true);
     expect(
       steps.some((l) =>
-        l.includes('\\color{red}{- 5} = e^{5} \\color{red}{- 5}'),
+        l.includes('\\textcolor{red}{- 5} = e^{5} \\textcolor{red}{- 5}'),
       ),
     ).toBe(true);
   });
@@ -156,14 +154,14 @@ describe('solving by undoing', () => {
     );
     expect(
       subtraction.some(
-        (line) => (line.match(/\\color\{red\}\{- 5\}/g) ?? []).length === 2,
+        (line) => (line.match(/\\textcolor\{red\}\{- 5\}/g) ?? []).length === 2,
       ),
     ).toBe(true);
 
     const division = solve('2(x + 3) = 10').steps.map(
       (step) => step.latex ?? '',
     );
-    expect(division.some((line) => line.includes('\\color{red}{2}'))).toBe(
+    expect(division.some((line) => line.includes('\\textcolor{red}{2}'))).toBe(
       true,
     );
   });
