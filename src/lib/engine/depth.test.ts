@@ -70,9 +70,11 @@ describe('the moves that used to be skipped', () => {
   it('writes a balancing operation on both sides before its result', () => {
     const ls = lines('3x + 4 = 2x - 5');
     // The line showing the same thing done to both sides, then the tidy-up.
-    expect(ls).toContain('3x + 4 - 2x = 2x - 5 - 2x');
+    expect(ls).toContain(
+      '3x + 4 - \\color{red}{2x} = 2x - 5 - \\color{red}{2x}',
+    );
     expect(ls).toContain('x + 4 = -5');
-    expect(ls).toContain('x + 4 - 4 = -5 - 4');
+    expect(ls).toContain('x + 4 - \\color{red}{4} = -5 - \\color{red}{4}');
   });
 
   it('shows the subtraction of one equation from the other', () => {
@@ -152,14 +154,18 @@ describe('undoing an operation is shown, not assumed', () => {
    */
   it('raises both sides as a power before cancelling the logarithm', () => {
     const ls = lines('ln x = 5');
-    expect(ls).toContain('e^{\\,\\ln x} = e^{\\,5}'); // the same-to-both-sides move
+    expect(ls).toContain(
+      '\\color{red}{e}^{\\,\\ln x} = \\color{red}{e}^{\\,5}',
+    ); // the same-to-both-sides move
     expect(ls).toContain('x = e^{\\,5}'); // only then does the log cancel
     expect(ls).toContain('x = 148.413159');
   });
 
   it('does the same for a base-10 logarithm', () => {
     const ls = lines('log x = 3');
-    expect(ls).toContain('10^{\\,\\log x} = 10^{\\,3}');
+    expect(ls).toContain(
+      '\\color{red}{10}^{\\,\\log x} = \\color{red}{10}^{\\,3}',
+    );
     expect(ls).toContain('x = 1000');
   });
 

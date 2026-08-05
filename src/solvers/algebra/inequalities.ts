@@ -1,6 +1,7 @@
 import { Rational } from '../../lib/math/rational';
 import { parsePoly, Poly, ParseError } from '../../lib/math/parse';
 import { rl, polyLatex } from '../../lib/math/format';
+import { redLatex } from '../../lib/math/latex';
 import { quadraticRoots } from '../quadratics';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
@@ -77,13 +78,13 @@ function solveLinear(iq: Ineq): SolveResult {
     rel = FLIP[rel];
     steps.push({
       note: `Divide both sides by $${rl(a)}$. Dividing by a negative **reverses** the inequality sign.`,
-      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${rl(a)}}`,
+      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${redLatex(rl(a))}}`,
       annotation: 'sign flipped!',
     });
   } else {
     steps.push({
       note: `Divide both sides by $${rl(a)}$.`,
-      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${rl(a)}}`,
+      latex: `x ${PRETTY[rel]} \\dfrac{${rl(b.neg())}}{${redLatex(rl(a))}}`,
     });
   }
   // The division is its own move, not a tail on the line that set it up.

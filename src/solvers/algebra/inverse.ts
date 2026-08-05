@@ -7,6 +7,7 @@ import {
   num,
   type Expr,
 } from '../../lib/math/expr';
+import { redLatex } from '../../lib/math/latex';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /**
@@ -179,7 +180,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
           // of the loop flips; doing it in one jump would skip the reason.
           steps.push({
             note: `Subtract $${toLatex(other)}$ from both sides, so the term with $x$ is on its own.`,
-            latex: `${toLatex(left)} - ${tight(other)} = ${toLatex(right)} - ${tight(other)}`,
+            latex: `${toLatex(left)} - ${redLatex(tight(other))} = ${toLatex(right)} - ${redLatex(tight(other))}`,
             annotation: 'same to both sides',
           });
           tidy(
@@ -200,7 +201,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
 
         steps.push({
           note: `${undo === 'add' ? 'Add' : 'Subtract'} $${toLatex(shown)}$ ${undo === 'add' ? 'to' : 'from'} both sides to undo the ${undo === 'add' ? 'subtraction' : 'addition'}.`,
-          latex: `${toLatex(left)} ${sign} ${tight(shown)} = ${toLatex(right)} ${sign} ${tight(shown)}`,
+          latex: `${toLatex(left)} ${sign} ${redLatex(tight(shown))} = ${toLatex(right)} ${sign} ${redLatex(tight(shown))}`,
           annotation: 'same to both sides',
         });
         tidy(
@@ -224,7 +225,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
           );
         steps.push({
           note: `$${toLatex(keep)}$ is multiplied by $${toLatex(factor)}$, so divide both sides by $${toLatex(factor)}$ to undo it.`,
-          latex: `\\dfrac{${toLatex(left)}}{${toLatex(factor)}} = \\dfrac{${toLatex(right)}}{${toLatex(factor)}}`,
+          latex: `\\dfrac{${toLatex(left)}}{${redLatex(toLatex(factor))}} = \\dfrac{${toLatex(right)}}{${redLatex(toLatex(factor))}}`,
           annotation: 'same to both sides',
         });
         tidy(
@@ -239,7 +240,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         if (has(left.a)) {
           steps.push({
             note: `$${toLatex(left.a)}$ is divided by $${toLatex(left.b)}$, so multiply both sides by $${toLatex(left.b)}$.`,
-            latex: `${toLatex(left)} \\times ${tight(left.b)} = ${toLatex(right)} \\times ${tight(left.b)}`,
+            latex: `${toLatex(left)} \\times ${redLatex(tight(left.b))} = ${toLatex(right)} \\times ${redLatex(tight(left.b))}`,
             annotation: 'same to both sides',
           });
           tidy(
@@ -263,7 +264,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         }
         steps.push({
           note: `$x$ is underneath, so multiply both sides by $${toLatex(left.b)}$ to bring it up.`,
-          latex: `${toLatex(left)} \\times ${tight(left.b)} = ${toLatex(right)} \\times ${tight(left.b)}`,
+          latex: `${toLatex(left)} \\times ${redLatex(tight(left.b))} = ${toLatex(right)} \\times ${redLatex(tight(left.b))}`,
           annotation: 'same to both sides',
         });
         steps.push({
@@ -272,7 +273,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         });
         steps.push({
           note: `Now divide both sides by $${toLatex(right)}$.`,
-          latex: `\\dfrac{${toLatex(top)}}{${tight(right)}} = ${toLatex(left.b)}`,
+          latex: `\\dfrac{${toLatex(top)}}{${redLatex(tight(right))}} = ${toLatex(left.b)}`,
           annotation: 'same to both sides',
         });
         tidy(
@@ -286,7 +287,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
       case 'neg': {
         steps.push({
           note: 'The whole left-hand side is negative, so multiply both sides by $-1$.',
-          latex: `${toLatex(left)} \\times (-1) = ${tight(right)} \\times (-1)`,
+          latex: `${toLatex(left)} \\times ${redLatex('(-1)')} = ${tight(right)} \\times ${redLatex('(-1)')}`,
           annotation: 'same to both sides',
         });
         tidy(left.a, { t: 'neg', a: right }, 'Both signs flip.');
@@ -320,7 +321,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
         }
         steps.push({
           note: `The unknown is in the index, so take $\\log_{${fmt(base)}}$ of both sides.`,
-          latex: `\\log_{${fmt(base)}}\\left(${toLatex(left)}\\right) = \\log_{${fmt(base)}}\\left(${toLatex(right)}\\right)`,
+          latex: `${redLatex(`\\log_{${fmt(base)}}`)}\\left(${toLatex(left)}\\right) = ${redLatex(`\\log_{${fmt(base)}}`)}\\left(${toLatex(right)}\\right)`,
           annotation: 'same to both sides',
         });
         const exact = wholePower(base, value);
@@ -352,7 +353,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             const shown = left.name === 'ln' ? 'e' : fmt(base);
             steps.push({
               note: `To undo a logarithm, raise $${shown}$ to the power of each side. Doing the same thing to both sides keeps the equation true.`,
-              latex: `${shown}^{\\,${toLatex(left)}} = ${shown}^{\\,${toLatex(right)}}`,
+              latex: `${redLatex(shown)}^{\\,${toLatex(left)}} = ${redLatex(shown)}^{\\,${toLatex(right)}}`,
               annotation: 'same to both sides',
             });
             const raised: Expr =
@@ -379,7 +380,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
               }
               steps.push({
                 note: 'To bring the index down, take the natural logarithm of both sides.',
-                latex: `\\ln\\left(${toLatex(left)}\\right) = \\ln\\left(${toLatex(right)}\\right)`,
+                latex: `${redLatex('\\ln')}\\left(${toLatex(left)}\\right) = ${redLatex('\\ln')}\\left(${toLatex(right)}\\right)`,
                 annotation: 'same to both sides',
               });
               tidy(
@@ -397,7 +398,7 @@ function isolate(eq: Equation, steps: Step[], depth = 0): Outcome {
             }
             steps.push({
               note: 'Square both sides to undo the square root.',
-              latex: `\\left(${toLatex(left)}\\right)^{2} = ${tight(right)}^{2}`,
+              latex: `\\left(${toLatex(left)}\\right)^{${redLatex('2')}} = ${tight(right)}^{${redLatex('2')}}`,
               annotation: 'same to both sides',
             });
             tidy(

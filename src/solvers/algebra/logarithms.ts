@@ -1,4 +1,5 @@
 import { fmt, par } from '../../lib/math/num';
+import { redLatex } from '../../lib/math/latex';
 import { quadraticRoots } from '../quadratics';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
@@ -573,7 +574,7 @@ export const logarithmsSolver: Solver = {
         { note: 'Write down the equation.', latex: `${L} x = ${fmt(value)}` },
         {
           note: `To undo a logarithm, raise ${base === 'e' ? '$e$' : `$${b}$`} to the power of each side. Doing the same thing to both sides keeps the equation true.`,
-          latex: `${b}^{\\,${L} x} = ${b}^{\\,${fmt(value)}}`,
+          latex: `${redLatex(b)}^{\\,${L} x} = ${redLatex(b)}^{\\,${fmt(value)}}`,
           annotation: 'same to both sides',
         },
         {

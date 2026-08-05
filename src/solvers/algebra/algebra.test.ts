@@ -17,6 +17,16 @@ describe('linearSolver', () => {
   it('solves 2x + 3 = 7', () => {
     expect(answerOf(linearSolver, '2x + 3 = 7', 'balance')).toBe('x = 2');
   });
+  it('marks both copies of a balancing term red', () => {
+    const res = linearSolver.solve('2x + 4 = 10', 'balance');
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const operation = res.solution.steps.find((step) =>
+      step.note?.includes('both sides'),
+    );
+    expect(operation?.latex).toContain('\\color{red}{4}');
+    expect(operation?.latex?.match(/\\color\{red\}\{4\}/g)).toHaveLength(2);
+  });
   it('keeps fractional answers exact', () => {
     expect(answerOf(linearSolver, '2x = 3', 'balance')).toBe(
       'x = \\frac{3}{2}',

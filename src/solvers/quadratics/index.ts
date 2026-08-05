@@ -7,6 +7,7 @@ import {
 } from '../../lib/math/parse';
 import { rl, rlPlain, polyLatex, connectTerm } from '../../lib/math/format';
 import { simplifySqrt, isPerfectSquare } from '../../lib/math/surd';
+import { redLatex } from '../../lib/math/latex';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /* ------------------------------------------------------------- integer helpers */
@@ -263,13 +264,14 @@ function solveByCompletingSquare(std: Poly): SolveResult {
       latex: `x^{2} ${term(B, 'x')} ${term(C)} = 0`,
     });
   }
+  const halfSquare = `\\left(${rl(H)}\\right)^{2}`;
   steps.push({
     note: 'Move the constant term to the right-hand side.',
     latex: `x^{2} ${term(B, 'x')} = ${rl(C.neg())}`,
   });
   steps.push({
     note: `Halve the coefficient of $x$: half of $${rl(B)}$ is $${rl(H)}$. Square that and add it to both sides, which keeps the equation balanced.`,
-    latex: `x^{2} ${term(B, 'x')} + \\left(${rl(H)}\\right)^{2} = ${rl(C.neg())} + \\left(${rl(H)}\\right)^{2}`,
+    latex: `x^{2} ${term(B, 'x')} + ${redLatex(halfSquare)} = ${rl(C.neg())} + ${redLatex(halfSquare)}`,
     annotation: `half of ${rlPlain(B)} is ${rlPlain(H)}`,
   });
   steps.push({
@@ -299,10 +301,19 @@ function solveByCompletingSquare(std: Poly): SolveResult {
 
   steps.push({
     note: 'Take the square root of both sides (remember $\\pm$).',
-    latex: `x + ${rl(H)} = \\pm\\sqrt{${rl(rhs)}}`,
+    latex: `x ${term(H)} = \\pm\\sqrt{${rl(rhs)}}`,
   });
+  if (!H.isZero()) {
+    const undoHalf = H.isNeg()
+      ? `+ ${redLatex(rl(H.abs()))}`
+      : `- ${redLatex(rl(H))}`;
+    steps.push({
+      note: `Subtract ${rl(H)} from both sides to solve for $x$.`,
+      latex: `x ${term(H)} ${undoHalf} = \\pm\\sqrt{${rl(rhs)}} ${undoHalf}`,
+    });
+  }
   steps.push({
-    note: `Subtract ${rl(H)} from both sides to solve for $x$.`,
+    note: 'Simplify the two solutions.',
     latex: info.answerLatex,
   });
   return done(std, 'Completing the square', steps, info.answerLatex);

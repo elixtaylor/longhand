@@ -63,31 +63,6 @@ export function workingSteps(solution: Solution): Step[] {
   return out;
 }
 
-/**
- * Identify the operation being applied to both sides of an equation. The
- * solver notes already explain the move in plain language, so keeping this
- * small classifier here means every solver gets the same visual language
- * without duplicating colour metadata in each maths engine.
- */
-export type StepOperation =
-  'subtract' | 'add' | 'multiply' | 'divide' | 'power' | 'log' | 'root';
-
-export function stepOperation(step: Step): StepOperation | undefined {
-  const text = `${step.note ?? ''} ${step.annotation ?? ''}`.toLowerCase();
-  if (!text.includes('both sides')) return undefined;
-
-  // Notes such as “is multiplied by ..., so divide both sides ...” describe
-  // the operation actually performed, which is division.
-  if (/\bdivide\b/.test(text)) return 'divide';
-  if (/\b(?:multiply|multiplied)\b/.test(text)) return 'multiply';
-  if (/\bsubtract\b|\boff both sides\b/.test(text)) return 'subtract';
-  if (/\badd\b/.test(text)) return 'add';
-  if (/\bsquare\b|\braise\b|\bpower\b/.test(text)) return 'power';
-  if (/\blog(?:arithm)?\b/.test(text)) return 'log';
-  if (/\broot\b/.test(text)) return 'root';
-  return undefined;
-}
-
 export function StepList({
   solution,
   revealMode,
@@ -263,13 +238,8 @@ export function StepList({
       <ol className={`steps${wide ? ' steps-wide' : ''}`} ref={listRef}>
         {steps.map((step, i) => {
           const hidden = i >= revealed;
-          const operation = stepOperation(step);
           return (
-            <li
-              key={i}
-              className={`step${hidden ? ' is-hidden' : ''}${operation ? ` step-operation step-operation-${operation}` : ''}`}
-              data-operation={operation}
-            >
+            <li key={i} className={`step${hidden ? ' is-hidden' : ''}`}>
               <div className="step-body">
                 {step.note && showNotes && (
                   <p className="step-note">

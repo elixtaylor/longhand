@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { StepList, stepOperation, workingSteps } from './StepList';
+import { StepList, workingSteps } from './StepList';
 import { quadraticsSolver } from '../solvers/quadratics';
 
-describe('StepList operation colours', () => {
-  it('colours a subtract-from-both-sides line without showing annotation text', () => {
+describe('StepList rendering', () => {
+  it('keeps operation annotations out of the equation line', () => {
     Object.defineProperty(document, 'fonts', {
       configurable: true,
       value: {
@@ -36,26 +36,7 @@ describe('StepList operation colours', () => {
         showNotes={false}
       />,
     );
-    expect(screen.getByRole('listitem').className).toContain('step-operation');
-    expect(screen.getByRole('listitem').className).toContain(
-      'step-operation-subtract',
-    );
-    expect(screen.getByRole('listitem').getAttribute('data-operation')).toBe(
-      'subtract',
-    );
     expect(screen.queryByText('same to both sides')).toBeNull();
-  });
-
-  it('classifies the operation actually applied when both sides change', () => {
-    const cases = [
-      ['Add 4 to both sides.', 'add'],
-      ['The term is multiplied, so divide both sides by 3.', 'divide'],
-      ['Multiply both sides by 2.', 'multiply'],
-      ['Square both sides.', 'power'],
-    ] as const;
-    for (const [note, operation] of cases) {
-      expect(stepOperation({ note })).toBe(operation);
-    }
   });
 
   it('does not repeat a multi-answer result after the final working line', () => {

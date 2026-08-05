@@ -1,6 +1,7 @@
 import { Rational } from '../../lib/math/rational';
 import { parseEquation, Poly, ParseError } from '../../lib/math/parse';
 import { rl, polyLatex, connectTerm } from '../../lib/math/format';
+import { redLatex } from '../../lib/math/latex';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /** Build a display polynomial  a·x + b. */
@@ -73,12 +74,16 @@ function solveByBalance(lin: Linear): SolveResult {
   // both sides, *then* tidy up. Showing only the tidied line hides the very
   // thing the method is about, so each move gets both.
   const undo = (r: Rational) => (r.isNeg() ? `+ ${rl(r.abs())}` : `- ${rl(r)}`);
+  const undoRed = (r: Rational, suffix = '') => {
+    const magnitude = suffix === 'x' ? termX(r.abs()) : rl(r.abs());
+    return r.isNeg() ? `+ ${redLatex(magnitude)}` : `- ${redLatex(magnitude)}`;
+  };
 
   // Gather the x-terms on the left.
   if (!lin.c.isZero()) {
     steps.push({
       note: `Take $${termX(lin.c)}$ off both sides, so the $x$-terms end up together.`,
-      latex: `${polyLatex(linearPoly(lin.a, lin.b))} ${undo(lin.c)}x = ${polyLatex(linearPoly(lin.c, lin.d))} ${undo(lin.c)}x`,
+      latex: `${polyLatex(linearPoly(lin.a, lin.b))} ${undoRed(lin.c, 'x')} = ${polyLatex(linearPoly(lin.c, lin.d))} ${undoRed(lin.c, 'x')}`,
       annotation: 'same to both sides',
     });
     steps.push({
@@ -93,7 +98,7 @@ function solveByBalance(lin: Linear): SolveResult {
     rightConst = rightConst.sub(leftConst);
     steps.push({
       note: `${moved.isNeg() ? 'Add' : 'Subtract'} $${rl(moved.abs())}$ ${moved.isNeg() ? 'to' : 'from'} both sides to leave the $x$-term on its own.`,
-      latex: `${termX(A)}${connectTerm(moved, 0, 'x')} ${undo(moved)} = ${rl(before)} ${undo(moved)}`,
+      latex: `${termX(A)}${connectTerm(moved, 0, 'x')} ${undoRed(moved)} = ${rl(before)} ${undoRed(moved)}`,
       annotation: 'same to both sides',
     });
     steps.push({
@@ -106,7 +111,7 @@ function solveByBalance(lin: Linear): SolveResult {
   if (!A.eq(Rational.int(1))) {
     steps.push({
       note: `$x$ is multiplied by $${rl(A)}$, so divide both sides by $${rl(A)}$ to undo it.`,
-      latex: `\\dfrac{${termX(A)}}{${rl(A)}} = \\dfrac{${rl(rightConst)}}{${rl(A)}}`,
+      latex: `\\dfrac{${termX(A)}}{${redLatex(rl(A))}} = \\dfrac{${rl(rightConst)}}{${redLatex(rl(A))}}`,
       annotation: 'same to both sides',
     });
     steps.push({

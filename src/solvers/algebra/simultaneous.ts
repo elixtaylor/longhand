@@ -1,6 +1,7 @@
 import { Rational } from '../../lib/math/rational';
 import { normalise, ParseError } from '../../lib/math/parse';
 import { rl } from '../../lib/math/format';
+import { redLatex } from '../../lib/math/latex';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /** One equation  a·x + b·y = c. */
@@ -144,7 +145,7 @@ function solveByElimination(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
   const val = diff.c.div(coeffLeft);
   steps.push({
     note: `Divide both sides by $${rl(coeffLeft)}$ to get $${solvedVar}$ on its own.`,
-    latex: `${solvedVar} = \\dfrac{${rl(diff.c)}}{${rl(coeffLeft)}} = ${rl(val)}`,
+    latex: `${solvedVar} = \\dfrac{${rl(diff.c)}}{${redLatex(rl(coeffLeft))}} = ${rl(val)}`,
     annotation: `${solvedVar} found`,
   });
 
@@ -176,7 +177,7 @@ function solveByElimination(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
   if (!wantedCoeff.eq(Rational.int(1))) {
     steps.push({
       note: `Divide both sides by $${rl(wantedCoeff)}$.`,
-      latex: `${wantedVar} = \\dfrac{${rl(remainder)}}{${rl(wantedCoeff)}} = ${rl(wantedVal)}`,
+      latex: `${wantedVar} = \\dfrac{${rl(remainder)}}{${redLatex(rl(wantedCoeff))}} = ${rl(wantedVal)}`,
     });
   }
   steps.push({
