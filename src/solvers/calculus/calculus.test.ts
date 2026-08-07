@@ -64,6 +64,12 @@ describe('integrationSolver', () => {
     expect(ans(integrationSolver, '∫_1^3 2x dx', 'reverse-power')).toBe('8');
   });
 
+  it('keeps a non-integer definite integral exact', () => {
+    expect(
+      ans(integrationSolver, 'integrate x^2 from 0 to 1', 'definite'),
+    ).toBe('\\frac{1}{3}');
+  });
+
   it('gives a signed area when the curve dips below the axis', () => {
     // ∫₋₁¹ x dx = 0
     expect(

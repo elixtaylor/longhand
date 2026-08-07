@@ -264,10 +264,10 @@ describe('worked answers stay worked', () => {
       '\\left(1,\\; 2\\right)\\text{ maximum}, \\quad \\left(2,\\; 1\\right)\\text{ minimum}',
     ],
     ['stationary points of x^3 + x', '\\text{no stationary points}'],
-    // Logs — e^25, and 2^5 = 32
+    // Logs — keep inverse powers exact, and 2^5 = 32
     ['2^x = 32', 'x = 5'],
     ['log2(32)', '\\log_{2}(32) = 5'],
-    ['ln x = 5', 'x = 148.413159'],
+    ['ln x = 5', 'x = e^{5}'],
     // Rates
     ['half-life 5, initial 80, t=15', 'y = 10'],
     ['doubling time 7, initial 500, t=21', 'y = 4000'],

@@ -92,6 +92,13 @@ describe('term collecting', () => {
     expect(found2.sort((a, b) => a - b)).toEqual([-3, 2]);
   });
 
+  it('keeps the remaining quadratic roots exact after peeling a cubic root', () => {
+    const answer = solve('(x-1)(x^2-2) = 0').answerLatex ?? '';
+    expect(answer).toContain('x = 1');
+    expect(answer).toContain('\\sqrt{2}');
+    expect(answer).not.toContain('1.414213');
+  });
+
   it('recognises an identity produced only after expanding', () => {
     const r = solve('5(x + 2) = 5x + 10');
     expect(r.answerLatex).toBeUndefined();

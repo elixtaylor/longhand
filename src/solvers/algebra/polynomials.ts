@@ -106,9 +106,10 @@ function splitDivision(
   input: string,
 ): { dividend: string; root: Rational } | null {
   const m = input.match(
-    /^(.*?)(?:÷|\/)\s*\(?\s*x\s*([+-])\s*(\d+(?:\.\d+)?)\s*\)?\s*$/i,
+    /^(.*?)(?:÷|\/)\s*\(?\s*x\s*(?:([+-])\s*(\d+(?:\.\d+)?))?\s*\)?\s*$/i,
   );
   if (!m) return null;
+  if (!m[2]) return { dividend: m[1], root: Rational.int(0) };
   const sign = m[2] === '-' ? 1 : -1;
   return { dividend: m[1], root: Rational.parse(String(sign * Number(m[3]))) };
 }

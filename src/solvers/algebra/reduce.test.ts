@@ -55,9 +55,10 @@ describe('reducing before solving', () => {
 
   it('uses log laws before solving powers inside logarithms', () => {
     const solution = solve('ln(x^2) + ln(x) = 4');
-    const found = answers(solution.answerLatex);
-    expect(found).toHaveLength(1);
-    expect(found[0]).toBeCloseTo(Math.exp(4 / 3), 6);
+    expect(solution.answerLatex).toBe('x = e^{\\frac{4}{3}}');
+    expect(
+      solution.steps.some((step) => step.latex?.includes('\\approx')),
+    ).toBe(true);
     expect(solution.steps.some((step) => step.latex?.includes('x^{3}'))).toBe(
       true,
     );
@@ -68,10 +69,9 @@ describe('reducing before solving', () => {
 
   it('substitutes u = ln x when the logarithm itself is squared', () => {
     const solution = solve('(lnx)^2 = 2lnx + 3');
-    const found = answers(solution.answerLatex);
-    expect(found).toHaveLength(2);
-    expect(found[0]).toBeCloseTo(Math.exp(3), 6);
-    expect(found[1]).toBeCloseTo(Math.exp(-1), 6);
+    expect(solution.answerLatex).toBe(
+      'x = e^{3} \\quad\\text{or}\\quad x = e^{-1}',
+    );
     expect(
       solution.steps.some((step) => step.latex?.includes('u^{2} - 2u - 3 = 0')),
     ).toBe(true);
@@ -87,9 +87,10 @@ describe('reducing before solving', () => {
   });
 
   it('takes logs of an exponential equation with different bases', () => {
-    expect(answers(solve('2^x = 3^x').answerLatex)[0]).toBeCloseTo(0, 6);
-    const x = answers(solve('2^(x+1) = 3^x').answerLatex)[0];
-    expect(2 ** (x + 1)).toBeCloseTo(3 ** x, 3);
+    expect(solve('2^x = 3^x').answerLatex).toBe('x = 0');
+    const exact = solve('2^(x+1) = 3^x').answerLatex;
+    expect(exact).toContain('\\ln');
+    expect(exact).not.toContain('bisection');
   });
 
   it('shows exact symbolic working for affine exponents before using decimals', () => {
@@ -118,7 +119,9 @@ describe('reducing before solving', () => {
     );
     expect(lines).toContain('\\ln 4 = 1.386294, \\qquad \\ln 3 = 1.098612');
     expect(lines[lines.length - 1]).toContain('0.080279');
-    expect(s.answerLatex).toBe('x = 0.080279');
+    expect(s.answerLatex).toBe(
+      'x = \\dfrac{\\ln\\left(\\dfrac{4}{3}\\right)}{\\ln\\left(36\\right)}',
+    );
   });
 
   it('shows the power-law expansion and the resulting linear equation, not just the answer', () => {
@@ -132,8 +135,8 @@ describe('reducing before solving', () => {
     expect(s.steps.some((step) => /^x\\left\(/.test(step.latex ?? ''))).toBe(
       true,
     );
-    const x = answers(s.answerLatex)[0];
-    expect(2 ** (x + 1)).toBeCloseTo(3 ** (x - 1), 3);
+    expect(s.answerLatex).toContain('\\ln');
+    expect(s.steps.some((step) => step.latex?.includes('\\ln'))).toBe(true);
   });
 
   it('uses base-10 logarithms throughout exponential working when selected', () => {

@@ -31,6 +31,11 @@ describe('polynomialsSolver', () => {
     expect(s.answerLatex).toBe('x^{2} - x - 6');
   });
 
+  it('accepts x itself as a linear divisor', () => {
+    const s = sol(polynomialsSolver, 'x^3 + 2x^2 - x / x', 'division');
+    expect(s.answerLatex).toBe('x^{2} + 2x - 1');
+  });
+
   it('finds a remainder with the remainder theorem', () => {
     // P(x) = x³ + 2x − 3 at x = 2 → 8 + 4 − 3 = 9
     const s = sol(
@@ -61,9 +66,9 @@ describe('logarithmsSolver', () => {
   });
 
   it('falls back to logs when the answer is not a whole power', () => {
-    // log 20 / log 3 = 2.726833
+    // Keep the exact change-of-base form; the decimal is shown in the working.
     const s = sol(logarithmsSolver, '3^x = 20', 'same-base');
-    expect(s.answerLatex).toBe('x = 2.726833');
+    expect(s.answerLatex).toBe('x = \\dfrac{\\ln(20)}{\\ln(3)}');
   });
 
   it('can show base-10 logarithms when that preference is selected', () => {
@@ -75,7 +80,9 @@ describe('logarithmsSolver', () => {
     const lines = result.solution.steps.map((step) => step.latex ?? '');
     expect(lines.some((line) => line.includes('\\log'))).toBe(true);
     expect(lines.some((line) => line.includes('\\ln'))).toBe(false);
-    expect(result.solution.answerLatex).toBe('x = 2.726833');
+    expect(result.solution.answerLatex).toBe(
+      'x = \\dfrac{\\log(20)}{\\log(3)}',
+    );
   });
 
   it('uses the selected base for change-of-base working', () => {
@@ -120,9 +127,9 @@ describe('logarithmsSolver', () => {
   });
 
   it('solves a natural-log equation', () => {
-    // ln x = 2 → e² = 7.389056
+    // ln x = 2 → x = e², with the decimal in the working.
     expect(sol(logarithmsSolver, 'ln x = 2', 'same-base').answerLatex).toBe(
-      'x = 7.389056',
+      'x = e^{2}',
     );
   });
 
@@ -135,7 +142,7 @@ describe('logarithmsSolver', () => {
     // u = -5 is rejected (2^x is always positive), so 2^x = 3 → x = log2(3).
     const s = sol(logarithmsSolver, '4^x+2^(x+1)-15=0', 'same-base');
     expect(s.methodName).toBe('Reducible to a quadratic');
-    expect(s.answerLatex).toBe('x = 1.584963');
+    expect(s.answerLatex).toBe('x = \\dfrac{\\ln(3)}{\\ln(2)}');
     expect(
       s.steps.some((step: { latex?: string }) => step.latex?.includes('u = 3')),
     ).toBe(true);

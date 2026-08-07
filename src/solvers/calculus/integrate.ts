@@ -81,6 +81,15 @@ function polynomialValue(poly: Poly, x: number): number {
   return total;
 }
 
+function polynomialValueExact(poly: Poly, x: Rational): Rational {
+  return poly
+    .terms()
+    .reduce(
+      (total, { power, coeff }) => total.add(coeff.mul(x.pow(power))),
+      Rational.int(0),
+    );
+}
+
 function areaUnder(poly: Poly, lower: number, upper: number): number {
   const anti = integrate(poly);
   return polynomialValue(anti, upper) - polynomialValue(anti, lower);
@@ -534,6 +543,20 @@ export const integrationSolver: Solver = {
       const upperVal = at(upper);
       const lowerVal = at(lower);
       const area = upperVal - lowerVal;
+      let exactArea: Rational | null = null;
+      try {
+        const upperExact = polynomialValueExact(
+          anti,
+          Rational.parse(String(upper)),
+        );
+        const lowerExact = polynomialValueExact(
+          anti,
+          Rational.parse(String(lower)),
+        );
+        exactArea = upperExact.sub(lowerExact);
+      } catch {
+        exactArea = null;
+      }
 
       steps.push({
         note: 'For a definite integral the constant cancels, so write the antiderivative in square brackets with the limits.',
@@ -545,7 +568,9 @@ export const integrationSolver: Solver = {
       });
       steps.push({
         note: 'Work out each part.',
-        latex: `= ${fmtNum(upperVal)} - \\left(${fmtNum(lowerVal)}\\right) = ${fmtNum(area)}`,
+        latex: exactArea
+          ? `= ${frac(polynomialValueExact(anti, Rational.parse(String(upper))))} - \\left(${frac(polynomialValueExact(anti, Rational.parse(String(lower))))}\\right) = ${frac(exactArea)} \\approx ${fmtNum(area)}`
+          : `= ${fmtNum(upperVal)} - \\left(${fmtNum(lowerVal)}\\right) = ${fmtNum(area)}`,
         annotation: 'signed area under the curve',
       });
 
@@ -555,7 +580,7 @@ export const integrationSolver: Solver = {
           headline: `Evaluate $\\int_{${lower}}^{${upper}} ${polyLatex(poly)} \\; dx$`,
           methodName: 'Definite integral',
           steps,
-          answerLatex: fmtNum(area),
+          answerLatex: exactArea ? frac(exactArea) : fmtNum(area),
         },
       };
     }
@@ -714,9 +739,27 @@ function solveAffinePower(input: string, q: AffinePower): SolveResult {
     const upper = valueAt(limits.upper);
     const lower = valueAt(limits.lower);
     const value = upper - lower;
+    let exactValue: Rational | null = null;
+    try {
+      const ar = Rational.fromDecimal(a);
+      const br = Rational.fromDecimal(b);
+      const antiderivativeAt = (x: Rational) =>
+        ar
+          .mul(x)
+          .add(br)
+          .pow(power + 1)
+          .div(ar.mul(Rational.int(power + 1)));
+      exactValue = antiderivativeAt(Rational.parse(String(limits.upper))).sub(
+        antiderivativeAt(Rational.parse(String(limits.lower))),
+      );
+    } catch {
+      exactValue = null;
+    }
     steps.push({
       note: 'Substitute the limits into the antiderivative; the constant cancels.',
-      latex: `\\left[\\dfrac{(${fmtNum(a)}x ${b < 0 ? '-' : '+'} ${fmtNum(Math.abs(b))})^{${power + 1}}}{${fmtNum(a * (power + 1))}}\\right]_${limits.lower}^{${limits.upper}} = ${fmtNum(value)}`,
+      latex: exactValue
+        ? `\\left[\\dfrac{(${fmtNum(a)}x ${b < 0 ? '-' : '+'} ${fmtNum(Math.abs(b))})^{${power + 1}}}{${fmtNum(a * (power + 1))}}\\right]_${limits.lower}^{${limits.upper}} = ${frac(exactValue)} \\approx ${fmtNum(value)}`
+        : `\\left[\\dfrac{(${fmtNum(a)}x ${b < 0 ? '-' : '+'} ${fmtNum(Math.abs(b))})^{${power + 1}}}{${fmtNum(a * (power + 1))}}\\right]_${limits.lower}^{${limits.upper}} = ${fmtNum(value)}`,
       annotation: 'definite integral',
     });
     return {
@@ -725,7 +768,7 @@ function solveAffinePower(input: string, q: AffinePower): SolveResult {
         headline: `Evaluate the definite integral`,
         methodName: 'Substitution',
         steps,
-        answerLatex: fmtNum(value),
+        answerLatex: exactValue ? frac(exactValue) : fmtNum(value),
       },
     };
   }

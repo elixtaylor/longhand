@@ -9,6 +9,7 @@ import { Poly } from '../../lib/math/parse';
 import { Rational } from '../../lib/math/rational';
 import { fmt } from '../../lib/math/num';
 import { collectSolver } from './collect';
+import { quadraticRoots } from '../quadratics';
 import type {
   LogarithmBase,
   SolveOptions,
@@ -134,6 +135,7 @@ function tryLog(sides: [string, string]): {
   before: string;
   combinedArgument: string;
   exponent: number;
+  monomial?: { coefficient: number; power: number };
 } | null {
   const one = new Poly(new Map([[0, Rational.int(1)]]), 'x');
 
@@ -201,21 +203,116 @@ function tryLog(sides: [string, string]): {
     const combinedArgument = denominatorTerms.length
       ? `\\dfrac{${product(numeratorTerms)}}{${product(denominatorTerms)}}`
       : product(numeratorTerms);
+    const numeratorMonomial = numerator.terms();
+    const denominatorMonomial = denominator.terms();
+    const monomial =
+      numeratorMonomial.length === 1 && denominatorMonomial.length === 1
+        ? {
+            coefficient:
+              numeratorMonomial[0].coeff.toNumber() /
+              denominatorMonomial[0].coeff.toNumber(),
+            power: numeratorMonomial[0].power - denominatorMonomial[0].power,
+          }
+        : undefined;
     return {
       coeffs,
       domain: parsed.map((t) => t.inner as string),
       before: `${beforeTerms} = ${fmt(k)}`,
       combinedArgument,
       exponent: k,
+      monomial,
     };
   }
   return null;
+}
+
+/** Exact positive root when combining logs leaves C·x^n = e^k. */
+function exactMonomialLogAnswer(
+  monomial: { coefficient: number; power: number } | undefined,
+  exponent: number,
+): { answer: string; value: number } | null {
+  if (!monomial || monomial.power === 0 || monomial.coefficient <= 0)
+    return null;
+  const value = Math.pow(
+    Math.exp(exponent) / monomial.coefficient,
+    1 / monomial.power,
+  );
+  if (!Number.isFinite(value) || value <= 0) return null;
+
+  const k = nearInteger(exponent);
+  const exponentRatio =
+    k === null
+      ? fmt(exponent / monomial.power, 10)
+      : rationalLatex(new Rational(k, monomial.power));
+  if (Math.abs(monomial.coefficient - 1) < 1e-12)
+    return { answer: `x = e^{${exponentRatio}}`, value };
+
+  const ePower = k === null ? `e^{${fmt(exponent, 10)}}` : `e^{${k}}`;
+  return {
+    answer: `x = \\left(\\dfrac{${ePower}}{${fmt(monomial.coefficient, 10)}}\\right)^{\\frac{1}{${monomial.power}}}`,
+    value,
+  };
 }
 
 /* ------------------------------------------------------- polynomial in ln x */
 
 /** Coefficients in ascending powers of u, where u = ln(x). */
 type LogPolynomial = number[];
+
+function nearInteger(value: number): number | null {
+  const rounded = Math.round(value);
+  return Number.isSafeInteger(rounded) && Math.abs(value - rounded) < 1e-10
+    ? rounded
+    : null;
+}
+
+function rationalLatex(value: Rational): string {
+  return value.isInt() ? String(value.n) : `\\frac{${value.n}}{${value.d}}`;
+}
+
+function expOfRational(power: Rational): string {
+  if (power.isZero()) return '1';
+  return `e^{${rationalLatex(power)}}`;
+}
+
+/**
+ * Keep a polynomial in u = ln(x) exact when its coefficients are integral.
+ * The old path solved for u numerically and then converted e^u to a decimal,
+ * which hid exact answers such as x = e^3 or x = e^{-1}.
+ */
+function exactExponentialAnswer(coefficients: LogPolynomial): string | null {
+  const integerCoefficients = coefficients.map(nearInteger);
+  if (integerCoefficients.some((value) => value === null)) return null;
+  const values = integerCoefficients as number[];
+  const degree = values.length - 1;
+
+  if (degree === 1) {
+    const [c, b] = values;
+    if (b === 0) return null;
+    return `x = ${expOfRational(new Rational(-c, b))}`;
+  }
+  if (degree !== 2) return null;
+
+  const [c, b, a] = values;
+  const info = quadraticRoots(a, b, c);
+  if (info.nature === 'complex') return null;
+  if (info.nature === 'double') {
+    return `x = ${expOfRational(new Rational(-b, 2 * a))}`;
+  }
+  if (info.nature === 'two-rational' && info.perfectRoot !== undefined) {
+    const first = new Rational(-b + info.perfectRoot, 2 * a);
+    const second = new Rational(-b - info.perfectRoot, 2 * a);
+    const [high, low] =
+      first.cmp(second) >= 0 ? [first, second] : [second, first];
+    return `x = ${expOfRational(high)} \\quad\\text{or}\\quad x = ${expOfRational(low)}`;
+  }
+
+  // quadraticRoots has already reduced the surd fraction. Wrapping that
+  // exact ± expression in e^(·) preserves both roots without reintroducing
+  // a rounded decimal.
+  const uExpression = info.answerLatex.replace(/^x\s*=\s*/, '');
+  return `x = e^{${uExpression}}`;
+}
 
 function trimLogPolynomial(coeffs: LogPolynomial): LogPolynomial {
   const out = [...coeffs];
@@ -830,6 +927,35 @@ function solveImpl(input: string, options: SolveOptions = {}): SolveResult {
         .replace(/\+ -/g, '- ')} = 0`,
     });
 
+    const exactMonomial = exactMonomialLogAnswer(log.monomial, log.exponent);
+    const inLogDomain = (x: number) =>
+      log.domain.every((d) => evaluateExpr(parseExpr(d), { x }) > 0);
+    if (
+      exactMonomial &&
+      inLogDomain(exactMonomial.value) &&
+      verifyAgainst(sides, exactMonomial.value)
+    ) {
+      steps.push({
+        note: 'This is a single power of x, so take the matching root and keep the result exact.',
+        latex: exactMonomial.answer,
+        annotation: 'exact form',
+      });
+      steps.push({
+        note: 'Only after the exact form is complete, evaluate it numerically if needed.',
+        latex: `${exactMonomial.answer} \\approx ${fmt(exactMonomial.value, 6)}`,
+        annotation: 'decimal check',
+      });
+      return {
+        ok: true,
+        solution: {
+          headline,
+          methodName: 'Combining logarithms',
+          steps,
+          answerLatex: exactMonomial.answer,
+        },
+      };
+    }
+
     const candidates = solveNumeric(log.coeffs);
     if (!candidates.length) {
       steps.push({
@@ -846,10 +972,8 @@ function solveImpl(input: string, options: SolveOptions = {}): SolveResult {
       latex: candidates.map((c) => `x = ${fmt(c, 6)}`).join(', \\quad '),
     });
 
-    const inDomain = (x: number) =>
-      log.domain.every((d) => evaluateExpr(parseExpr(d), { x }) > 0);
     const valid = candidates.filter(
-      (x) => inDomain(x) && verifyAgainst(sides, x),
+      (x) => inLogDomain(x) && verifyAgainst(sides, x),
     );
     const rejected = candidates.filter((x) => !valid.includes(x));
     if (rejected.length) {
@@ -944,6 +1068,15 @@ function solveImpl(input: string, options: SolveOptions = {}): SolveResult {
       };
     }
 
+    const exactAnswer = exactExponentialAnswer(coefficients);
+    if (exactAnswer && finiteRoots.length === uRoots.length) {
+      steps.push({
+        note: 'Keep the final values in exact exponential form before giving any decimal approximation.',
+        latex: exactAnswer,
+        annotation: 'exact form',
+      });
+    }
+
     steps.push({
       note: 'Substitute the values of $u$ back into $u = \\ln x$.',
       latex: finiteRoots
@@ -971,9 +1104,12 @@ function solveImpl(input: string, options: SolveOptions = {}): SolveResult {
         headline,
         methodName: 'Substituting u = ln x',
         steps,
-        answerLatex: finiteRoots
-          .map(({ x }) => `x = ${fmt(x, 6)}`)
-          .join(' \\quad\\text{or}\\quad '),
+        answerLatex:
+          exactAnswer && finiteRoots.length === uRoots.length
+            ? exactAnswer
+            : finiteRoots
+                .map(({ x }) => `x = ${fmt(x, 6)}`)
+                .join(' \\quad\\text{or}\\quad '),
       },
     };
   }
@@ -1089,7 +1225,7 @@ function solveImpl(input: string, options: SolveOptions = {}): SolveResult {
         headline,
         methodName: 'Taking logarithms',
         steps,
-        answerLatex: `x = ${fmt(x, 6)}`,
+        answerLatex: `x = ${exact.combined}`,
       },
     };
   }

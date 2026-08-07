@@ -1,4 +1,5 @@
 import { fmt, par } from '../../lib/math/num';
+import { Rational } from '../../lib/math/rational';
 import { quadraticRoots } from '../quadratics';
 import type {
   LogarithmBase,
@@ -279,6 +280,28 @@ function exactPower(base: number, value: number): number | null {
     : null;
 }
 
+function exactIndex(power: number, multiplier: number): string | null {
+  if (
+    !Number.isSafeInteger(power) ||
+    !Number.isSafeInteger(multiplier) ||
+    multiplier === 0
+  )
+    return null;
+  const value = new Rational(power, multiplier);
+  return value.isInt() ? String(value.n) : `\\frac{${value.n}}{${value.d}}`;
+}
+
+function exactLogValue(
+  value: number,
+  base: number,
+  logarithmBase: LogarithmBase = 'natural',
+): string | null {
+  if (!(value > 0) || !(base > 0) || base === 1) return null;
+  if (Math.abs(value - 1) < 1e-12) return '0';
+  const symbol = workingLogName(logarithmBase);
+  return `\\dfrac{${symbol}(${fmt(value, 12)})}{${symbol}(${fmt(base, 12)})}`;
+}
+
 function solveExponential(
   p: Extract<Problem, { kind: 'exponential' }>,
   methodId: string,
@@ -320,7 +343,7 @@ function solveExponential(
     if (mult !== 1) {
       steps.push({
         note: `Divide by ${fmt(mult)}.`,
-        latex: `x = ${fmt(power / mult, 6)}`,
+        latex: `x = ${exactIndex(power, mult) ?? fmt(power / mult, 6)}`,
       });
     }
     const x = power / mult;
@@ -330,7 +353,7 @@ function solveExponential(
         headline: `Solve $${original}$`,
         methodName: 'Equating indices',
         steps,
-        answerLatex: `x = ${fmt(x, 6)}`,
+        answerLatex: `x = ${exactIndex(power, mult) ?? fmt(x, 6)}`,
       },
     };
   }
@@ -361,13 +384,32 @@ function solveExponential(
     annotation: 'solved',
   });
 
+  const exactPowerIndex = power === null ? null : exactIndex(power, mult);
+  const exactLogAnswer =
+    exactPowerIndex !== null
+      ? `x = ${exactPowerIndex}`
+      : rhs === 1
+        ? 'x = 0'
+        : base === 'e'
+          ? mult === 1
+            ? `x = ${workingLog}(${fmt(rhs, 12)})`
+            : `x = \\dfrac{${workingLog}(${fmt(rhs, 12)})}{${fmt(mult)}}`
+          : `x = \\dfrac{${workingLog}(${fmt(rhs, 12)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${workingLog}(${baseTex(bNum)})}`;
+  if (exactPowerIndex !== null) {
+    steps.push({
+      note: 'The logarithmic form simplifies to an exact index.',
+      latex: exactLogAnswer,
+      annotation: 'exact form',
+    });
+  }
+
   return {
     ok: true,
     solution: {
       headline: `Solve $${original}$`,
       methodName: 'Taking logarithms',
       steps,
-      answerLatex: `x = ${fmt(x, 6)}`,
+      answerLatex: exactLogAnswer,
     },
   };
 }
@@ -409,7 +451,7 @@ function quadInULatex(a: number, b: number, c: number): string {
  */
 function solveExponentialQuadratic(
   p: Extract<Problem, { kind: 'exponential-quadratic' }>,
-  methodId: string,
+  _methodId: string,
   options: SolveOptions = {},
 ): SolveResult {
   const { terms, rhs, unitBase, a, b, c } = p;
@@ -493,13 +535,15 @@ function solveExponentialQuadratic(
     };
   }
 
+  const exactXs: string[] = [];
   const xs = valid.map((u) => {
-    const exact = methodId !== 'logs' ? exactPower(unitBase, u) : null;
+    const exact = exactPower(unitBase, u);
     if (exact !== null) {
       steps.push({
         note: `Recognise $${fmt(u, 6)}$ as ${fmt(unitBase)} to the power ${exact}.`,
         latex: `x = ${exact}`,
       });
+      exactXs.push(String(exact));
       return exact;
     }
     const x = Math.log(u) / Math.log(unitBase);
@@ -508,13 +552,20 @@ function solveExponentialQuadratic(
       note: `Take ${workingLogDescription(options.logarithmBase)} to solve $${fmt(unitBase)}^{x} = ${fmt(u, 6)}$.`,
       latex: `x = \\dfrac{${workingLog}(${fmt(u, 6)})}{${workingLog}(${fmt(unitBase)})} = ${fmt(x, 6)}`,
     });
+    exactXs.push(
+      exactLogValue(u, unitBase, options.logarithmBase) ?? fmt(x, 6),
+    );
     return x;
   });
 
   const answerLatex =
-    xs.length > 1
-      ? `x = ${fmt(xs[0], 6)} \\quad\\text{or}\\quad x = ${fmt(xs[1], 6)}`
-      : `x = ${fmt(xs[0], 6)}`;
+    exactXs.length === xs.length
+      ? exactXs.length > 1
+        ? `x = ${exactXs[0]} \\quad\\text{or}\\quad x = ${exactXs[1]}`
+        : `x = ${exactXs[0]}`
+      : xs.length > 1
+        ? `x = ${fmt(xs[0], 6)} \\quad\\text{or}\\quad x = ${fmt(xs[1], 6)}`
+        : `x = ${fmt(xs[0], 6)}`;
 
   return {
     ok: true,
@@ -580,6 +631,14 @@ export const logarithmsSolver: Solver = {
       const x = base === 'e' ? Math.exp(value) : Math.pow(bNum, value);
       const b = baseTex(base);
       const L = logName(base);
+      const exactPower =
+        Number.isInteger(value) && base !== 'e'
+          ? Number.isSafeInteger(Math.pow(bNum, value))
+            ? fmt(Math.pow(bNum, value))
+            : `${b}^{${fmt(value)}}`
+          : value === 0
+            ? '1'
+            : `${b}^{${fmt(value)}}`;
 
       // Going straight from "ln x = 5" to "x = e^5" hides the move that
       // justifies it. Raising both sides as a power of the base is an
@@ -614,6 +673,11 @@ export const logarithmsSolver: Solver = {
         latex: `x = ${fmt(x, 6)}`,
         annotation: 'solved',
       });
+      steps.push({
+        note: 'Keep the inverse operation in exact form before the decimal check.',
+        latex: `x = ${exactPower}`,
+        annotation: 'exact form',
+      });
 
       return {
         ok: true,
@@ -621,7 +685,7 @@ export const logarithmsSolver: Solver = {
           headline: `Solve $${L} x = ${fmt(value)}$`,
           methodName: 'Converting to index form',
           steps,
-          answerLatex: `x = ${fmt(x, 6)}`,
+          answerLatex: `x = ${exactPower}`,
         },
       };
     }

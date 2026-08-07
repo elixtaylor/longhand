@@ -552,8 +552,8 @@ function finish(right: Expr, steps: Step[]): Outcome {
       annotation: 'exact',
     });
   }
-  const exact = fraction ?? toLatex(right);
   const decimal = fmt(value, 6);
+  const exact = fraction ?? (right.t === 'num' ? decimal : toLatex(right));
   if (exact !== decimal) {
     steps.push({
       note: 'Work it out.',
@@ -563,7 +563,7 @@ function finish(right: Expr, steps: Step[]): Outcome {
   } else if (steps.length) {
     steps[steps.length - 1].annotation = 'solved';
   }
-  return { ok: true, answers: [{ latex: `x = ${decimal}`, value }] };
+  return { ok: true, answers: [{ latex: `x = ${exact}`, value }] };
 }
 
 /* ------------------------------------------------------------------ trig */

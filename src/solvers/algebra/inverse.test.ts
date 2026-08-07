@@ -23,6 +23,25 @@ function answers(latex: string | undefined): number[] {
   );
 }
 
+function numericAnswers(solution: {
+  answerLatex?: string;
+  steps: { latex?: string }[];
+}): number[] {
+  const direct = answers(solution.answerLatex);
+  if (direct.length) return direct;
+  const found: number[] = [];
+  for (const step of solution.steps) {
+    for (const match of (step.latex ?? '').matchAll(
+      /(?:^|[,;]|\\quad)\s*x\s*=\s*(-?\d*\.?\d+)/g,
+    )) {
+      const value = Number(match[1]);
+      if (!found.some((existing) => Math.abs(existing - value) < 1e-9))
+        found.push(value);
+    }
+  }
+  return found;
+}
+
 /** Substitute a solution back into the original equation and compare sides. */
 function satisfies(equation: string, x: number): boolean {
   const [lhs, rhs] = equation.split('=');
@@ -83,7 +102,7 @@ describe('solving by undoing', () => {
   ];
 
   it.each(equations)('%s — the answer satisfies the equation', (equation) => {
-    const found = answers(solve(equation).answerLatex);
+    const found = numericAnswers(solve(equation));
     expect(found.length).toBeGreaterThan(0);
     for (const x of found) expect(satisfies(equation, x)).toBe(true);
   });
@@ -100,14 +119,14 @@ describe('solving by undoing', () => {
     ['1/(x+2) = 5', -1.8],
     ['3/x = 12', 0.25],
   ])('%s gives x = %d', (equation, expected) => {
-    expect(answers(solve(equation).answerLatex)).toEqual([expected]);
+    expect(numericAnswers(solve(equation))).toEqual([expected]);
   });
 
   it('keeps both roots of an even power', () => {
-    expect(answers(solve('(x+3)^2 = 16').answerLatex)).toEqual([1, -7]);
-    expect(answers(solve('(x-2)^2 = 9').answerLatex)).toEqual([5, -1]);
+    expect(numericAnswers(solve('(x+3)^2 = 16'))).toEqual([1, -7]);
+    expect(numericAnswers(solve('(x-2)^2 = 9'))).toEqual([5, -1]);
     // Dropping the negative root is the classic slip; check it really is there.
-    for (const x of answers(solve('(x+3)^2 = 16').answerLatex)) {
+    for (const x of numericAnswers(solve('(x+3)^2 = 16'))) {
       expect(satisfies('(x+3)^2 = 16', x)).toBe(true);
     }
   });
@@ -120,12 +139,12 @@ describe('solving by undoing', () => {
   });
 
   it('gives every solution of a compound-angle trig equation, not just the first', () => {
-    const found = answers(solve('sin(2x) = 0.5').answerLatex);
+    const found = numericAnswers(solve('sin(2x) = 0.5'));
     expect(found).toEqual([15, 75, 195, 255]);
     for (const x of found)
       expect(satisfiesInDegrees('sin(2x) = 0.5', x)).toBe(true);
 
-    const cos = answers(solve('cos(x+30) = 0.5').answerLatex);
+    const cos = numericAnswers(solve('cos(x+30) = 0.5'));
     expect(cos).toEqual([30, 270]);
     for (const x of cos)
       expect(satisfiesInDegrees('cos(x+30) = 0.5', x)).toBe(true);
@@ -146,6 +165,10 @@ describe('solving by undoing', () => {
         l.includes('\\textcolor{red}{- 5} = e^{5} \\textcolor{red}{- 5}'),
       ),
     ).toBe(true);
+  });
+
+  it('keeps inverse logarithms exact in the final answer', () => {
+    expect(solve('ln(x+5) = 5').answerLatex).toBe('x = e^{5} - 5');
   });
 
   it('marks repeated inverse-operation terms red', () => {

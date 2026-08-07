@@ -295,6 +295,7 @@ function solveImpl(input: string, methodId: string): SolveResult {
   steps.push(...peeled.steps);
 
   const roots = [...peeled.roots];
+  const exactParts = roots.map((r) => `x = ${rl(r)}`);
   if (peeled.remaining.degree() === 2) {
     const { a, b, c } = integerAbc(peeled.remaining);
     const info = quadraticRoots(a, b, c);
@@ -302,18 +303,18 @@ function solveImpl(input: string, methodId: string): SolveResult {
       note: 'What is left is a quadratic — solve it with the formula.',
       latex: info.answerLatex,
     });
-    roots.push(
-      ...info.numericRoots.map((n) =>
-        Rational.fromDecimal(Math.round(n * 1e9) / 1e9),
-      ),
-    );
+    // Keep the quadratic's exact rational, surd, or complex form. Converting
+    // numeric roots back through a decimal loses the information the formula
+    // just worked out, such as turning √2 into 1.414213562.
+    exactParts.push(info.answerLatex);
   } else if (peeled.remaining.degree() === 1) {
     const r = peeled.remaining.get(0).neg().div(peeled.remaining.get(1));
-    steps.push({ note: 'What is left is linear.', latex: `x = ${rl(r)}` });
     roots.push(r);
+    exactParts.push(`x = ${rl(r)}`);
+    steps.push({ note: 'What is left is linear.', latex: `x = ${rl(r)}` });
   }
 
-  const fallback = roots.map((r) => `x = ${rl(r)}`).join(', \\quad ');
+  const fallback = exactParts.join(', \\quad ');
   const { kept, rejected } = hasVarDenominator
     ? surviving(combined, exclusions)
     : { kept: [], rejected: [] };

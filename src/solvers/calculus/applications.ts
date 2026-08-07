@@ -278,12 +278,30 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
   const y1 = evaluatePoly(f, x1);
 
   if (kind === 'normal' && slope === 0) {
+    const steps: Step[] = [
+      ...derivativeSteps(f, fd),
+      {
+        note: `The gradient of the curve at x = ${fmt(x1)} is the derivative there.`,
+        latex: `f'(${par(x1)}) = ${fmt(slope, 4)}`,
+      },
+      {
+        note: 'Find the point the line passes through.',
+        latex: `f(${par(x1)}) = ${fmt(y1, 4)} \\quad\\Rightarrow\\quad \\left(${fmt(x1)},\\; ${fmt(y1, 4)}\\right)`,
+      },
+      {
+        note: 'A horizontal tangent has no finite negative reciprocal. Its normal is the vertical line through the same point.',
+        latex: `m_{\\text{tangent}} = 0 \\quad\\Rightarrow\\quad x = ${fmt(x1, 4)}`,
+        annotation: 'vertical normal',
+      },
+    ];
     return {
-      ok: false,
-      error:
-        'The tangent is horizontal there, so the normal is the vertical line x = ' +
-        fmt(x1) +
-        '.',
+      ok: true,
+      solution: {
+        headline: `Normal to ${polyLatex(f)} at x = ${fmt(x1)}`,
+        methodName: 'Normal line',
+        steps,
+        answerLatex: `x = ${fmt(x1, 4)}`,
+      },
     };
   }
   const m = kind === 'tangent' ? slope : -1 / slope;
