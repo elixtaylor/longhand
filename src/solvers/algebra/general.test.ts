@@ -30,10 +30,47 @@ describe('general equation fallback', () => {
   it('finds a repeated root and roots outside the old search window', () => {
     const repeated = generalSolver.solve('(x - 2.13)^2 = 0', 'numerical');
     expect(repeated.ok).toBe(true);
-    if (repeated.ok) expect(repeated.solution.answerLatex).toContain('2.13');
+    if (repeated.ok) {
+      expect(repeated.solution.answerLatex).toContain('2.13');
+      expect(
+        repeated.solution.steps.some((step) =>
+          step.note?.toLowerCase().includes('touches the x-axis'),
+        ),
+      ).toBe(true);
+      expect(
+        repeated.solution.steps.some((step) => step.latex?.includes('x_{m_1}')),
+      ).toBe(true);
+      expect(
+        repeated.solution.steps.every(
+          (step) => !step.latex?.includes('No sign-changing bracket'),
+        ),
+      ).toBe(true);
+    }
     const wide = generalSolver.solve('x - 500 = 0', 'numerical');
     expect(wide.ok).toBe(true);
-    if (wide.ok) expect(wide.solution.answerLatex).toContain('500');
+    if (wide.ok) {
+      expect(wide.solution.answerLatex).toContain('500');
+      expect(
+        wide.solution.steps.some((step) => step.latex?.includes('f(500)')),
+      ).toBe(true);
+    }
+  });
+
+  it('keeps the no-root working readable when no bracket exists', () => {
+    const result = generalSolver.solve('x^2 + 1 = 0', 'numerical');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(
+        result.solution.steps.some((step) =>
+          step.latex?.includes('No sign-changing interval'),
+        ),
+      ).toBe(true);
+      expect(
+        result.solution.steps.every(
+          (step) => !step.latex?.includes('No sign-changing bracket'),
+        ),
+      ).toBe(true);
+    }
   });
 
   it('evaluates a numeric advanced expression', () => {

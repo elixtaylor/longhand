@@ -66,23 +66,57 @@ interface BisectionTrace {
   root: number;
 }
 
+interface SampleTrace {
+  x: number;
+  value: number;
+}
+
+interface MinimumTrace {
+  left: number;
+  right: number;
+  rows: {
+    left: number;
+    right: number;
+    candidate: number;
+    value: number;
+  }[];
+  root: number;
+}
+
 interface NumericalRoots {
   roots: number[];
   traces: BisectionTrace[];
+  sampleTraces: SampleTrace[];
+  minimumTraces: MinimumTrace[];
 }
 
-function refineMinimum(f: Expr, left: number, right: number): number | null {
+function refineMinimum(
+  f: Expr,
+  left: number,
+  right: number,
+): MinimumTrace | null {
   // Golden-section search catches repeated roots, which never change sign.
   let a = left;
   let b = right;
   const phi = (1 + Math.sqrt(5)) / 2;
   let c = b - (b - a) / phi;
   let d = a + (b - a) / phi;
+  const rows: MinimumTrace['rows'] = [];
   const absValue = (x: number) => {
     const y = value(f, x);
     return Number.isFinite(y) ? Math.abs(y) : Number.POSITIVE_INFINITY;
   };
   for (let i = 0; i < 45; i++) {
+    const candidate = absValue(c) <= absValue(d) ? c : d;
+    const candidateValue = value(f, candidate);
+    if (Number.isFinite(candidateValue)) {
+      rows.push({
+        left: a,
+        right: b,
+        candidate,
+        value: candidateValue,
+      });
+    }
     if (absValue(c) < absValue(d)) {
       b = d;
     } else {
@@ -92,7 +126,7 @@ function refineMinimum(f: Expr, left: number, right: number): number | null {
     d = a + (b - a) / phi;
   }
   const x = (a + b) / 2;
-  return absValue(x) < 1e-7 ? x : null;
+  return absValue(x) < 1e-7 ? { left, right, rows, root: x } : null;
 }
 
 /** Refine one sign-changing bracket while retaining a short working trace. */
@@ -133,6 +167,8 @@ function bisectRoot(
 function numericalRoots(f: Expr): NumericalRoots {
   const roots: number[] = [];
   const traces: BisectionTrace[] = [];
+  const sampleTraces: SampleTrace[] = [];
+  const minimumTraces: MinimumTrace[] = [];
   const min = -1000;
   const max = 1000;
   const step = 0.5;
@@ -140,8 +176,10 @@ function numericalRoots(f: Expr): NumericalRoots {
   let previous = value(f, previousX);
   for (let x = min + step; x <= max; x += step) {
     const current = value(f, x);
-    if (Number.isFinite(previous) && Math.abs(previous) < 1e-8)
+    if (Number.isFinite(previous) && Math.abs(previous) < 1e-8) {
       addRoot(roots, previousX);
+      sampleTraces.push({ x: previousX, value: previous });
+    }
     if (
       Number.isFinite(previous) &&
       Number.isFinite(current) &&
@@ -155,8 +193,15 @@ function numericalRoots(f: Expr): NumericalRoots {
         Math.abs(current) <= Math.abs(previous) &&
         Math.abs(current) <= Math.abs(next)
       ) {
-        const repeated = refineMinimum(f, x - step, x + step);
-        if (repeated !== null) addRoot(roots, repeated);
+        // An exact sample already has its own trace. Avoid rendering the
+        // same root twice when the local-minimum search finds it as well.
+        if (Math.abs(current) > 1e-8) {
+          const repeated = refineMinimum(f, x - step, x + step);
+          if (repeated !== null) {
+            addRoot(roots, repeated.root);
+            minimumTraces.push(repeated);
+          }
+        }
       }
     }
     if (
@@ -173,9 +218,16 @@ function numericalRoots(f: Expr): NumericalRoots {
     previousX = x;
     previous = current;
   }
-  if (Number.isFinite(previous) && Math.abs(previous) < 1e-8)
+  if (Number.isFinite(previous) && Math.abs(previous) < 1e-8) {
     addRoot(roots, max);
-  return { roots: roots.sort((a, b) => a - b), traces };
+    sampleTraces.push({ x: max, value: previous });
+  }
+  return {
+    roots: roots.sort((a, b) => a - b),
+    traces,
+    sampleTraces,
+    minimumTraces,
+  };
 }
 
 function solveEquation(leftText: string, rightText: string): SolveResult {
@@ -241,10 +293,25 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
       latex: `${toLatex(f)} = 0`,
     },
     {
-      note: 'Search the real domain, bracket each sign change, and halve the interval repeatedly.',
+      note: numerical.traces.length
+        ? 'Find a sign-changing interval, then halve it repeatedly.'
+        : numerical.sampleTraces.length
+          ? 'A sampled value is already on the x-axis, so check it directly.'
+          : numerical.minimumTraces.length
+            ? 'This root touches the x-axis without changing sign. Locate the minimum of |f(x)| and refine it.'
+            : 'Check the search window for sign changes and for a curve that just touches the x-axis.',
       latex: numerical.traces.length
         ? `f(${fmt(numerical.traces[0].left, 6)}) = ${fmt(value(f, numerical.traces[0].left), 6)}, \\quad f(${fmt(numerical.traces[0].right, 6)}) = ${fmt(value(f, numerical.traces[0].right), 6)}`
-        : 'No sign-changing bracket was found.',
+        : numerical.sampleTraces.length
+          ? numerical.sampleTraces
+              .slice(0, 6)
+              .map(
+                (sample) => `f(${fmt(sample.x, 6)}) = ${fmt(sample.value, 6)}`,
+              )
+              .join(', \\quad ')
+          : numerical.minimumTraces.length
+            ? `|f(${fmt(numerical.minimumTraces[0].root, 6)})| \\approx ${fmt(Math.abs(value(f, numerical.minimumTraces[0].root)), 6)}`
+            : '\\text{No sign-changing interval or near-zero touch was found in the search window.}',
     },
   ];
   numerical.traces.forEach((trace, rootIndex) => {
@@ -262,10 +329,24 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
       });
     }
   });
+  numerical.minimumTraces.forEach((trace, rootIndex) => {
+    trace.rows.slice(0, 6).forEach((row, iteration) => {
+      steps.push({
+        note: `Refine the touching root ${rootIndex + 1} around the smallest |f(x)| value.`,
+        latex: `a_${iteration + 1} = ${fmt(row.left, 6)}, \\, b_${iteration + 1} = ${fmt(row.right, 6)}, \\, x_{m_${iteration + 1}} = ${fmt(row.candidate, 6)}, \\, |f(x_{m_${iteration + 1}})| = ${fmt(Math.abs(row.value), 6)}`,
+      });
+    });
+    if (trace.rows.length > 6) {
+      steps.push({
+        note: 'Continue narrowing the interval until the residual is within the displayed precision.',
+        latex: `f(${fmt(trace.root, 8)}) \\approx 0, \\quad x \\approx ${fmt(trace.root, 8)}`,
+      });
+    }
+  });
   if (roots.length === 0) {
     steps.push({
-      note: 'No real root was located in the searched domain −1000 ≤ x ≤ 1000. This search cannot prove that no root exists elsewhere.',
-      latex: '\\text{no real solutions}',
+      note: 'No real root was located in the searched domain −1000 ≤ x ≤ 1000 after checking sign changes and near-zero touches. This finite search cannot prove that no root exists elsewhere.',
+      latex: '\\text{No real root found in the searched window.}',
     });
     return {
       ok: true,
