@@ -488,6 +488,31 @@ function linTex(p: number, q: number): string {
   return xTerm ? `${xTerm} ${sign} ${fmt(Math.abs(q))}` : fmt(q);
 }
 
+interface LogTermDisplay {
+  coefficient: number;
+  base: number;
+  withX?: boolean;
+}
+
+/** Render a signed term such as `-x\\ln 4` without exposing float algebra. */
+function logTermsLatex(terms: LogTermDisplay[]): string {
+  const nonZero = terms.filter((term) => Math.abs(term.coefficient) > 1e-12);
+  if (!nonZero.length) return '0';
+
+  return nonZero
+    .map((term, index) => {
+      const negative = term.coefficient < 0;
+      const magnitude = Math.abs(term.coefficient);
+      const coefficient =
+        Math.abs(magnitude - 1) < 1e-12 ? '' : fmt(magnitude, 6);
+      const variable = term.withX ? 'x' : '';
+      const body = `${coefficient}${variable}\\ln ${fmt(term.base)}`;
+      if (index === 0) return negative ? `-${body}` : body;
+      return `${negative ? ' - ' : ' + '}${body}`;
+    })
+    .join('');
+}
+
 function tryExponential(sides: [string, string]): {
   a: number;
   b: number;
@@ -817,8 +842,42 @@ function solveImpl(input: string): SolveResult {
       annotation: 'power law',
     });
     steps.push({
-      note: 'Expand the brackets and collect the x-terms on one side — this is now a linear equation in x.',
-      latex: `${fmt(p, 6)}x = ${fmt(qb - qa, 6)}`,
+      note: 'Expand both brackets, keeping the logarithms exact.',
+      latex: `${logTermsLatex([
+        { coefficient: qL, base: a },
+        { coefficient: pL, base: a, withX: true },
+      ])} = ${logTermsLatex([
+        { coefficient: pR, base: b, withX: true },
+        { coefficient: qR, base: b },
+      ])}`,
+    });
+    steps.push({
+      note: 'Move the x-terms to the left and the constant logarithms to the right.',
+      latex: `${logTermsLatex([
+        { coefficient: pL, base: a, withX: true },
+        { coefficient: -pR, base: b, withX: true },
+      ])} = ${logTermsLatex([
+        { coefficient: qR, base: b },
+        { coefficient: -qL, base: a },
+      ])}`,
+    });
+    steps.push({
+      note: 'Factor x from the left-hand side.',
+      latex: `x\\left(${logTermsLatex([
+        { coefficient: pL, base: a },
+        { coefficient: -pR, base: b },
+      ])}\\right) = ${logTermsLatex([
+        { coefficient: qR, base: b },
+        { coefficient: -qL, base: a },
+      ])}`,
+    });
+    steps.push({
+      note: 'Evaluate the logarithms before doing the final division.',
+      latex: `\\ln ${fmt(a)} = ${fmt(Math.log(a), 6)}, \\qquad \\ln ${fmt(b)} = ${fmt(Math.log(b), 6)}`,
+    });
+    steps.push({
+      note: 'Substitute those values into the factored equation.',
+      latex: `x\\left(${fmt(p, 6)}\\right) = ${fmt(qb - qa, 6)}`,
     });
     steps.push({
       note: 'Divide to make x the subject.',

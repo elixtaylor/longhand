@@ -92,6 +92,19 @@ describe('reducing before solving', () => {
     expect(2 ** (x + 1)).toBeCloseTo(3 ** x, 3);
   });
 
+  it('shows exact symbolic working for affine exponents before using decimals', () => {
+    expect(interpret('4^(1-x)=3^(2x+1)').detection?.solver.id).toBe('reduce');
+    const s = solve('4^(1-x)=3^(2x+1)');
+    const lines = s.steps.map((step) => step.latex ?? '');
+    expect(lines).toContain('\\ln 4 - x\\ln 4 = 2x\\ln 3 + \\ln 3');
+    expect(lines).toContain('-x\\ln 4 - 2x\\ln 3 = \\ln 3 - \\ln 4');
+    expect(lines).toContain(
+      'x\\left(-\\ln 4 - 2\\ln 3\\right) = \\ln 3 - \\ln 4',
+    );
+    expect(lines).toContain('\\ln 4 = 1.386294, \\qquad \\ln 3 = 1.098612');
+    expect(s.answerLatex).toBe('x = 0.080279');
+  });
+
   it('shows the power-law expansion and the resulting linear equation, not just the answer', () => {
     // 2^(x+1) = 3^(x-1) used to jump straight from "take logs" to the answer,
     // skipping the actual algebra — same underlying gap as the quadratic and
@@ -100,9 +113,9 @@ describe('reducing before solving', () => {
     const s = solve('2^(x+1)=3^(x-1)');
     expect(s.steps.length).toBeGreaterThanOrEqual(4);
     expect(s.steps.some((step) => step.latex?.includes('\\ln'))).toBe(true);
-    expect(
-      s.steps.some((step) => /^-?\d*\.?\d+x\s*=/.test(step.latex ?? '')),
-    ).toBe(true);
+    expect(s.steps.some((step) => /^x\\left\(/.test(step.latex ?? ''))).toBe(
+      true,
+    );
     const x = answers(s.answerLatex)[0];
     expect(2 ** (x + 1)).toBeCloseTo(3 ** (x - 1), 3);
   });
