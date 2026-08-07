@@ -7,6 +7,14 @@ describe('general equation fallback', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.solution.answerLatex).toContain('x \\approx');
+      expect(
+        result.solution.steps.some((step) => step.latex?.includes('m_1')),
+      ).toBe(true);
+      expect(
+        result.solution.steps.some((step) =>
+          step.latex?.toLowerCase().includes('bisection'),
+        ),
+      ).toBe(false);
       const last = result.solution.steps[result.solution.steps.length - 1];
       expect(last?.latex).toContain('0');
     }

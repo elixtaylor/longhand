@@ -513,6 +513,137 @@ function logTermsLatex(terms: LogTermDisplay[]): string {
     .join('');
 }
 
+/** Put positive log terms first so an exact fraction reads naturally. */
+function canonicalLogTerms(terms: LogTermDisplay[]): string {
+  return logTermsLatex([
+    ...terms.filter((term) => term.coefficient > 1e-12),
+    ...terms.filter((term) => term.coefficient < -1e-12),
+  ]);
+}
+
+/** Render the product inside a single logarithm after applying log laws. */
+function logFactorsLatex(
+  terms: LogTermDisplay[],
+  collapseNumeric = true,
+): string {
+  const factors = terms
+    .filter((term) => Math.abs(term.coefficient) > 1e-12)
+    .map((term) => {
+      const magnitude = Math.abs(term.coefficient);
+      return Math.abs(magnitude - 1) < 1e-12
+        ? fmt(term.base)
+        : `${fmt(term.base)}^{${fmt(magnitude, 6)}}`;
+    });
+  if (!factors.length) return '1';
+
+  // Numeric bases can be multiplied exactly enough for a much cleaner final
+  // logarithm, e.g. ln 4 + 2 ln 3 → ln 36.
+  const product = terms
+    .filter((term) => Math.abs(term.coefficient) > 1e-12)
+    .reduce(
+      (value, term) => value * Math.pow(term.base, Math.abs(term.coefficient)),
+      1,
+    );
+  const integerPowers = terms
+    .filter((term) => Math.abs(term.coefficient) > 1e-12)
+    .every(
+      (term) =>
+        Math.abs(term.coefficient - Math.round(term.coefficient)) < 1e-12,
+    );
+  if (collapseNumeric && integerPowers && Number.isFinite(product))
+    return fmt(product, 12);
+  return factors.join(' \\cdot ');
+}
+
+/** Combine a signed sum of logarithms into the shortest exact log expression. */
+function combinedLogTermsLatex(
+  terms: LogTermDisplay[],
+  collapseNumeric = true,
+): string {
+  const nonZero = terms.filter((term) => Math.abs(term.coefficient) > 1e-12);
+  if (!nonZero.length) return '0';
+  const positive = nonZero.filter((term) => term.coefficient > 0);
+  const negative = nonZero.filter((term) => term.coefficient < 0);
+  const numerator = logFactorsLatex(positive, collapseNumeric);
+  const denominator = logFactorsLatex(negative, collapseNumeric);
+  const argument = negative.length
+    ? `\\dfrac{${numerator}}{${denominator}}`
+    : numerator;
+  return `${positive.length ? '' : '-'}\\ln\\left(${argument}\\right)`;
+}
+
+interface ExactLogFraction {
+  fraction: string;
+  lawCombined: string;
+  combined: string;
+  numeratorValue: number;
+  denominatorValue: number;
+}
+
+/** Build a canonical exact fraction for the linear equation in x. */
+function exactLogFraction(
+  a: number,
+  b: number,
+  pL: number,
+  qL: number,
+  pR: number,
+  qR: number,
+  p: number,
+  qa: number,
+  qb: number,
+): ExactLogFraction {
+  let numerator: LogTermDisplay[] = [
+    { coefficient: qR, base: b },
+    { coefficient: -qL, base: a },
+  ];
+  let denominator: LogTermDisplay[] = [
+    { coefficient: pL, base: a },
+    { coefficient: -pR, base: b },
+  ];
+
+  // Multiplying top and bottom by -1 keeps the denominator positive-looking
+  // for the common case `-ln a - 2ln b`.
+  const firstDenominator = denominator.find(
+    (term) => Math.abs(term.coefficient) > 1e-12,
+  );
+  const scale = firstDenominator && firstDenominator.coefficient < 0 ? -1 : 1;
+  if (scale < 0) {
+    numerator = numerator.map((term) => ({
+      ...term,
+      coefficient: -term.coefficient,
+    }));
+    denominator = denominator.map((term) => ({
+      ...term,
+      coefficient: -term.coefficient,
+    }));
+  }
+
+  const numeratorText = canonicalLogTerms(numerator);
+  const denominatorText = canonicalLogTerms(denominator);
+  const fraction =
+    numeratorText === '0'
+      ? '0'
+      : `\\dfrac{${numeratorText}}{${denominatorText}}`;
+  const lawNumerator = combinedLogTermsLatex(numerator, false);
+  const lawDenominator = combinedLogTermsLatex(denominator, false);
+  const lawCombined =
+    lawNumerator === '0' ? '0' : `\\dfrac{${lawNumerator}}{${lawDenominator}}`;
+  const combinedNumerator = combinedLogTermsLatex(numerator);
+  const combinedDenominator = combinedLogTermsLatex(denominator);
+  const combined =
+    combinedNumerator === '0'
+      ? '0'
+      : `\\dfrac{${combinedNumerator}}{${combinedDenominator}}`;
+
+  return {
+    fraction,
+    lawCombined,
+    combined,
+    numeratorValue: scale * (qb - qa),
+    denominatorValue: scale * p,
+  };
+}
+
 function tryExponential(sides: [string, string]): {
   a: number;
   b: number;
@@ -871,17 +1002,30 @@ function solveImpl(input: string): SolveResult {
         { coefficient: -qL, base: a },
       ])}`,
     });
+    const exact = exactLogFraction(a, b, pL, qL, pR, qR, p, qa, qb);
     steps.push({
-      note: 'Evaluate the logarithms before doing the final division.',
+      note: 'Divide by the coefficient of x to give the exact simplified form.',
+      latex: `x = ${exact.fraction}`,
+    });
+    if (exact.lawCombined !== exact.fraction) {
+      steps.push({
+        note: 'Use the product, quotient, and power laws to combine the logarithms.',
+        latex: `x = ${exact.lawCombined}`,
+      });
+    }
+    if (exact.combined !== exact.lawCombined) {
+      steps.push({
+        note: 'Multiply the exact numerical factors inside the logarithm.',
+        latex: `x = ${exact.combined}`,
+      });
+    }
+    steps.push({
+      note: 'Evaluate the individual logarithms only after the exact form is complete.',
       latex: `\\ln ${fmt(a)} = ${fmt(Math.log(a), 6)}, \\qquad \\ln ${fmt(b)} = ${fmt(Math.log(b), 6)}`,
     });
     steps.push({
-      note: 'Substitute those values into the factored equation.',
-      latex: `x\\left(${fmt(p, 6)}\\right) = ${fmt(qb - qa, 6)}`,
-    });
-    steps.push({
-      note: 'Divide to make x the subject.',
-      latex: `x = \\dfrac{${fmt(qb - qa, 6)}}{${fmt(p, 6)}} = ${fmt(x, 6)}`,
+      note: 'Now evaluate the exact expression numerically.',
+      latex: `x = ${exact.combined} = \\dfrac{${fmt(exact.numeratorValue, 6)}}{${fmt(exact.denominatorValue, 6)}} = ${fmt(x, 6)}`,
       annotation: 'solved',
     });
     return {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { reduceSolver } from './reduce';
-import { interpret } from '../../lib/engine/run';
+import { interpret, runWorked } from '../../lib/engine/run';
 
 function solve(input: string) {
   const r = reduceSolver.solve(input, reduceSolver.defaultMethodId);
@@ -94,6 +94,14 @@ describe('reducing before solving', () => {
 
   it('shows exact symbolic working for affine exponents before using decimals', () => {
     expect(interpret('4^(1-x)=3^(2x+1)').detection?.solver.id).toBe('reduce');
+    const worked = runWorked('4^(1-x)=3^(2x+1)');
+    expect(worked.parts[0]?.solver.id).toBe('reduce');
+    expect(
+      worked.parts[0]?.result.ok &&
+        worked.parts[0].result.solution.steps.some((step) =>
+          step.latex?.includes('bisection'),
+        ),
+    ).toBe(false);
     const s = solve('4^(1-x)=3^(2x+1)');
     const lines = s.steps.map((step) => step.latex ?? '');
     expect(lines).toContain('\\ln 4 - x\\ln 4 = 2x\\ln 3 + \\ln 3');
@@ -101,7 +109,15 @@ describe('reducing before solving', () => {
     expect(lines).toContain(
       'x\\left(-\\ln 4 - 2\\ln 3\\right) = \\ln 3 - \\ln 4',
     );
+    expect(lines).toContain('x = \\dfrac{\\ln 4 - \\ln 3}{\\ln 4 + 2\\ln 3}');
+    expect(lines).toContain(
+      'x = \\dfrac{\\ln\\left(\\dfrac{4}{3}\\right)}{\\ln\\left(4 \\cdot 3^{2}\\right)}',
+    );
+    expect(lines).toContain(
+      'x = \\dfrac{\\ln\\left(\\dfrac{4}{3}\\right)}{\\ln\\left(36\\right)}',
+    );
     expect(lines).toContain('\\ln 4 = 1.386294, \\qquad \\ln 3 = 1.098612');
+    expect(lines[lines.length - 1]).toContain('0.080279');
     expect(s.answerLatex).toBe('x = 0.080279');
   });
 
