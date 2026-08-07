@@ -6,9 +6,10 @@ import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 /**
  * Proof by mathematical induction (SACE Stage 2 Specialist, Topic 1).
  *
- * The student types the summand; we derive the closed form ourselves and then
- * set out the standard three-part proof. Deriving it (rather than asking for
- * it) means the proof is always of a true statement.
+ * The student types the summand and chooses the starting value/domain; we
+ * derive the closed form ourselves and then set out the standard three-part
+ * proof. Deriving it (rather than asking for it) means the proof is always of
+ * a true statement.
  */
 
 /** Interpolate the unique polynomial through the given points. */
@@ -37,18 +38,18 @@ function lagrange(xs: Rational[], ys: Rational[], variable: string): Poly {
 }
 
 /**
- * Closed form for Σ_{r=1}^{n} f(r).
+ * Closed form for Σ_{r=start}^{n} f(r).
  * The sum of a degree-d polynomial is a degree-(d+1) polynomial, so
  * interpolating through d+2 partial sums recovers it exactly.
  */
-function closedForm(f: Poly, variable: string): Poly {
+function closedForm(f: Poly, variable: string, start: number): Poly {
   const d = f.degree();
   const xs: Rational[] = [];
   const ys: Rational[] = [];
   let running = Rational.int(0);
-  xs.push(Rational.int(0));
+  xs.push(Rational.int(start - 1));
   ys.push(Rational.int(0)); // an empty sum is zero
-  for (let n = 1; n <= d + 2; n++) {
+  for (let n = start; n <= start + d + 1; n++) {
     running = running.add(f.at(Rational.int(n)));
     xs.push(Rational.int(n));
     ys.push(running);
@@ -164,16 +165,41 @@ function divideByRoot(p: Poly, root: Rational): Poly {
     : out.scale(new Rational(1, root.d));
 }
 
-function parseSummand(input: string): Poly {
+type InductionDomain = 'natural' | 'integer';
+
+interface InductionRequest {
+  summand: Poly;
+  start: number;
+  domain: InductionDomain;
+}
+
+function parseRequest(input: string): InductionRequest {
+  const domainMatch = input.match(/\bdomain\s*=\s*(natural|integer)\b/i);
+  const domain: InductionDomain =
+    domainMatch?.[1]?.toLowerCase() === 'integer' ? 'integer' : 'natural';
+  const startMatch = input.match(/\bfrom\s*r\s*=\s*(-?\d+)\s*to\s*n\b/i);
+  const start = startMatch ? Number(startMatch[1]) : 1;
+  if (!Number.isSafeInteger(start))
+    throw new ParseError('The starting value must be an integer.');
+  if (domain === 'natural' && start < 0)
+    throw new ParseError(
+      'A natural-number induction domain cannot start below 0.',
+    );
+
   const cleaned = input
+    .replace(/\bdomain\s*=\s*(?:natural|integer)\b/gi, ' ')
+    .replace(/\bfrom\s*r\s*=\s*-?\d+\s*to\s*n\b/gi, ' ')
     .replace(/prove|by induction|induction|the sum of|sum of|sum|series/gi, ' ')
-    .replace(/from\s*r\s*=\s*1\s*to\s*n/gi, ' ')
     .replace(/_?\{?r\s*=\s*1\}?\^?\{?n\}?/gi, ' ')
     .replace(/Σ|∑/g, ' ')
     .trim();
   if (cleaned === '')
     throw new ParseError('Type the terms you are adding up, e.g.  sum r^2.');
-  return parsePoly(cleaned, 'r');
+  return { summand: parsePoly(cleaned, 'r'), start, domain };
+}
+
+function parseSummand(input: string): Poly {
+  return parseRequest(input).summand;
 }
 
 export const inductionSolver: Solver = {
@@ -188,6 +214,7 @@ export const inductionSolver: Solver = {
       name: 'Proof by induction',
       blurb:
         'Base case, inductive assumption, inductive step — the standard structure.',
+      opForm: 'induction',
     },
   ],
   defaultMethodId: 'sum',
@@ -201,15 +228,16 @@ export const inductionSolver: Solver = {
     }
   },
   solve(input): SolveResult {
-    let f: Poly;
+    let request: InductionRequest;
     try {
-      f = parseSummand(input);
+      request = parseRequest(input);
     } catch (e) {
       return {
         ok: false,
         error: e instanceof Error ? e.message : 'Could not read that sum.',
       };
     }
+    const { summand: f, start, domain } = request;
     if (f.isZeroPoly())
       return {
         ok: false,
@@ -221,9 +249,12 @@ export const inductionSolver: Solver = {
         error: 'This handles sums of polynomials up to degree 4.',
       };
 
-    const F = closedForm(f, 'n');
+    const F = closedForm(f, 'n', start);
     const summand = polyLatex(f);
     const closed = displayClosed(F, 'n');
+    const domainSymbol = domain === 'integer' ? '\\mathbb{Z}' : '\\mathbb{N}';
+    const domainText = `n \\in ${domainSymbol},\\; n \\ge ${start}`;
+    const summation = (upper: string) => `\\sum_{r=${start}}^{${upper}}`;
 
     // The inductive step, done honestly as polynomials in k.
     const Fk = new Poly(F.coeffs, 'k');
@@ -247,26 +278,26 @@ export const inductionSolver: Solver = {
     const steps: Step[] = [
       {
         note: 'State clearly what you are proving.',
-        latex: `P(n): \\quad \\sum_{r=1}^{n} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${closed}`,
+        latex: `P(n): \\quad ${summation('n')} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${closed}, \\qquad ${domainText}`,
         annotation: 'the statement',
       },
       {
-        note: 'Step 1 — the base case. Check the statement holds for $n = 1$.',
-        latex: `\\text{LHS} = ${polyLatex(new Poly(f.coeffs, 'r'))}\\Big|_{r=1} = ${rat(f.at(Rational.int(1)))}, \\qquad \\text{RHS} = ${rat(F.at(Rational.int(1)))}`,
+        note: `Step 1 — the base case. Check the statement holds for $n = ${start}$.`,
+        latex: `\\text{LHS} = ${summation(String(start))} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${rat(f.at(Rational.int(start)))}, \\qquad \\text{RHS} = ${rat(F.at(Rational.int(start)))}`,
       },
       {
-        note: 'The two sides agree, so $P(1)$ is true.',
-        latex: `\\text{LHS} = \\text{RHS} \\;\\Rightarrow\\; P(1) \\text{ is true}`,
+        note: `The two sides agree, so $P(${start})$ is true.`,
+        latex: `\\text{LHS} = \\text{RHS} \\;\\Rightarrow\\; P(${start}) \\text{ is true}`,
         annotation: 'base case ✓',
       },
       {
         note: 'Step 2 — the inductive assumption. Assume the statement is true for some $n = k$.',
-        latex: `\\sum_{r=1}^{k} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${displayClosed(Fk, 'k')}`,
+        latex: `${summation('k')} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${displayClosed(Fk, 'k')}`,
         annotation: 'assume for n = k',
       },
       {
         note: 'Step 3 — the inductive step. Show it follows for $n = k+1$. Split the last term off the sum.',
-        latex: `\\sum_{r=1}^{k+1} = \\sum_{r=1}^{k} + \\left(${polyLatex(fk1InK).replace(/k/g, 'k')}\\right)`,
+        latex: `${summation('k+1')} = ${summation('k')} + \\left(${polyLatex(fk1InK).replace(/k/g, 'k')}\\right)`,
       },
       {
         note: 'Substitute the assumption for the first part.',
@@ -289,7 +320,7 @@ export const inductionSolver: Solver = {
       },
       {
         note: 'Conclusion.',
-        latex: `P(1) \\text{ is true, and } P(k) \\Rightarrow P(k+1), \\text{ so by induction } P(n) \\text{ is true for all } n \\ge 1.`,
+        latex: `P(${start}) \\text{ is true, and } P(k) \\Rightarrow P(k+1), \\text{ so by induction } P(n) \\text{ is true for all } ${domainText}.`,
         annotation: 'QED',
       },
     ];
@@ -297,10 +328,10 @@ export const inductionSolver: Solver = {
     return {
       ok: true,
       solution: {
-        headline: `Prove $\\sum_{r=1}^{n} \\left(${summand.replace(/n/g, 'r')}\\right) = ${closed}$ by induction`,
+        headline: `Prove $${summation('n')} \\left(${summand.replace(/n/g, 'r')}\\right) = ${closed}$ by induction`,
         methodName: 'Proof by induction',
         steps,
-        answerLatex: `\\sum_{r=1}^{n} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${closed}`,
+        answerLatex: `${summation('n')} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${closed}`,
       },
     };
   },

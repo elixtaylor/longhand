@@ -109,4 +109,35 @@ describe('Workspace solution reveal', () => {
       ).toBe(''),
     );
   });
+
+  it('opens the PMI calculator from the calculator directory', async () => {
+    const onCalculatorHandled = vi.fn();
+    render(
+      <Workspace
+        revealMode="all"
+        onRevealMode={vi.fn()}
+        showNotes={false}
+        onShowNotes={vi.fn()}
+        sidebarOpen={false}
+        onSidebarClose={vi.fn()}
+        theme="notebook"
+        onTheme={vi.fn()}
+        dark={false}
+        onDark={vi.fn()}
+        textSize="md"
+        onTextSize={vi.fn()}
+        showPalette
+        onShowPalette={vi.fn()}
+        pendingCalculator={{ solverId: 'induction', methodId: 'sum' }}
+        onCalculatorHandled={onCalculatorHandled}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Summand f(r)')).toBeTruthy(),
+    );
+    expect(screen.getByLabelText('Start n₀')).toBeTruthy();
+    expect(screen.getByLabelText('Induction domain')).toBeTruthy();
+    expect(onCalculatorHandled).toHaveBeenCalled();
+  });
 });

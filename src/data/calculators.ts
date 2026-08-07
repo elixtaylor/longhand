@@ -1,8 +1,8 @@
 /**
  * The "Calculators" directory — a curated shortcut into specific
  * structured-input methods (see StructuredInputForm), grouped by subject.
- * Only methods with `fields` belong here; free-text topics are already one
- * search away and don't need a second front door.
+ * Structured methods and bespoke operation forms belong here; free-text topics
+ * are already one search away and don't need a second front door.
  *
  * label/blurb fall back to the method's own name/blurb — set them only when
  * the method's name reads fine as a tab ("Component form") but not as a
@@ -90,6 +90,18 @@ export const CALCULATORS: CalculatorGroup[] = [
         label: 'Complex numbers',
         blurb:
           'Add, subtract, multiply, divide, modulus, conjugate or polar form.',
+      },
+    ],
+  },
+  {
+    heading: 'Proofs',
+    items: [
+      {
+        solverId: 'induction',
+        methodId: 'sum',
+        label: 'Proof by induction (PMI)',
+        blurb:
+          'Set the summand, starting value and domain, then generate the base case and inductive step.',
       },
     ],
   },

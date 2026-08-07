@@ -34,6 +34,7 @@ import { StructuredInputForm } from './StructuredInputForm';
 import { VectorOperationForm } from './VectorOperationForm';
 import { ComplexOperationForm } from './ComplexOperationForm';
 import { ProbabilityOperationForm } from './ProbabilityOperationForm';
+import { InductionOperationForm } from './InductionOperationForm';
 import { StepList } from './StepList';
 import { PartedSolution } from './PartedSolution';
 import { TeX, RichText } from './TeX';
@@ -541,6 +542,13 @@ export function Workspace({
                 onOperationChange={(id) => {
                   if (id !== methodId) chooseMethod(id);
                 }}
+                onSubmit={(serialized) => {
+                  setInput(serialized);
+                  commit(serialized, pin);
+                }}
+              />
+            ) : pin && activeMethod?.opForm === 'induction' ? (
+              <InductionOperationForm
                 onSubmit={(serialized) => {
                   setInput(serialized);
                   commit(serialized, pin);

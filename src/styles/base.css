@@ -755,6 +755,24 @@ button {
 .number-field .num-input {
   text-align: left;
 }
+.induction-number-fields {
+  width: 100%;
+}
+.induction-domain-select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--control-radius);
+  font-size: 0.88rem;
+}
+.field-error {
+  width: 100%;
+  color: var(--danger, #a32626);
+  font-size: 0.82rem;
+  text-align: center;
+}
 .structured-form--triangle .number-fields {
   grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
   gap: 6px;

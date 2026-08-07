@@ -108,7 +108,7 @@ Covering SACE Stage 1 and Stage 2 (Years 11–12).
 |                 | Mathematical induction               | Base case → assumption → inductive step                                                                                   |
 
 Terminology and methods follow **SACE** (Foundations / General / Methods / Specialist).
-Induction derives the closed form itself, so the proof is always of a true statement.
+Induction derives the closed form itself, so the proof is always of a true statement. The PMI calculator also lets you choose the starting value and whether the domain is natural or integer, then presents the statement, base case, assumption, inductive step, and conclusion in order.
 
 The exact Stage 1 and Stage 2 Methods/Specialist topic list is kept in
 [`src/data/curriculum.ts`](src/data/curriculum.ts) and checked by

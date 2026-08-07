@@ -247,4 +247,15 @@ describe('inductionSolver', () => {
     expect(text).toContain('inductive assumption');
     expect(text).toContain('inductive step');
   });
+
+  it('supports a configurable starting value and integer domain', () => {
+    const s = sol(inductionSolver, 'sum r from r=2 to n domain=integer', 'sum');
+    const text = s.steps
+      .map((step: { latex?: string }) => step.latex ?? '')
+      .join(' ');
+    expect(text).toContain('r=2');
+    expect(text).toContain('P(2)');
+    expect(text).toContain('\\mathbb{Z}');
+    expect(text).toContain('n \\ge 2');
+  });
 });
