@@ -136,6 +136,21 @@ describe('reducing before solving', () => {
     expect(2 ** (x + 1)).toBeCloseTo(3 ** (x - 1), 3);
   });
 
+  it('uses base-10 logarithms throughout exponential working when selected', () => {
+    const result = reduceSolver.solve('4^(1-x)=3^(2x+1)', 'reduce', {
+      logarithmBase: 'common',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const lines = result.solution.steps.map((step) => step.latex ?? '');
+    expect(lines).toContain('\\log 4 - x\\log 4 = 2x\\log 3 + \\log 3');
+    expect(lines).toContain(
+      'x = \\dfrac{\\log\\left(\\dfrac{4}{3}\\right)}{\\log\\left(36\\right)}',
+    );
+    expect(lines.some((line) => line.includes('\\ln'))).toBe(false);
+    expect(lines[lines.length - 1]).toContain('0.080279');
+  });
+
   it('leaves a single-occurrence log equation to the solver that already owns it', () => {
     // ln(x) - ln(2) = 1 only has x inside one of the two logs — inverse.ts's
     // "undoing" narration is the right fit, not a two-log combination.

@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Solver } from '../lib/engine/types';
-import type { ThemeId, RevealMode, TextSize, DisplayMode } from '../lib/ui';
+import type {
+  ThemeId,
+  RevealMode,
+  TextSize,
+  DisplayMode,
+  LogarithmBase,
+} from '../lib/ui';
 import { importedFor, sourceOf, type ImportedProblem } from '../data/imported';
 import type { HistoryEntry } from '../lib/history';
 import { SettingsPanel } from './SettingsPanel';
@@ -36,6 +42,8 @@ export function Sidebar({
   onShowPalette,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
+  logarithmBase = 'natural',
+  onLogarithmBase = () => undefined,
   onNavigatePage = () => undefined,
 }: {
   onClose: () => void;
@@ -56,6 +64,8 @@ export function Sidebar({
   onShowPalette: (show: boolean) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
+  logarithmBase?: LogarithmBase;
+  onLogarithmBase?: (base: LogarithmBase) => void;
   onNavigatePage?: (
     page: 'home' | 'graphing' | 'calculators' | 'settings',
   ) => void;
@@ -282,6 +292,8 @@ export function Sidebar({
                       onShowPalette={onShowPalette}
                       displayMode={displayMode}
                       onDisplayMode={onDisplayMode}
+                      logarithmBase={logarithmBase}
+                      onLogarithmBase={onLogarithmBase}
                     />
                   )}
                 </div>

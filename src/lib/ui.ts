@@ -4,6 +4,7 @@ export type ThemeId = 'mono' | 'editorial' | 'notebook' | 'warm';
 export type RevealMode = 'all' | 'step';
 export type TextSize = 'sm' | 'md' | 'lg';
 export type DisplayMode = 'exact' | 'decimal';
+export type LogarithmBase = 'natural' | 'common';
 
 export interface ThemeMeta {
   id: ThemeId;

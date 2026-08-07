@@ -66,6 +66,32 @@ describe('logarithmsSolver', () => {
     expect(s.answerLatex).toBe('x = 2.726833');
   });
 
+  it('can show base-10 logarithms when that preference is selected', () => {
+    const result = logarithmsSolver.solve('3^x = 20', 'logs', {
+      logarithmBase: 'common',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const lines = result.solution.steps.map((step) => step.latex ?? '');
+    expect(lines.some((line) => line.includes('\\log'))).toBe(true);
+    expect(lines.some((line) => line.includes('\\ln'))).toBe(false);
+    expect(result.solution.answerLatex).toBe('x = 2.726833');
+  });
+
+  it('uses the selected base for change-of-base working', () => {
+    const result = logarithmsSolver.solve('log2(20)', 'same-base', {
+      logarithmBase: 'common',
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(
+      result.solution.steps.some((step) =>
+        step.latex?.includes('\\dfrac{\\log 20}{\\log 2}'),
+      ),
+    ).toBe(true);
+    expect(result.solution.answerLatex).toBe('\\log_{2}(20) = 4.321928');
+  });
+
   it('handles a coefficient in front', () => {
     // 5 × 2^x = 40 → 2^x = 8 → x = 3
     expect(sol(logarithmsSolver, '5*2^x = 40', 'same-base').answerLatex).toBe(

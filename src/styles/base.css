@@ -1868,9 +1868,10 @@ button {
   grid-template-areas:
     'theme theme'
     'light palette'
-    'number auto'
-    'text reading'
-    'working notes'
+    'number logarithms'
+    'text auto'
+    'working reading'
+    'notes notes'
     'reset reset';
   column-gap: clamp(18px, 4vw, 48px);
   row-gap: 2px;
@@ -1932,6 +1933,9 @@ button {
 }
 .settings-page .setting-row-number {
   grid-area: number;
+}
+.settings-page .setting-row-logarithms {
+  grid-area: logarithms;
 }
 .settings-page .setting-row-text {
   grid-area: text;
@@ -2522,6 +2526,7 @@ button {
       'theme'
       'light'
       'number'
+      'logarithms'
       'text'
       'working'
       'palette'

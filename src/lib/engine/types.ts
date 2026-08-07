@@ -43,6 +43,14 @@ export interface Solution {
   derivedValues?: Record<string, number>;
 }
 
+/** Preferences that affect how a solver presents equivalent working. */
+export type LogarithmBase = 'natural' | 'common';
+
+export interface SolveOptions {
+  /** Use ln (natural logs) or log (base 10) for log-based working. */
+  logarithmBase?: LogarithmBase;
+}
+
 /**
  * One input a structured-input method asks for. `point` renders as 2-3
  * boxed numbers sharing a label (dimension follows the form's own 2D/3D
@@ -110,7 +118,7 @@ export interface Solver {
    */
   detect(input: string): number;
   /** Parse `input` and produce working using `methodId`. */
-  solve(input: string, methodId: string): SolveResult;
+  solve(input: string, methodId: string, options?: SolveOptions): SolveResult;
 }
 
 /** Small helper for solvers to build a method lookup / validate ids. */

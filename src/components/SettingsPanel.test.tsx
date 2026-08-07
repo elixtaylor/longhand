@@ -4,6 +4,7 @@ import { SettingsPanel } from './SettingsPanel';
 describe('SettingsPanel compact layout', () => {
   it('keeps each setting to one labelled row without descriptions', () => {
     const onShowPalette = vi.fn();
+    const onLogarithmBase = vi.fn();
     render(
       <SettingsPanel
         theme="mono"
@@ -16,15 +17,26 @@ describe('SettingsPanel compact layout', () => {
         onTextSize={vi.fn()}
         showPalette
         onShowPalette={onShowPalette}
+        onLogarithmBase={onLogarithmBase}
       />,
     );
 
-    expect(document.querySelectorAll('.setting-row')).toHaveLength(9);
+    expect(document.querySelectorAll('.setting-row')).toHaveLength(10);
     expect(document.querySelectorAll('.setting-hint')).toHaveLength(0);
     expect(screen.getByText('Theme')).toBeTruthy();
     expect(screen.getByText('Light or dark')).toBeTruthy();
     expect(screen.getByText('Text size')).toBeTruthy();
     expect(screen.getByText('Number format')).toBeTruthy();
+    expect(screen.getByText('Logarithms')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Natural (ln)' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Base 10 (log)' })).toBeTruthy();
+    expect(
+      screen
+        .getByRole('button', { name: 'Natural (ln)' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+    screen.getByRole('button', { name: 'Base 10 (log)' }).click();
+    expect(onLogarithmBase).toHaveBeenCalledWith('common');
     expect(screen.getByText('Working out')).toBeTruthy();
     expect(screen.getByText('Auto-scroll to working')).toBeTruthy();
     expect(screen.getByText('Reading preview')).toBeTruthy();

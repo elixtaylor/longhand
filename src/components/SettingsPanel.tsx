@@ -4,6 +4,7 @@ import {
   type RevealMode,
   type TextSize,
   type DisplayMode,
+  type LogarithmBase,
 } from '../lib/ui';
 
 /**
@@ -23,6 +24,8 @@ export function SettingsPanel({
   onShowPalette,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
+  logarithmBase = 'natural',
+  onLogarithmBase = () => undefined,
   autoScroll = true,
   onAutoScroll = () => undefined,
   showReading = true,
@@ -43,6 +46,8 @@ export function SettingsPanel({
   onShowPalette: (show: boolean) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
+  logarithmBase?: LogarithmBase;
+  onLogarithmBase?: (base: LogarithmBase) => void;
   autoScroll?: boolean;
   onAutoScroll?: (value: boolean) => void;
   showReading?: boolean;
@@ -139,6 +144,26 @@ export function SettingsPanel({
             onClick={() => onDisplayMode('decimal')}
           >
             Decimal
+          </button>
+        </div>
+      </div>
+
+      <div className="setting-row setting-row-logarithms">
+        <span className="field-label">Logarithms</span>
+        <div className="segmented" role="group" aria-label="Logarithm base">
+          <button
+            type="button"
+            aria-pressed={logarithmBase === 'natural'}
+            onClick={() => onLogarithmBase('natural')}
+          >
+            Natural (ln)
+          </button>
+          <button
+            type="button"
+            aria-pressed={logarithmBase === 'common'}
+            onClick={() => onLogarithmBase('common')}
+          >
+            Base 10 (log)
           </button>
         </div>
       </div>

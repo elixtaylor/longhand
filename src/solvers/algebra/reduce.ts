@@ -9,7 +9,13 @@ import { Poly } from '../../lib/math/parse';
 import { Rational } from '../../lib/math/rational';
 import { fmt } from '../../lib/math/num';
 import { collectSolver } from './collect';
-import type { Solver, Step, SolveResult } from '../../lib/engine/types';
+import type {
+  LogarithmBase,
+  SolveOptions,
+  Solver,
+  Step,
+  SolveResult,
+} from '../../lib/engine/types';
 
 /**
  * Equations where x is wrapped by the same function more than once —
@@ -494,8 +500,16 @@ interface LogTermDisplay {
   withX?: boolean;
 }
 
+const logSymbol = (base: LogarithmBase = 'natural') =>
+  base === 'common' ? '\\log' : '\\ln';
+const logValue = (value: number, base: LogarithmBase = 'natural') =>
+  base === 'common' ? Math.log10(value) : Math.log(value);
+
 /** Render a signed term such as `-x\\ln 4` without exposing float algebra. */
-function logTermsLatex(terms: LogTermDisplay[]): string {
+function logTermsLatex(
+  terms: LogTermDisplay[],
+  logarithmBase: LogarithmBase = 'natural',
+): string {
   const nonZero = terms.filter((term) => Math.abs(term.coefficient) > 1e-12);
   if (!nonZero.length) return '0';
 
@@ -506,7 +520,7 @@ function logTermsLatex(terms: LogTermDisplay[]): string {
       const coefficient =
         Math.abs(magnitude - 1) < 1e-12 ? '' : fmt(magnitude, 6);
       const variable = term.withX ? 'x' : '';
-      const body = `${coefficient}${variable}\\ln ${fmt(term.base)}`;
+      const body = `${coefficient}${variable}${logSymbol(logarithmBase)} ${fmt(term.base)}`;
       if (index === 0) return negative ? `-${body}` : body;
       return `${negative ? ' - ' : ' + '}${body}`;
     })
@@ -514,11 +528,17 @@ function logTermsLatex(terms: LogTermDisplay[]): string {
 }
 
 /** Put positive log terms first so an exact fraction reads naturally. */
-function canonicalLogTerms(terms: LogTermDisplay[]): string {
-  return logTermsLatex([
-    ...terms.filter((term) => term.coefficient > 1e-12),
-    ...terms.filter((term) => term.coefficient < -1e-12),
-  ]);
+function canonicalLogTerms(
+  terms: LogTermDisplay[],
+  logarithmBase: LogarithmBase = 'natural',
+): string {
+  return logTermsLatex(
+    [
+      ...terms.filter((term) => term.coefficient > 1e-12),
+      ...terms.filter((term) => term.coefficient < -1e-12),
+    ],
+    logarithmBase,
+  );
 }
 
 /** Render the product inside a single logarithm after applying log laws. */
@@ -559,6 +579,7 @@ function logFactorsLatex(
 function combinedLogTermsLatex(
   terms: LogTermDisplay[],
   collapseNumeric = true,
+  logarithmBase: LogarithmBase = 'natural',
 ): string {
   const nonZero = terms.filter((term) => Math.abs(term.coefficient) > 1e-12);
   if (!nonZero.length) return '0';
@@ -569,7 +590,7 @@ function combinedLogTermsLatex(
   const argument = negative.length
     ? `\\dfrac{${numerator}}{${denominator}}`
     : numerator;
-  return `${positive.length ? '' : '-'}\\ln\\left(${argument}\\right)`;
+  return `${positive.length ? '' : '-'}${logSymbol(logarithmBase)}\\left(${argument}\\right)`;
 }
 
 interface ExactLogFraction {
@@ -588,9 +609,7 @@ function exactLogFraction(
   qL: number,
   pR: number,
   qR: number,
-  p: number,
-  qa: number,
-  qb: number,
+  logarithmBase: LogarithmBase = 'natural',
 ): ExactLogFraction {
   let numerator: LogTermDisplay[] = [
     { coefficient: qR, base: b },
@@ -618,18 +637,30 @@ function exactLogFraction(
     }));
   }
 
-  const numeratorText = canonicalLogTerms(numerator);
-  const denominatorText = canonicalLogTerms(denominator);
+  const numeratorText = canonicalLogTerms(numerator, logarithmBase);
+  const denominatorText = canonicalLogTerms(denominator, logarithmBase);
   const fraction =
     numeratorText === '0'
       ? '0'
       : `\\dfrac{${numeratorText}}{${denominatorText}}`;
-  const lawNumerator = combinedLogTermsLatex(numerator, false);
-  const lawDenominator = combinedLogTermsLatex(denominator, false);
+  const lawNumerator = combinedLogTermsLatex(numerator, false, logarithmBase);
+  const lawDenominator = combinedLogTermsLatex(
+    denominator,
+    false,
+    logarithmBase,
+  );
   const lawCombined =
     lawNumerator === '0' ? '0' : `\\dfrac{${lawNumerator}}{${lawDenominator}}`;
-  const combinedNumerator = combinedLogTermsLatex(numerator);
-  const combinedDenominator = combinedLogTermsLatex(denominator);
+  const combinedNumerator = combinedLogTermsLatex(
+    numerator,
+    true,
+    logarithmBase,
+  );
+  const combinedDenominator = combinedLogTermsLatex(
+    denominator,
+    true,
+    logarithmBase,
+  );
   const combined =
     combinedNumerator === '0'
       ? '0'
@@ -639,8 +670,12 @@ function exactLogFraction(
     fraction,
     lawCombined,
     combined,
-    numeratorValue: scale * (qb - qa),
-    denominatorValue: scale * p,
+    numeratorValue:
+      scale *
+      (qR * logValue(b, logarithmBase) - qL * logValue(a, logarithmBase)),
+    denominatorValue:
+      scale *
+      (pL * logValue(a, logarithmBase) - pR * logValue(b, logarithmBase)),
   };
 }
 
@@ -689,7 +724,7 @@ function tryExponential(sides: [string, string]): {
 
 /* ---------------------------------------------------------------- solver */
 
-function solveImpl(input: string): SolveResult {
+function solveImpl(input: string, options: SolveOptions = {}): SolveResult {
   const sides = splitEquation(input);
   if (!sides)
     return {
@@ -948,9 +983,10 @@ function solveImpl(input: string): SolveResult {
     const { a, b, pL, qL, pR, qR, p, qa, qb } = exp;
     if (Math.abs(p) < 1e-12) {
       const consistent = Math.abs(qa - qb) < 1e-9;
+      const workingLog = logSymbol(options.logarithmBase);
       steps.push({
-        note: 'Take the natural logarithm of both sides, so the powers come down.',
-        latex: `\\ln\\left(${toLatex(parseExpr(sides[0]))}\\right) = \\ln\\left(${toLatex(parseExpr(sides[1]))}\\right)`,
+        note: `Take the ${options.logarithmBase === 'common' ? 'base-10' : 'natural'} logarithm of both sides, so the powers come down.`,
+        latex: `${workingLog}\\left(${toLatex(parseExpr(sides[0]))}\\right) = ${workingLog}\\left(${toLatex(parseExpr(sides[1]))}\\right)`,
         annotation: 'same to both sides',
       });
       steps.push({
@@ -967,49 +1003,68 @@ function solveImpl(input: string): SolveResult {
       };
     }
     const x = (qb - qa) / p;
+    const workingLog = logSymbol(options.logarithmBase);
     steps.push({
-      note: 'Take the natural logarithm of both sides, then use the power law $\\ln(m^{n}) = n\\ln m$ to bring the powers down.',
-      latex: `\\left(${linTex(pL, qL)}\\right)\\ln ${fmt(a)} = \\left(${linTex(pR, qR)}\\right)\\ln ${fmt(b)}`,
+      note: `Take the ${options.logarithmBase === 'common' ? 'base-10' : 'natural'} logarithm of both sides, then use the power law $${workingLog}(m^{n}) = n${workingLog}m$ to bring the powers down.`,
+      latex: `\\left(${linTex(pL, qL)}\\right)${workingLog} ${fmt(a)} = \\left(${linTex(pR, qR)}\\right)${workingLog} ${fmt(b)}`,
       annotation: 'power law',
     });
     steps.push({
       note: 'Expand both brackets, keeping the logarithms exact.',
-      latex: `${logTermsLatex([
-        { coefficient: qL, base: a },
-        { coefficient: pL, base: a, withX: true },
-      ])} = ${logTermsLatex([
-        { coefficient: pR, base: b, withX: true },
-        { coefficient: qR, base: b },
-      ])}`,
+      latex: `${logTermsLatex(
+        [
+          { coefficient: qL, base: a },
+          { coefficient: pL, base: a, withX: true },
+        ],
+        options.logarithmBase,
+      )} = ${logTermsLatex(
+        [
+          { coefficient: pR, base: b, withX: true },
+          { coefficient: qR, base: b },
+        ],
+        options.logarithmBase,
+      )}`,
     });
     steps.push({
       note: 'Move the x-terms to the left and the constant logarithms to the right.',
-      latex: `${logTermsLatex([
-        { coefficient: pL, base: a, withX: true },
-        { coefficient: -pR, base: b, withX: true },
-      ])} = ${logTermsLatex([
-        { coefficient: qR, base: b },
-        { coefficient: -qL, base: a },
-      ])}`,
+      latex: `${logTermsLatex(
+        [
+          { coefficient: pL, base: a, withX: true },
+          { coefficient: -pR, base: b, withX: true },
+        ],
+        options.logarithmBase,
+      )} = ${logTermsLatex(
+        [
+          { coefficient: qR, base: b },
+          { coefficient: -qL, base: a },
+        ],
+        options.logarithmBase,
+      )}`,
     });
     steps.push({
       note: 'Factor x from the left-hand side.',
-      latex: `x\\left(${logTermsLatex([
-        { coefficient: pL, base: a },
-        { coefficient: -pR, base: b },
-      ])}\\right) = ${logTermsLatex([
-        { coefficient: qR, base: b },
-        { coefficient: -qL, base: a },
-      ])}`,
+      latex: `x\\left(${logTermsLatex(
+        [
+          { coefficient: pL, base: a },
+          { coefficient: -pR, base: b },
+        ],
+        options.logarithmBase,
+      )}\\right) = ${logTermsLatex(
+        [
+          { coefficient: qR, base: b },
+          { coefficient: -qL, base: a },
+        ],
+        options.logarithmBase,
+      )}`,
     });
-    const exact = exactLogFraction(a, b, pL, qL, pR, qR, p, qa, qb);
+    const exact = exactLogFraction(a, b, pL, qL, pR, qR, options.logarithmBase);
     steps.push({
       note: 'Divide by the coefficient of x to give the exact simplified form.',
       latex: `x = ${exact.fraction}`,
     });
     if (exact.lawCombined !== exact.fraction) {
       steps.push({
-        note: 'Use the product, quotient, and power laws to combine the logarithms.',
+        note: `Use the product, quotient, and power laws to combine the ${options.logarithmBase === 'common' ? 'base-10 logs' : 'natural logs'}.`,
         latex: `x = ${exact.lawCombined}`,
       });
     }
@@ -1021,7 +1076,7 @@ function solveImpl(input: string): SolveResult {
     }
     steps.push({
       note: 'Evaluate the individual logarithms only after the exact form is complete.',
-      latex: `\\ln ${fmt(a)} = ${fmt(Math.log(a), 6)}, \\qquad \\ln ${fmt(b)} = ${fmt(Math.log(b), 6)}`,
+      latex: `${logSymbol(options.logarithmBase)} ${fmt(a)} = ${fmt(logValue(a, options.logarithmBase), 6)}, \\qquad ${logSymbol(options.logarithmBase)} ${fmt(b)} = ${fmt(logValue(b, options.logarithmBase), 6)}`,
     });
     steps.push({
       note: 'Now evaluate the exact expression numerically.',
@@ -1069,7 +1124,7 @@ export const reduceSolver: Solver = {
       return 0;
     }
   },
-  solve(input): SolveResult {
-    return solveImpl(input);
+  solve(input, _methodId, options = {}): SolveResult {
+    return solveImpl(input, options);
   },
 };

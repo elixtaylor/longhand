@@ -1,6 +1,12 @@
 import { fmt, par } from '../../lib/math/num';
 import { quadraticRoots } from '../quadratics';
-import type { Solver, Step, SolveResult } from '../../lib/engine/types';
+import type {
+  LogarithmBase,
+  SolveOptions,
+  Solver,
+  Step,
+  SolveResult,
+} from '../../lib/engine/types';
 
 /**
  * Logarithmic and exponential equations
@@ -256,6 +262,12 @@ const baseTex = (b: number | 'e') => (b === 'e' ? 'e' : fmt(b));
 const logName = (b: number | 'e') =>
   b === 'e' ? '\\ln' : b === 10 ? '\\log' : `\\log_{${fmt(b)}}`;
 const lnOf = (b: number | 'e') => (b === 'e' ? 1 : Math.log(b));
+const workingLogName = (base: LogarithmBase = 'natural') =>
+  base === 'common' ? '\\log' : '\\ln';
+const workingLogValue = (value: number, base: LogarithmBase = 'natural') =>
+  base === 'common' ? Math.log10(value) : Math.log(value);
+const workingLogDescription = (base: LogarithmBase = 'natural') =>
+  base === 'common' ? 'base-10 logarithms' : 'natural logarithms';
 
 /** Is `value` a neat whole power of `base`? Then the answer is exact. */
 function exactPower(base: number, value: number): number | null {
@@ -270,6 +282,7 @@ function exactPower(base: number, value: number): number | null {
 function solveExponential(
   p: Extract<Problem, { kind: 'exponential' }>,
   methodId: string,
+  options: SolveOptions = {},
 ): SolveResult {
   const { coeff, base, mult, value } = p;
   const bNum = base === 'e' ? Math.E : base;
@@ -324,26 +337,27 @@ function solveExponential(
 
   // General case: take logarithms of both sides.
   const x = Math.log(rhs) / (lnOf(base) * mult);
+  const workingLog = workingLogName(options.logarithmBase);
   steps.push({
-    note: 'Take logarithms of both sides so the power can come down.',
-    latex: `${logName('e')}\\left(${baseTex(base)}^{${mult === 1 ? 'x' : `${fmt(mult)}x`}}\\right) = ${logName('e')}(${fmt(rhs, 6)})`,
+    note: `Take ${workingLogDescription(options.logarithmBase)} of both sides so the power can come down.`,
+    latex: `${workingLog}\\left(${baseTex(base)}^{${mult === 1 ? 'x' : `${fmt(mult)}x`}}\\right) = ${workingLog}(${fmt(rhs, 6)})`,
   });
   steps.push({
-    note: 'Use the power law $\\log(a^{n}) = n\\log a$ to bring the index down.',
-    latex: `${mult === 1 ? 'x' : `${fmt(mult)}x`} \\times ${logName('e')}(${baseTex(base)}) = ${logName('e')}(${fmt(rhs, 6)})`,
+    note: `Use the power law $${workingLog}(a^{n}) = n${workingLog}a$ to bring the index down.`,
+    latex: `${mult === 1 ? 'x' : `${fmt(mult)}x`} \\times ${workingLog}(${baseTex(base)}) = ${workingLog}(${fmt(rhs, 6)})`,
     annotation: 'power law',
   });
   steps.push({
-    note: `Divide both sides by $${mult === 1 ? '' : `${fmt(mult)}`}${logName('e')}(${baseTex(base)})$ to make $x$ the subject.`,
-    latex: `x = \\dfrac{${logName('e')}(${fmt(rhs, 6)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${logName('e')}(${baseTex(base)})}`,
+    note: `Divide both sides by $${mult === 1 ? '' : `${fmt(mult)}`}${workingLog}(${baseTex(base)})$ to make $x$ the subject.`,
+    latex: `x = \\dfrac{${workingLog}(${fmt(rhs, 6)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${workingLog}(${baseTex(base)})}`,
   });
   steps.push({
-    note: 'Look up the two logarithms.',
-    latex: `${logName('e')}(${fmt(rhs, 6)}) = ${fmt(Math.log(rhs), 6)}, \\qquad ${logName('e')}(${baseTex(base)}) = ${fmt(lnOf(base), 6)}`,
+    note: `Look up the two ${workingLogDescription(options.logarithmBase)}.`,
+    latex: `${workingLog}(${fmt(rhs, 6)}) = ${fmt(workingLogValue(rhs, options.logarithmBase), 6)}, \\qquad ${workingLog}(${baseTex(base)}) = ${fmt(workingLogValue(bNum, options.logarithmBase), 6)}`,
   });
   steps.push({
     note: 'Work out the division.',
-    latex: `x = \\dfrac{${fmt(Math.log(rhs), 6)}}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${fmt(lnOf(base), 6)}} = ${fmt(x, 6)}`,
+    latex: `x = \\dfrac{${fmt(workingLogValue(rhs, options.logarithmBase), 6)}}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${fmt(workingLogValue(bNum, options.logarithmBase), 6)}} = ${fmt(x, 6)}`,
     annotation: 'solved',
   });
 
@@ -396,6 +410,7 @@ function quadInULatex(a: number, b: number, c: number): string {
 function solveExponentialQuadratic(
   p: Extract<Problem, { kind: 'exponential-quadratic' }>,
   methodId: string,
+  options: SolveOptions = {},
 ): SolveResult {
   const { terms, rhs, unitBase, a, b, c } = p;
 
@@ -488,9 +503,10 @@ function solveExponentialQuadratic(
       return exact;
     }
     const x = Math.log(u) / Math.log(unitBase);
+    const workingLog = workingLogName(options.logarithmBase);
     steps.push({
-      note: `Take logarithms to solve $${fmt(unitBase)}^{x} = ${fmt(u, 6)}$.`,
-      latex: `x = \\log_{${fmt(unitBase)}}(${fmt(u, 6)}) = ${fmt(x, 6)}`,
+      note: `Take ${workingLogDescription(options.logarithmBase)} to solve $${fmt(unitBase)}^{x} = ${fmt(u, 6)}$.`,
+      latex: `x = \\dfrac{${workingLog}(${fmt(u, 6)})}{${workingLog}(${fmt(unitBase)})} = ${fmt(x, 6)}`,
     });
     return x;
   });
@@ -540,7 +556,7 @@ export const logarithmsSolver: Solver = {
       return 0;
     }
   },
-  solve(input, methodId): SolveResult {
+  solve(input, methodId, options = {}): SolveResult {
     let p: Problem;
     try {
       p = parse(input);
@@ -551,9 +567,9 @@ export const logarithmsSolver: Solver = {
       };
     }
 
-    if (p.kind === 'exponential') return solveExponential(p, methodId);
+    if (p.kind === 'exponential') return solveExponential(p, methodId, options);
     if (p.kind === 'exponential-quadratic')
-      return solveExponentialQuadratic(p, methodId);
+      return solveExponentialQuadratic(p, methodId, options);
 
     if (p.kind === 'log-equation') {
       const { base, value } = p;
@@ -620,6 +636,7 @@ export const logarithmsSolver: Solver = {
       };
     }
     const result = Math.log(value) / lnOf(base);
+    const workingLog = workingLogName(options.logarithmBase);
     const exact = base === 'e' ? null : exactPower(bNum, value);
     const steps: Step[] = [
       {
@@ -642,17 +659,17 @@ export const logarithmsSolver: Solver = {
       // One line used to do three things: state the rule, look up both
       // logarithms, and divide. Split so each is checkable on a calculator.
       steps.push({
-        note: 'It isn’t a whole power, so use the change-of-base rule to get something a calculator has a button for.',
-        latex: `${logName(base)}(${fmt(value)}) = \\dfrac{\\ln ${fmt(value)}}{\\ln ${baseTex(base)}}`,
+        note: `It isn’t a whole power, so use the change-of-base rule with ${workingLogDescription(options.logarithmBase)}.`,
+        latex: `${logName(base)}(${fmt(value)}) = \\dfrac{${workingLog} ${fmt(value)}}{${workingLog} ${baseTex(base)}}`,
         annotation: 'change of base',
       });
       steps.push({
-        note: 'Look up the two natural logarithms.',
-        latex: `\\ln ${fmt(value)} = ${fmt(Math.log(value), 6)}, \\qquad \\ln ${baseTex(base)} = ${fmt(lnOf(base), 6)}`,
+        note: `Look up the two ${workingLogDescription(options.logarithmBase)}.`,
+        latex: `${workingLog} ${fmt(value)} = ${fmt(workingLogValue(value, options.logarithmBase), 6)}, \\qquad ${workingLog} ${baseTex(base)} = ${fmt(workingLogValue(bNum, options.logarithmBase), 6)}`,
       });
       steps.push({
         note: 'Divide one by the other.',
-        latex: `${logName(base)}(${fmt(value)}) = \\dfrac{${fmt(Math.log(value), 6)}}{${fmt(lnOf(base), 6)}} = ${fmt(result, 6)}`,
+        latex: `${logName(base)}(${fmt(value)}) = \\dfrac{${fmt(workingLogValue(value, options.logarithmBase), 6)}}{${fmt(workingLogValue(bNum, options.logarithmBase), 6)}} = ${fmt(result, 6)}`,
         annotation: 'answer',
       });
     }

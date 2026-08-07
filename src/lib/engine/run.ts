@@ -2,7 +2,7 @@ import { normalise, type Reading } from '../nl/normalise';
 import { detectSolver, type Detection } from './registry';
 import { work, type Worked } from './parts';
 import { foldArithmetic } from '../nl/arithmetic';
-import type { Solver, SolveResult } from './types';
+import type { SolveOptions, Solver, SolveResult } from './types';
 
 export type { Worked, WorkedPart } from './parts';
 
@@ -37,20 +37,21 @@ export function runSolve(
   solver: Solver,
   raw: string,
   methodId: string,
+  options: SolveOptions = {},
 ): SolveResult {
   // Measurement inputs carry dimensional units which the general prose
   // normaliser intentionally strips. Give that solver the raw form first so
   // `r=5 cm` can be converted rather than silently becoming unitless.
   if (solver.id === 'measurement') {
-    const original = solver.solve(raw, methodId);
+    const original = solver.solve(raw, methodId, options);
     if (original.ok) return original;
   }
   const { text } = normalise(raw);
-  const first = solver.solve(text, methodId);
+  const first = solver.solve(text, methodId, options);
   if (first.ok) return first;
   // If the rewrite confused this solver, give the original a chance before
   // reporting failure — the student's own phrasing may already have been valid.
-  const original = solver.solve(raw, methodId);
+  const original = solver.solve(raw, methodId, options);
   return original.ok ? original : first;
 }
 
@@ -66,6 +67,12 @@ export function runWorked(
   raw: string,
   preferred?: { solver: Solver; methodId: string },
   methodOverrides: Record<string, string> = {},
+  options: SolveOptions = {},
 ): Worked {
-  return work(raw, runSolve, preferred, methodOverrides);
+  return work(
+    raw,
+    (solver, text, methodId) => runSolve(solver, text, methodId, options),
+    preferred,
+    methodOverrides,
+  );
 }

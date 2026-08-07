@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Solver } from '../lib/engine/types';
+import type { SolveOptions, Solver } from '../lib/engine/types';
 import { runSolve } from '../lib/engine/run';
 import { distinctMethods } from '../lib/engine/methods';
 import { TeX, RichText } from './TeX';
@@ -14,9 +14,11 @@ import { TeX, RichText } from './TeX';
 export function CompareMethods({
   solver,
   input,
+  options = {},
 }: {
   solver: Solver;
   input: string;
+  options?: SolveOptions;
 }) {
   // Comparing a method against an identical copy of itself teaches nothing,
   // so compare only the ones that genuinely differ on this problem.
@@ -24,9 +26,9 @@ export function CompareMethods({
     () =>
       distinctMethods(solver, input).map((m) => ({
         method: m,
-        result: runSolve(solver, input, m.id),
+        result: runSolve(solver, input, m.id, options),
       })),
-    [solver, input],
+    [solver, input, options],
   );
 
   const answers = runs

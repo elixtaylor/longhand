@@ -1,6 +1,12 @@
 import { useEffect, useState, type ComponentProps } from 'react';
 import { useLocalStorage } from './lib/useLocalStorage';
-import type { ThemeId, RevealMode, TextSize, DisplayMode } from './lib/ui';
+import type {
+  ThemeId,
+  RevealMode,
+  TextSize,
+  DisplayMode,
+  LogarithmBase,
+} from './lib/ui';
 import { Workspace } from './components/Workspace';
 import { DisplayModeContext } from './components/TeX';
 import { GraphingWorkspace } from './components/GraphingWorkspace';
@@ -23,6 +29,10 @@ export default function App() {
   const [displayMode, setDisplayMode] = useLocalStorage<DisplayMode>(
     'longhand.displayMode',
     'exact',
+  );
+  const [logarithmBase, setLogarithmBase] = useLocalStorage<LogarithmBase>(
+    'longhand.logarithmBase',
+    'natural',
   );
   const [showPalette, setShowPalette] = useLocalStorage<boolean>(
     'longhand.palette',
@@ -160,6 +170,8 @@ export default function App() {
             onShowPalette={setShowPalette}
             displayMode={displayMode}
             onDisplayMode={setDisplayMode}
+            logarithmBase={logarithmBase}
+            onLogarithmBase={setLogarithmBase}
             autoScroll={autoScroll}
             onAutoScroll={setAutoScroll}
             showReading={showReading}
@@ -172,6 +184,7 @@ export default function App() {
               setDark(false);
               setTextSize('md');
               setDisplayMode('exact');
+              setLogarithmBase('natural');
               setShowPalette(true);
               setAutoScroll(true);
               setShowReading(true);
@@ -221,6 +234,8 @@ export default function App() {
               resetKey={resetKey}
               displayMode={displayMode}
               onDisplayMode={setDisplayMode}
+              logarithmBase={logarithmBase}
+              onLogarithmBase={setLogarithmBase}
               autoScroll={autoScroll}
               showReading={showReading}
               onNavigatePage={navigate}

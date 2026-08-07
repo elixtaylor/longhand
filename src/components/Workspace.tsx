@@ -11,7 +11,13 @@ import { interpret, runWorked, type Worked } from '../lib/engine/run';
 import { partMethodKey } from '../lib/engine/parts';
 import { hasMethodChoice } from '../lib/engine/methods';
 import type { SolveResult, Solver } from '../lib/engine/types';
-import type { ThemeId, RevealMode, TextSize, DisplayMode } from '../lib/ui';
+import type {
+  ThemeId,
+  RevealMode,
+  TextSize,
+  DisplayMode,
+  LogarithmBase,
+} from '../lib/ui';
 import {
   loadHistory,
   pushHistory,
@@ -82,6 +88,8 @@ export function Workspace({
   onShowPalette,
   displayMode = 'exact',
   onDisplayMode = () => undefined,
+  logarithmBase = 'natural',
+  onLogarithmBase = () => undefined,
   autoScroll = true,
   showReading = true,
   onNavigatePage = () => undefined,
@@ -105,6 +113,8 @@ export function Workspace({
   onShowPalette: (show: boolean) => void;
   displayMode?: DisplayMode;
   onDisplayMode?: (mode: DisplayMode) => void;
+  logarithmBase?: LogarithmBase;
+  onLogarithmBase?: (base: LogarithmBase) => void;
   autoScroll?: boolean;
   showReading?: boolean;
   onNavigatePage?: (
@@ -206,11 +216,12 @@ export function Workspace({
             ? { solver, methodId: pinned!.methodId || solver.defaultMethodId }
             : undefined,
           methodOverrides,
+          { logarithmBase },
         ),
       );
       hasSolved.current = true;
     },
-    [partMethodOverrides],
+    [partMethodOverrides, logarithmBase],
   );
 
   /** Solving is the moment worth recording and worth making shareable. */
@@ -469,6 +480,8 @@ export function Workspace({
             onShowPalette={onShowPalette}
             displayMode={displayMode}
             onDisplayMode={onDisplayMode}
+            logarithmBase={logarithmBase}
+            onLogarithmBase={onLogarithmBase}
             onNavigatePage={onNavigatePage}
           />
         </Suspense>
@@ -639,7 +652,11 @@ export function Workspace({
               <Suspense
                 fallback={<p className="empty-state">Loading comparison…</p>}
               >
-                <CompareMethods solver={single.solver} input={single.text} />
+                <CompareMethods
+                  solver={single.solver}
+                  input={single.text}
+                  options={{ logarithmBase }}
+                />
               </Suspense>
             </>
           ) : worked && worked.parts.length > 1 ? (
