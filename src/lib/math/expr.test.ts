@@ -21,6 +21,7 @@ describe('parseExpr', () => {
     expect(show('2+3*4')).toBe('2 + 3 \\cdot 4');
     expect(show('(2+3)*4')).toBe('\\left(2 + 3\\right) \\cdot 4');
     expect(show('x*2')).toBe('x \\cdot 2'); // a dot is needed before a bare number
+    expect(show('1.3*2^(0.08k)')).toBe('1.3 \\times 2^{0.08k}');
   });
   it('reads functions with and without brackets', () => {
     expect(show('sin(2x)')).toBe('\\sin \\left(2x\\right)');

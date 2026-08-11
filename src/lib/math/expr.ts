@@ -750,8 +750,11 @@ export function toLatex(e: Expr): string {
       const left = wrap(a, 2);
       const right = wrap(b, 2);
       // A dot is still needed before a bare number, which would otherwise
-      // run into whatever precedes it (x · 2, not x2).
-      const glue = b.t === 'num' ? ' \\cdot ' : '';
+      // run into whatever precedes it (x · 2, not x2). A numeric base raised
+      // to a power needs the same guard: `1.3*2^(0.08k)` must not print as
+      // `1.32^{0.08k}`, which changes the apparent base from 2 to 1.32.
+      const numericPower = b.t === 'pow' && b.a.t === 'num';
+      const glue = b.t === 'num' ? ' \\cdot ' : numericPower ? ' \\times ' : '';
       return `${left}${glue}${right}`;
     }
     case 'div':

@@ -14,7 +14,14 @@ import type {
  * (SACE Stage 2 Mathematical Methods, Topic 4).
  */
 type QuadTerm =
-  | { kind: 'exp'; coeff: number; base: number; mult: number; k: number }
+  | {
+      kind: 'exp';
+      coeff: number;
+      base: number;
+      mult: number;
+      k: number;
+      variable: string;
+    }
   | { kind: 'const'; value: number };
 
 type Problem =
@@ -23,7 +30,15 @@ type Problem =
       coeff: number;
       base: number | 'e';
       mult: number;
+      variable: string;
       value: number;
+    }
+  | {
+      kind: 'exponential-expression';
+      coeff: number;
+      base: number | 'e';
+      mult: number;
+      variable: string;
     }
   | { kind: 'evaluate'; base: number | 'e'; value: number }
   | { kind: 'log-equation'; base: number | 'e'; value: number }
@@ -32,6 +47,7 @@ type Problem =
       terms: QuadTerm[];
       rhs: number;
       unitBase: number;
+      variable: string;
       a: number;
       b: number;
       c: number;
@@ -42,27 +58,65 @@ const clean = (s: string) => s.replace(/\s+/g, '');
 function parse(inputRaw: string): Problem {
   const s = clean(inputRaw);
 
-  // b^x = c, optionally with a coefficient and a multiple of x: 5*2^(3x)=40
-  const exp = s.match(
-    /^(?:(\d*\.?\d+)[*×])?(\d*\.?\d+|e)\^\(?(\d*\.?\d+)?x\)?=(-?\d*\.?\d+)$/i,
-  );
+  // b^x = c, optionally with a coefficient and a multiple of one variable:
+  // 5*2^(3x)=40 or 1.3*2^(0.08k)=10.
+  const exp = s.includes('^')
+    ? s.match(
+        /^(?:(\d+(?:\.\d*)?|\.\d+)[*×])?(\d+(?:\.\d*)?|\.\d+|e)\^\(?([+-]?(?:\d+(?:\.\d*)?|\.\d+)?)?([a-df-zA-DF-Z])\)?=(-?(?:\d+(?:\.\d*)?|\.\d+))$/i,
+      )
+    : null;
   if (exp) {
+    const multiplier = exp[3];
     return {
       kind: 'exponential',
       coeff: exp[1] ? Number(exp[1]) : 1,
       base: exp[2].toLowerCase() === 'e' ? 'e' : Number(exp[2]),
-      mult: exp[3] ? Number(exp[3]) : 1,
-      value: Number(exp[4]),
+      mult:
+        multiplier === undefined || multiplier === '' || multiplier === '+'
+          ? 1
+          : multiplier === '-'
+            ? -1
+            : Number(multiplier),
+      variable: exp[4],
+      value: Number(exp[5]),
+    };
+  }
+
+  // An expression such as 1.3*2^(0.08k) is a valid exponential model even
+  // without an equals sign. Keep it as a function for the preview and give a
+  // useful symbolic result; adding `= value` then uses the equation path above
+  // to solve for the variable.
+  const expression =
+    !s.includes('=') &&
+    s.includes('^') &&
+    s.match(
+      /^(?:(\d+(?:\.\d*)?|\.\d+)[*×])?(\d+(?:\.\d*)?|\.\d+|e)\^\(?([+-]?(?:\d+(?:\.\d*)?|\.\d+)?)?([a-df-zA-DF-Z])\)?$/i,
+    );
+  if (expression) {
+    const multiplier = expression[3];
+    return {
+      kind: 'exponential-expression',
+      coeff: expression[1] ? Number(expression[1]) : 1,
+      base: expression[2].toLowerCase() === 'e' ? 'e' : Number(expression[2]),
+      mult:
+        multiplier === undefined || multiplier === '' || multiplier === '+'
+          ? 1
+          : multiplier === '-'
+            ? -1
+            : Number(multiplier),
+      variable: expression[4],
     };
   }
 
   // Several exponential terms that reduce to a quadratic once one of them
   // is recognised as a common base's square: 4^x+2^(x+1)-15=0
-  const quad = parseExpQuadratic(s);
+  const quad = s.includes('^') ? parseExpQuadratic(s) : null;
   if (quad) return quad;
 
   // log_b(x) = c  /  ln(x) = c   → solve for x
-  const logEq = s.match(/^(?:log_?(\d*\.?\d+)?|ln)\(?x\)?=(-?\d*\.?\d+)$/i);
+  const logEq = /^(?:log|ln)/i.test(s)
+    ? s.match(/^(?:log_?(\d*\.?\d+)?|ln)\(?x\)?=(-?\d*\.?\d+)$/i)
+    : null;
   if (logEq) {
     const isLn = /^ln/i.test(s);
     return {
@@ -73,7 +127,9 @@ function parse(inputRaw: string): Problem {
   }
 
   // log_b(c) / log(c) / ln(c) → evaluate
-  const evalLog = s.match(/^(?:log_?(\d*\.?\d+)?|ln)\(?(\d*\.?\d+)\)?$/i);
+  const evalLog = /^(?:log|ln)/i.test(s)
+    ? s.match(/^(?:log_?(\d*\.?\d+)?|ln)\(?(\d*\.?\d+)\)?$/i)
+    : null;
   if (evalLog) {
     const isLn = /^ln/i.test(s);
     return {
@@ -146,7 +202,7 @@ function splitTerms(s: string): string[] {
   return terms.filter(Boolean);
 }
 
-/** Parses one signed term as a plain number or coeff·base^(mult·x+k). */
+/** Parses one signed term as a plain number or coeff·base^(mult·variable+k). */
 function parseTerm(raw: string): QuadTerm | null {
   let s = raw;
   let sign = 1;
@@ -179,18 +235,27 @@ function parseTerm(raw: string): QuadTerm | null {
   if (!Number.isFinite(base) || base <= 0 || base === 1) return null;
 
   if (right.startsWith('(') && right.endsWith(')')) right = right.slice(1, -1);
-  const expMatch = right.match(/^([+-]?\d*)x([+-]\d+(?:\.\d+)?)?$/);
+  const expMatch = right.match(
+    /^([+-]?(?:\d+(?:\.\d*)?|\.\d+)?)?([a-df-zA-DF-Z])([+-](?:\d+(?:\.\d*)?|\.\d+))?$/,
+  );
   if (!expMatch) return null;
   const multStr = expMatch[1];
   const mult =
-    multStr === '' || multStr === '+'
+    multStr === undefined || multStr === '' || multStr === '+'
       ? 1
       : multStr === '-'
         ? -1
         : Number(multStr);
-  const k = expMatch[2] ? Number(expMatch[2]) : 0;
+  const k = expMatch[3] ? Number(expMatch[3]) : 0;
 
-  return { kind: 'exp', coeff: sign * coeff, base, mult, k };
+  return {
+    kind: 'exp',
+    coeff: sign * coeff,
+    base,
+    mult,
+    k,
+    variable: expMatch[2],
+  };
 }
 
 /** Finds the smallest base that every exponential term's own base is an
@@ -238,6 +303,8 @@ function parseExpQuadratic(
     (t): t is Extract<QuadTerm, { kind: 'exp' }> => t.kind === 'exp',
   );
   if (expTerms.length < 2) return null;
+  const variable = expTerms[0].variable;
+  if (expTerms.some((t) => t.variable !== variable)) return null;
 
   const effBases = expTerms.map((t) => Math.pow(t.base, t.mult));
   const found = findUnitBase(effBases);
@@ -256,7 +323,16 @@ function parseExpQuadratic(
     if (t.kind === 'const') c += t.value;
   });
 
-  return { kind: 'exponential-quadratic', terms, rhs, unitBase, a, b, c };
+  return {
+    kind: 'exponential-quadratic',
+    terms,
+    rhs,
+    unitBase,
+    variable,
+    a,
+    b,
+    c,
+  };
 }
 
 const baseTex = (b: number | 'e') => (b === 'e' ? 'e' : fmt(b));
@@ -269,6 +345,14 @@ const workingLogValue = (value: number, base: LogarithmBase = 'natural') =>
   base === 'common' ? Math.log10(value) : Math.log(value);
 const workingLogDescription = (base: LogarithmBase = 'natural') =>
   base === 'common' ? 'base-10 logarithms' : 'natural logarithms';
+
+/** Print a multiple of the unknown in an exponential index. */
+const indexTex = (mult: number, variable: string): string =>
+  mult === 1
+    ? variable
+    : mult === -1
+      ? `-${variable}`
+      : `${fmt(mult)}${variable}`;
 
 /** Is `value` a neat whole power of `base`? Then the answer is exact. */
 function exactPower(base: number, value: number): number | null {
@@ -307,11 +391,11 @@ function solveExponential(
   methodId: string,
   options: SolveOptions = {},
 ): SolveResult {
-  const { coeff, base, mult, value } = p;
+  const { coeff, base, mult, variable, value } = p;
   const bNum = base === 'e' ? Math.E : base;
   const rhs = value / coeff;
 
-  const original = `${coeff === 1 ? '' : `${fmt(coeff)} \\times `}${baseTex(base)}^{${mult === 1 ? 'x' : `${fmt(mult)}x`}} = ${fmt(value)}`;
+  const original = `${coeff === 1 ? '' : `${fmt(coeff)} \\times `}${baseTex(base)}^{${indexTex(mult, variable)}} = ${fmt(value)}`;
   const steps: Step[] = [{ note: 'Write down the equation.', latex: original }];
 
   if (rhs <= 0) {
@@ -323,7 +407,7 @@ function solveExponential(
   if (coeff !== 1) {
     steps.push({
       note: `Divide both sides by ${fmt(coeff)} to get the power on its own.`,
-      latex: `${baseTex(base)}^{${mult === 1 ? 'x' : `${fmt(mult)}x`}} = ${fmt(rhs, 6)}`,
+      latex: `${baseTex(base)}^{${indexTex(mult, variable)}} = ${fmt(rhs, 6)}`,
     });
   }
 
@@ -333,17 +417,20 @@ function solveExponential(
   if (power !== null && methodId !== 'logs') {
     steps.push({
       note: `Write the right-hand side as a power of ${fmt(bNum)}.`,
-      latex: `${baseTex(base)}^{${mult === 1 ? 'x' : `${fmt(mult)}x`}} = ${fmt(bNum)}^{${power}}`,
+      latex: `${baseTex(base)}^{${indexTex(mult, variable)}} = ${fmt(bNum)}^{${power}}`,
       annotation: `${fmt(bNum)}^${power} = ${fmt(rhs)}`,
     });
     steps.push({
       note: 'The bases match, so the indices must be equal.',
-      latex: mult === 1 ? `x = ${power}` : `${fmt(mult)}x = ${power}`,
+      latex:
+        mult === 1
+          ? `${variable} = ${power}`
+          : `${indexTex(mult, variable)} = ${power}`,
     });
     if (mult !== 1) {
       steps.push({
         note: `Divide by ${fmt(mult)}.`,
-        latex: `x = ${exactIndex(power, mult) ?? fmt(power / mult, 6)}`,
+        latex: `${variable} = ${exactIndex(power, mult) ?? fmt(power / mult, 6)}`,
       });
     }
     const x = power / mult;
@@ -353,7 +440,7 @@ function solveExponential(
         headline: `Solve $${original}$`,
         methodName: 'Equating indices',
         steps,
-        answerLatex: `x = ${exactIndex(power, mult) ?? fmt(x, 6)}`,
+        answerLatex: `${variable} = ${exactIndex(power, mult) ?? fmt(x, 6)}`,
       },
     };
   }
@@ -363,16 +450,16 @@ function solveExponential(
   const workingLog = workingLogName(options.logarithmBase);
   steps.push({
     note: `Take ${workingLogDescription(options.logarithmBase)} of both sides so the power can come down.`,
-    latex: `${workingLog}\\left(${baseTex(base)}^{${mult === 1 ? 'x' : `${fmt(mult)}x`}}\\right) = ${workingLog}(${fmt(rhs, 6)})`,
+    latex: `${workingLog}\\left(${baseTex(base)}^{${indexTex(mult, variable)}}\\right) = ${workingLog}(${fmt(rhs, 6)})`,
   });
   steps.push({
     note: `Use the power law $${workingLog}(a^{n}) = n${workingLog}a$ to bring the index down.`,
-    latex: `${mult === 1 ? 'x' : `${fmt(mult)}x`} \\times ${workingLog}(${baseTex(base)}) = ${workingLog}(${fmt(rhs, 6)})`,
+    latex: `${indexTex(mult, variable)} \\times ${workingLog}(${baseTex(base)}) = ${workingLog}(${fmt(rhs, 6)})`,
     annotation: 'power law',
   });
   steps.push({
-    note: `Divide both sides by $${mult === 1 ? '' : `${fmt(mult)}`}${workingLog}(${baseTex(base)})$ to make $x$ the subject.`,
-    latex: `x = \\dfrac{${workingLog}(${fmt(rhs, 6)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${workingLog}(${baseTex(base)})}`,
+    note: `Divide both sides by $${mult === 1 ? '' : `${fmt(mult)}`}${workingLog}(${baseTex(base)})$ to make $${variable}$ the subject.`,
+    latex: `${variable} = \\dfrac{${workingLog}(${fmt(rhs, 6)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${workingLog}(${baseTex(base)})}`,
   });
   steps.push({
     note: `Look up the two ${workingLogDescription(options.logarithmBase)}.`,
@@ -380,21 +467,21 @@ function solveExponential(
   });
   steps.push({
     note: 'Work out the division.',
-    latex: `x = \\dfrac{${fmt(workingLogValue(rhs, options.logarithmBase), 6)}}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${fmt(workingLogValue(bNum, options.logarithmBase), 6)}} = ${fmt(x, 6)}`,
+    latex: `${variable} = \\dfrac{${fmt(workingLogValue(rhs, options.logarithmBase), 6)}}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${fmt(workingLogValue(bNum, options.logarithmBase), 6)}} = ${fmt(x, 6)}`,
     annotation: 'solved',
   });
 
   const exactPowerIndex = power === null ? null : exactIndex(power, mult);
   const exactLogAnswer =
     exactPowerIndex !== null
-      ? `x = ${exactPowerIndex}`
+      ? `${variable} = ${exactPowerIndex}`
       : rhs === 1
-        ? 'x = 0'
+        ? `${variable} = 0`
         : base === 'e'
           ? mult === 1
-            ? `x = ${workingLog}(${fmt(rhs, 12)})`
-            : `x = \\dfrac{${workingLog}(${fmt(rhs, 12)})}{${fmt(mult)}}`
-          : `x = \\dfrac{${workingLog}(${fmt(rhs, 12)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${workingLog}(${baseTex(bNum)})}`;
+            ? `${variable} = ${workingLog}(${fmt(rhs, 12)})`
+            : `${variable} = \\dfrac{${workingLog}(${fmt(rhs, 12)})}{${fmt(mult)}}`
+          : `${variable} = \\dfrac{${workingLog}(${fmt(rhs, 12)})}{${mult === 1 ? '' : `${fmt(mult)} \\times `}${workingLog}(${baseTex(bNum)})}`;
   if (exactPowerIndex !== null) {
     steps.push({
       note: 'The logarithmic form simplifies to an exact index.',
@@ -414,8 +501,33 @@ function solveExponential(
   };
 }
 
-function expLatex(mult: number, k: number): string {
-  const mPart = mult === 1 ? 'x' : mult === -1 ? '-x' : `${fmt(mult)}x`;
+function solveExponentialExpression(
+  p: Extract<Problem, { kind: 'exponential-expression' }>,
+): SolveResult {
+  const { coeff, base, mult, variable } = p;
+  const expression = `${coeff === 1 ? '' : `${fmt(coeff)} \\times `}${baseTex(base)}^{${indexTex(mult, variable)}}`;
+  return {
+    ok: true,
+    solution: {
+      headline: `Simplify $${expression}$`,
+      methodName: 'Exponential model',
+      steps: [
+        {
+          note: 'Read the coefficient and the exponential factor as a product.',
+          latex: `${fmt(coeff)} \\times ${baseTex(base)}^{${indexTex(mult, variable)}}`,
+        },
+        {
+          note: `This expression is already in simplest exponential form. Add an equals sign and a known value to solve for $${variable}$.`,
+          latex: `f(${variable}) = ${expression}`,
+        },
+      ],
+      answerLatex: `f(${variable}) = ${expression}`,
+    },
+  };
+}
+
+function expLatex(mult: number, k: number, variable: string): string {
+  const mPart = indexTex(mult, variable);
   if (k === 0) return mPart;
   return `${mPart} ${k > 0 ? '+' : '-'} ${fmt(Math.abs(k))}`;
 }
@@ -428,7 +540,7 @@ function termTex(t: QuadTerm, leading: boolean): string {
   const sign = t.coeff < 0 ? '-' : leading ? '' : '+';
   const absCoeff = Math.abs(t.coeff);
   const coeffTex = absCoeff === 1 ? '' : `${fmt(absCoeff)} \\times `;
-  return `${sign} ${coeffTex}${fmt(t.base)}^{${expLatex(t.mult, t.k)}}`;
+  return `${sign} ${coeffTex}${fmt(t.base)}^{${expLatex(t.mult, t.k, t.variable)}}`;
 }
 
 /** "u^{2} + 2u - 15 = 0" — the reduced quadratic, in standard signed form. */
@@ -454,7 +566,7 @@ function solveExponentialQuadratic(
   _methodId: string,
   options: SolveOptions = {},
 ): SolveResult {
-  const { terms, rhs, unitBase, a, b, c } = p;
+  const { terms, rhs, unitBase, variable, a, b, c } = p;
 
   const original = `${terms.map((t, i) => termTex(t, i === 0)).join(' ')} = ${fmt(rhs)}`;
   const steps: Step[] = [{ note: 'Write down the equation.', latex: original }];
@@ -472,10 +584,10 @@ function solveExponentialQuadratic(
       const baseToK = Math.pow(t.base, t.k);
       const uPart =
         degree === 1
-          ? `${fmt(unitBase)}^{x}`
-          : `(${fmt(unitBase)}^{x})^{${degree}}`;
+          ? `${fmt(unitBase)}^{${variable}}`
+          : `(${fmt(unitBase)}^{${variable}})^{${degree}}`;
       const rhsTex = t.k === 0 ? uPart : `${fmt(baseToK)} \\times ${uPart}`;
-      return `${fmt(t.base)}^{${expLatex(t.mult, t.k)}} = ${rhsTex}`;
+      return `${fmt(t.base)}^{${expLatex(t.mult, t.k, variable)}} = ${rhsTex}`;
     })
     .filter((x): x is string => x !== null);
 
@@ -487,7 +599,7 @@ function solveExponentialQuadratic(
   }
 
   steps.push({
-    note: `Let $u = ${fmt(unitBase)}^{x}$. Substituting turns this into an ordinary quadratic in $u$.`,
+    note: `Let $u = ${fmt(unitBase)}^{${variable}}$. Substituting turns this into an ordinary quadratic in $u$.`,
     latex: quadInULatex(a, b, c),
   });
 
@@ -519,7 +631,7 @@ function solveExponentialQuadratic(
 
   if (rejected.length > 0) {
     steps.push({
-      note: `$u = ${fmt(unitBase)}^{x}$ can never be zero or negative — a positive base to any power is always positive — so ${rejected.map((u) => `$u = ${fmt(u, 6)}$`).join(' and ')} ${rejected.length > 1 ? 'are' : 'is'} rejected.`,
+      note: `$u = ${fmt(unitBase)}^{${variable}}$ can never be zero or negative — a positive base to any power is always positive — so ${rejected.map((u) => `$u = ${fmt(u, 6)}$`).join(' and ')} ${rejected.length > 1 ? 'are' : 'is'} rejected.`,
       latex:
         valid.length > 0
           ? valid.map((u) => `u = ${fmt(u, 6)}`).join(', ')
@@ -541,7 +653,7 @@ function solveExponentialQuadratic(
     if (exact !== null) {
       steps.push({
         note: `Recognise $${fmt(u, 6)}$ as ${fmt(unitBase)} to the power ${exact}.`,
-        latex: `x = ${exact}`,
+        latex: `${variable} = ${exact}`,
       });
       exactXs.push(String(exact));
       return exact;
@@ -549,8 +661,8 @@ function solveExponentialQuadratic(
     const x = Math.log(u) / Math.log(unitBase);
     const workingLog = workingLogName(options.logarithmBase);
     steps.push({
-      note: `Take ${workingLogDescription(options.logarithmBase)} to solve $${fmt(unitBase)}^{x} = ${fmt(u, 6)}$.`,
-      latex: `x = \\dfrac{${workingLog}(${fmt(u, 6)})}{${workingLog}(${fmt(unitBase)})} = ${fmt(x, 6)}`,
+      note: `Take ${workingLogDescription(options.logarithmBase)} to solve $${fmt(unitBase)}^{${variable}} = ${fmt(u, 6)}$.`,
+      latex: `${variable} = \\dfrac{${workingLog}(${fmt(u, 6)})}{${workingLog}(${fmt(unitBase)})} = ${fmt(x, 6)}`,
     });
     exactXs.push(
       exactLogValue(u, unitBase, options.logarithmBase) ?? fmt(x, 6),
@@ -561,11 +673,11 @@ function solveExponentialQuadratic(
   const answerLatex =
     exactXs.length === xs.length
       ? exactXs.length > 1
-        ? `x = ${exactXs[0]} \\quad\\text{or}\\quad x = ${exactXs[1]}`
-        : `x = ${exactXs[0]}`
+        ? `${variable} = ${exactXs[0]} \\quad\\text{or}\\quad ${variable} = ${exactXs[1]}`
+        : `${variable} = ${exactXs[0]}`
       : xs.length > 1
-        ? `x = ${fmt(xs[0], 6)} \\quad\\text{or}\\quad x = ${fmt(xs[1], 6)}`
-        : `x = ${fmt(xs[0], 6)}`;
+        ? `${variable} = ${fmt(xs[0], 6)} \\quad\\text{or}\\quad ${variable} = ${fmt(xs[1], 6)}`
+        : `${variable} = ${fmt(xs[0], 6)}`;
 
   return {
     ok: true,
@@ -619,6 +731,8 @@ export const logarithmsSolver: Solver = {
     }
 
     if (p.kind === 'exponential') return solveExponential(p, methodId, options);
+    if (p.kind === 'exponential-expression')
+      return solveExponentialExpression(p);
     if (p.kind === 'exponential-quadratic')
       return solveExponentialQuadratic(p, methodId, options);
 

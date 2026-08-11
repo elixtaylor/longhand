@@ -1,5 +1,6 @@
 import { polynomialsSolver } from './polynomials';
 import { logarithmsSolver } from './logarithms';
+import { runWorked } from '../../lib/engine/run';
 
 const sol = (
   s: { solve: (i: string, m: string) => any },
@@ -111,6 +112,32 @@ describe('logarithmsSolver', () => {
     expect(sol(logarithmsSolver, '2^(3x) = 64', 'same-base').answerLatex).toBe(
       'x = 2',
     );
+  });
+
+  it('keeps a decimal coefficient separate and solves for k', () => {
+    const s = sol(logarithmsSolver, '1.3*2^(0.08k) = 10', 'same-base');
+    expect(s.answerLatex).toBe(
+      'k = \\dfrac{\\ln(7.692307692315)}{0.08 \\times \\ln(2)}',
+    );
+    expect(s.steps[0]?.latex).toBe('1.3 \\times 2^{0.08k} = 10');
+    expect(
+      s.steps.some((step: { latex?: string }) => step.latex?.includes('k =')),
+    ).toBe(true);
+
+    const worked = runWorked('1.3*2^(0.08k) = 10');
+    expect(worked.parts[0]?.solver.id).toBe('logarithms');
+    expect(worked.parts[0]?.result.ok).toBe(true);
+  });
+
+  it('keeps an exponential model usable when no target has been supplied', () => {
+    const worked = runWorked('1.3*2^(0.08k)');
+    expect(worked.parts[0]?.solver.id).toBe('logarithms');
+    expect(worked.parts[0]?.result.ok).toBe(true);
+    if (worked.parts[0]?.result.ok) {
+      expect(worked.parts[0].result.solution.answerLatex).toBe(
+        'f(k) = 1.3 \\times 2^{0.08k}',
+      );
+    }
   });
 
   it('evaluates an exact logarithm', () => {

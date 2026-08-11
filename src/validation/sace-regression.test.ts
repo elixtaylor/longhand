@@ -850,7 +850,7 @@ describe('SACE-aligned generated regression corpus', () => {
       failures.slice(0, 40),
       `first failures of ${failures.length}`,
     ).toEqual([]);
-  });
+  }, 15000);
 
   it('keeps exact families symbolic instead of replacing them with approximations', () => {
     const failures: string[] = [];

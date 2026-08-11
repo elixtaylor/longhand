@@ -90,6 +90,11 @@ describe('parsers refuse a value they can only partly read', () => {
     expect(() => parsePoly('2*7')).toThrow(ParseError);
     expect(parsePoly('3*x').degree()).toBe(1); // implicit product is still fine
   });
+
+  it('does not fold a coefficient into a symbolic exponential base', () => {
+    expect(foldArithmetic('1.3*2^(0.08k)')).toBe('1.3*2^(0.08k)');
+    expect(foldArithmetic('1.3*2^(0.08k)=10')).toBe('1.3*2^(0.08k)=10');
+  });
 });
 
 describe('a question that mixes topics in one equation', () => {

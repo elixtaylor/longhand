@@ -31,7 +31,7 @@
  * and a pattern reaching for the brackets would either swallow the closing
  * one or strip the brackets the log solver needs.
  */
-const NUMERIC = /(?<![\^\w.])\d[\d.]*(?:\s*[+\-*/^×÷]\s*\d[\d.]*)+(?![\w.])/g;
+const NUMERIC = /(?<![\^\w.])\d[\d.]*(?:\s*[+\-*/^×÷]\s*\d[\d.]*)+(?![\w.^])/g;
 
 /** A sub-expression is only worth replacing if it does something. */
 const HAS_OPERATOR = /[+\-*/^×÷]/;
