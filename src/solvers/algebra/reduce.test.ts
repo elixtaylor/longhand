@@ -67,6 +67,23 @@ describe('reducing before solving', () => {
     );
   });
 
+  it('combines logarithms with coefficients before solving the resulting quadratic', () => {
+    const input = 'log(3x+3)-2log(x-2)=log3';
+    expect(interpret(input).detection?.solver.id).toBe('reduce');
+    const solution = solve(input);
+    const lines = solution.steps.map((step) => step.latex ?? '');
+
+    expect(solution.answerLatex).toBe('x = \\dfrac{5 + \\sqrt{13}}{2}');
+    expect(lines).toContain(
+      '\\log\\left(\\dfrac{3x + 3}{\\left(x - 2\\right)^{2}}\\right) = \\log\\left(3\\right)',
+    );
+    expect(lines).toContain('3x + 3 = 3\\left(x - 2\\right)^{2}');
+    expect(lines).toContain('x^{2} - 5x + 3 = 0');
+    expect(lines.some((line) => line.includes('bisection'))).toBe(false);
+    expect(lines.some((line) => line.includes('rejected'))).toBe(true);
+    expect(lines.some((line) => line.includes('4.302776'))).toBe(true);
+  });
+
   it('substitutes u = ln x when the logarithm itself is squared', () => {
     const solution = solve('(lnx)^2 = 2lnx + 3');
     expect(solution.answerLatex).toBe(

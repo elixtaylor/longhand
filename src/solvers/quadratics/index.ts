@@ -195,7 +195,7 @@ function solveByFormula(std: Poly): SolveResult {
     },
     {
       note: 'Substitute the values (keep the brackets around negatives).',
-      latex: `x = \\dfrac{-${par(b)} \\pm \\sqrt{${par(b)}^{2} - 4${par(a)}${par(c)}}}{2${par(a)}}`,
+      latex: `x = \\dfrac{-${par(b)} \\pm \\sqrt{${par(b)}^{2} - 4\\cdot${par(a)}\\cdot${par(c)}}}{2\\cdot${par(a)}}`,
     },
     {
       note: 'Work out the discriminant, $\\Delta = b^{2} - 4ac$.',

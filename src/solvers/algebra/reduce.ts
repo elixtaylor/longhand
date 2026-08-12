@@ -1,13 +1,19 @@
 import {
+  num,
   parseExpr,
   toLatex,
   evaluateExpr,
   type Expr,
 } from '../../lib/math/expr';
-import { exprToPolyFrac, numericSolutionsOf } from '../../lib/math/expand';
+import {
+  exprToPolyFrac,
+  numericSolutionsOf,
+  polyAscii,
+} from '../../lib/math/expand';
 import { Poly } from '../../lib/math/parse';
 import { Rational } from '../../lib/math/rational';
 import { fmt } from '../../lib/math/num';
+import { polyLatex } from '../../lib/math/format';
 import { collectSolver } from './collect';
 import { quadraticRoots } from '../quadratics';
 import type {
@@ -119,6 +125,374 @@ function trySqrt(
 }
 
 /* -------------------------------------------------------------------- ln */
+
+/** One logarithm term after reading a whole side of an equation. */
+interface StructuredLogTerm {
+  coefficient: number;
+  argument: Expr;
+  base: number;
+}
+
+/** A logarithm side rewritten as a single numerator/denominator ratio. */
+interface CombinedLogSide {
+  terms: StructuredLogTerm[];
+  numerator: Expr;
+  denominator: Expr;
+  expression: Expr;
+}
+
+interface StructuredLogEquation {
+  base: number;
+  lhs: CombinedLogSide;
+  rhs: CombinedLogSide;
+  lhsFrac: ReturnType<typeof exprToPolyFrac>;
+  rhsFrac: ReturnType<typeof exprToPolyFrac>;
+  crossLeft: Poly;
+  crossRight: Poly;
+}
+
+/** Evaluate an expression only when it is a genuine numeric constant. */
+function numericConstant(expression: Expr): number | null {
+  switch (expression.t) {
+    case 'num':
+      return expression.v;
+    case 'var':
+      return expression.name === 'e'
+        ? Math.E
+        : expression.name === 'π'
+          ? Math.PI
+          : null;
+    case 'neg': {
+      const value = numericConstant(expression.a);
+      return value === null ? null : -value;
+    }
+    case 'add':
+    case 'sub':
+    case 'mul':
+    case 'div': {
+      const left = numericConstant(expression.a);
+      const right = numericConstant(expression.b);
+      if (left === null || right === null) return null;
+      if (expression.t === 'add') return left + right;
+      if (expression.t === 'sub') return left - right;
+      if (expression.t === 'mul') return left * right;
+      return Math.abs(right) < 1e-15 ? null : left / right;
+    }
+    case 'pow': {
+      const base = numericConstant(expression.a);
+      const exponent = numericConstant(expression.b);
+      if (base === null || exponent === null) return null;
+      const value = Math.pow(base, exponent);
+      return Number.isFinite(value) ? value : null;
+    }
+    case 'fn':
+      // A function, including log(3), is a logarithm term rather than a
+      // numeric coefficient. Keeping it here prevents log(3)log(x) from
+      // being mistaken for a constant multiple of log(x).
+      return null;
+  }
+}
+
+/**
+ * Read an expression made only from logarithms, numeric coefficients and
+ * +, −, ×, ÷. A non-zero ordinary term makes the shape unsuitable because
+ * log laws cannot remove it without changing the equation type.
+ */
+function collectStructuredLogTerms(
+  expression: Expr,
+  scale = 1,
+): StructuredLogTerm[] | null {
+  const constant = numericConstant(expression);
+  if (constant !== null) return Math.abs(constant) < 1e-12 ? [] : null;
+
+  switch (expression.t) {
+    case 'fn':
+      if (expression.name !== 'ln' && expression.name !== 'log') return null;
+      return [
+        {
+          coefficient: scale,
+          argument: expression.a,
+          base: expression.name === 'ln' ? Math.E : (expression.base ?? 10),
+        },
+      ];
+    case 'neg':
+      return collectStructuredLogTerms(expression.a, -scale);
+    case 'add': {
+      const left = collectStructuredLogTerms(expression.a, scale);
+      const right = collectStructuredLogTerms(expression.b, scale);
+      return left && right ? [...left, ...right] : null;
+    }
+    case 'sub': {
+      const left = collectStructuredLogTerms(expression.a, scale);
+      const right = collectStructuredLogTerms(expression.b, -scale);
+      return left && right ? [...left, ...right] : null;
+    }
+    case 'mul': {
+      const leftConstant = numericConstant(expression.a);
+      const rightConstant = numericConstant(expression.b);
+      if (leftConstant !== null) {
+        const terms = collectStructuredLogTerms(expression.b, scale);
+        return (
+          terms?.map((term) => ({
+            ...term,
+            coefficient: term.coefficient * leftConstant,
+          })) ?? null
+        );
+      }
+      if (rightConstant !== null) {
+        const terms = collectStructuredLogTerms(expression.a, scale);
+        return (
+          terms?.map((term) => ({
+            ...term,
+            coefficient: term.coefficient * rightConstant,
+          })) ?? null
+        );
+      }
+      return null;
+    }
+    case 'div': {
+      const denominator = numericConstant(expression.b);
+      if (denominator === null || Math.abs(denominator) < 1e-15) return null;
+      const terms = collectStructuredLogTerms(expression.a, scale);
+      return (
+        terms?.map((term) => ({
+          ...term,
+          coefficient: term.coefficient / denominator,
+        })) ?? null
+      );
+    }
+    case 'num':
+    case 'var':
+    case 'pow':
+      return null;
+  }
+}
+
+function logSymbolForBase(base: number): string {
+  if (Math.abs(base - Math.E) < 1e-12) return '\\ln';
+  if (Math.abs(base - 10) < 1e-12) return '\\log';
+  return `\\log_{${fmt(base, 6)}}`;
+}
+
+function oneExpression(expression: Expr): boolean {
+  return expression.t === 'num' && Math.abs(expression.v - 1) < 1e-12;
+}
+
+function multiplyExpressions(factors: Expr[]): Expr {
+  if (!factors.length) return num(1);
+  return factors
+    .slice(1)
+    .reduce<Expr>(
+      (left, right) => ({ t: 'mul', a: left, b: right }),
+      factors[0],
+    );
+}
+
+function combineStructuredLogSide(
+  terms: StructuredLogTerm[],
+): CombinedLogSide | null {
+  const active = terms.filter((term) => Math.abs(term.coefficient) > 1e-12);
+  if (!active.length) return null;
+  if (
+    active.some(
+      (term) =>
+        !Number.isSafeInteger(Math.abs(term.coefficient)) ||
+        Math.abs(term.coefficient) < 1,
+    )
+  )
+    return null;
+
+  const factor = (term: StructuredLogTerm): Expr =>
+    Math.abs(Math.abs(term.coefficient) - 1) < 1e-12
+      ? term.argument
+      : { t: 'pow', a: term.argument, b: num(Math.abs(term.coefficient)) };
+  const numerator = multiplyExpressions(
+    active.filter((term) => term.coefficient > 0).map(factor),
+  );
+  const denominator = multiplyExpressions(
+    active.filter((term) => term.coefficient < 0).map(factor),
+  );
+  const expression = oneExpression(denominator)
+    ? numerator
+    : ({ t: 'div', a: numerator, b: denominator } as Expr);
+  return { terms: active, numerator, denominator, expression };
+}
+
+function sameBase(terms: StructuredLogTerm[]): number | null {
+  if (!terms.length) return null;
+  const base = terms[0].base;
+  return terms.every((term) => Math.abs(term.base - base) < 1e-12)
+    ? base
+    : null;
+}
+
+/** Recognise log-law equations on both sides, including coefficients. */
+function tryStructuredLogEquation(
+  sides: [string, string],
+): StructuredLogEquation | null {
+  let leftExpr: Expr;
+  let rightExpr: Expr;
+  try {
+    leftExpr = parseExpr(sides[0]);
+    rightExpr = parseExpr(sides[1]);
+  } catch {
+    return null;
+  }
+  const leftTerms = collectStructuredLogTerms(leftExpr);
+  const rightTerms = collectStructuredLogTerms(rightExpr);
+  if (!leftTerms?.length || !rightTerms?.length) return null;
+  const base = sameBase([...leftTerms, ...rightTerms]);
+  if (base === null) return null;
+
+  const allTerms = [...leftTerms, ...rightTerms];
+  if (
+    allTerms.some(
+      (term) =>
+        !Number.isFinite(term.coefficient) ||
+        !Number.isSafeInteger(Math.abs(term.coefficient)),
+    )
+  )
+    return null;
+
+  let lhs: CombinedLogSide;
+  let rhs: CombinedLogSide;
+  let lhsFrac: ReturnType<typeof exprToPolyFrac>;
+  let rhsFrac: ReturnType<typeof exprToPolyFrac>;
+  try {
+    const lhsCombined = combineStructuredLogSide(leftTerms);
+    const rhsCombined = combineStructuredLogSide(rightTerms);
+    if (!lhsCombined || !rhsCombined) return null;
+    lhs = lhsCombined;
+    rhs = rhsCombined;
+    lhsFrac = exprToPolyFrac(lhs.expression, 'x');
+    rhsFrac = exprToPolyFrac(rhs.expression, 'x');
+  } catch {
+    return null;
+  }
+  if (lhsFrac.den.isZeroPoly() || rhsFrac.den.isZeroPoly()) return null;
+
+  const crossLeft = lhsFrac.num.mul(rhsFrac.den);
+  const crossRight = rhsFrac.num.mul(lhsFrac.den);
+  const degree = crossLeft.sub(crossRight).degree();
+  // This path owns the exact algebraic cases it can narrate. Leave higher
+  // degrees to the general polynomial/numerical solvers rather than claiming
+  // a log-law method which would stop half way through.
+  if (degree < 1 || degree > 2) return null;
+  return { base, lhs, rhs, lhsFrac, rhsFrac, crossLeft, crossRight };
+}
+
+function containsX(expression: Expr): boolean {
+  switch (expression.t) {
+    case 'var':
+      return expression.name === 'x';
+    case 'num':
+      return false;
+    case 'neg':
+    case 'fn':
+      return containsX(expression.a);
+    default:
+      return containsX(expression.a) || containsX(expression.b);
+  }
+}
+
+interface DomainBound {
+  direction: 'lower' | 'upper';
+  value: number;
+}
+
+interface DomainCondition {
+  latex: string;
+  bound?: DomainBound;
+}
+
+/** Render a useful positivity restriction for a linear log argument. */
+function logDomainCondition(argument: Expr): DomainCondition {
+  try {
+    const fraction = exprToPolyFrac(argument, 'x');
+    if (fraction.den.degree() !== 0)
+      return { latex: `${toLatex(argument)} > 0` };
+    const denominator = fraction.den.get(0).toNumber();
+    if (Math.abs(denominator) < 1e-12)
+      return { latex: `${toLatex(argument)} > 0` };
+    const numerator =
+      denominator < 0 ? fraction.num.scale(Rational.int(-1)) : fraction.num;
+    if (numerator.degree() !== 1)
+      return { latex: `${polyLatex(numerator)} > 0` };
+    const coefficient = numerator.get(1).toNumber();
+    const constant = numerator.get(0).toNumber();
+    if (Math.abs(coefficient) < 1e-12)
+      return { latex: `${polyLatex(numerator)} > 0` };
+    const root = -constant / coefficient;
+    const relation = coefficient > 0 ? '>' : '<';
+    return {
+      latex: `${polyLatex(numerator)} > 0 \\Longrightarrow x ${relation} ${fmt(root, 6)}`,
+      bound: { direction: coefficient > 0 ? 'lower' : 'upper', value: root },
+    };
+  } catch {
+    return { latex: `${toLatex(argument)} > 0` };
+  }
+}
+
+function domainSummary(bounds: DomainBound[]): string | null {
+  if (!bounds.length) return null;
+  const lower = bounds
+    .filter((bound) => bound.direction === 'lower')
+    .reduce<number | null>(
+      (best, bound) =>
+        best === null ? bound.value : Math.max(best, bound.value),
+      null,
+    );
+  const upper = bounds
+    .filter((bound) => bound.direction === 'upper')
+    .reduce<number | null>(
+      (best, bound) =>
+        best === null ? bound.value : Math.min(best, bound.value),
+      null,
+    );
+  if (lower !== null && upper !== null && lower >= upper)
+    return '\\text{No possible real domain}';
+  if (lower !== null && upper !== null)
+    return `${fmt(lower, 6)} < x < ${fmt(upper, 6)}`;
+  if (lower !== null) return `x > ${fmt(lower, 6)}`;
+  if (upper !== null) return `x < ${fmt(upper, 6)}`;
+  return null;
+}
+
+function gcdIntegers(a: number, b: number): number {
+  a = Math.abs(a);
+  b = Math.abs(b);
+  while (b) [a, b] = [b, a % b];
+  return a || 1;
+}
+
+function integerCommonFactor(poly: Poly): number {
+  const terms = poly.terms();
+  if (!terms.length || terms.some((term) => !term.coeff.isInt())) return 1;
+  return (
+    terms.reduce(
+      (factor, term) => gcdIntegers(factor, Math.abs(term.coeff.n)),
+      0,
+    ) || 1
+  );
+}
+
+function exactRootForCandidate(
+  info: ReturnType<typeof quadraticRoots>,
+  candidate: number,
+): string {
+  if (info.nature === 'double') return info.answerLatex;
+  if (info.nature === 'two-irrational') {
+    const sign = Math.abs(candidate - info.numericRoots[0]) < 1e-7 ? '+' : '-';
+    return info.answerLatex.replace('\\pm', sign);
+  }
+  if (info.nature === 'two-rational') {
+    const pieces = info.answerLatex.split(' \\quad\\text{or}\\quad ');
+    return Math.abs(candidate - info.numericRoots[0]) < 1e-7
+      ? pieces[0]
+      : (pieces[1] ?? `x = ${fmt(candidate, 6)}`);
+  }
+  return `x = ${fmt(candidate, 6)}`;
+}
 
 /**
  * A sum of `ln(...)` terms (and only that) on one side, `k` on the other.
@@ -884,6 +1258,175 @@ function solveImpl(input: string, options: SolveOptions = {}): SolveResult {
         answerLatex: valid.length
           ? valid.map((v) => `x = ${fmt(v, 6)}`).join(', \\quad ')
           : inner.solution.answerLatex,
+      },
+    };
+  }
+
+  const structuredLog = tryStructuredLogEquation(sides);
+  if (structuredLog) {
+    const { base, lhs, rhs, lhsFrac, rhsFrac, crossLeft, crossRight } =
+      structuredLog;
+    const logSymbol = logSymbolForBase(base);
+    const allArguments = [...lhs.terms, ...rhs.terms]
+      .map((term) => term.argument)
+      .filter(
+        (argument, index, all) =>
+          all.findIndex(
+            (candidate) => toLatex(candidate) === toLatex(argument),
+          ) === index,
+      );
+    const conditions = allArguments.filter(containsX).map(logDomainCondition);
+    const bounds = conditions
+      .map((condition) => condition.bound)
+      .filter((bound): bound is DomainBound => bound !== undefined);
+
+    if (conditions.length) {
+      steps.push({
+        note: 'Every logarithm is defined only when its argument is positive. Set each argument greater than zero.',
+        latex: conditions.map((condition) => condition.latex).join(' \\qquad '),
+        annotation: 'domain restriction',
+      });
+      const summary = domainSummary(bounds);
+      if (summary) {
+        steps.push({
+          note: 'Take the intersection of those restrictions before solving.',
+          latex: `\\text{Domain: }${summary}`,
+          annotation: 'domain restriction',
+        });
+      }
+    }
+
+    steps.push({
+      note: 'Use the product, quotient and power laws to combine each side into one logarithm.',
+      latex: `${logSymbol}\\left(${toLatex(lhs.expression)}\\right) = ${logSymbol}\\left(${toLatex(rhs.expression)}\\right)`,
+      annotation: 'log laws',
+    });
+    steps.push({
+      note: 'The logarithms have the same base, so their arguments must be equal.',
+      latex: `${toLatex(lhs.expression)} = ${toLatex(rhs.expression)}`,
+      annotation: 'equal logs',
+    });
+
+    const denominatorPresent =
+      lhsFrac.den.degree() > 0 || rhsFrac.den.degree() > 0;
+    if (denominatorPresent) {
+      const crossLeftExpr = oneExpression(rhs.denominator)
+        ? lhs.numerator
+        : ({ t: 'mul', a: lhs.numerator, b: rhs.denominator } as Expr);
+      const crossRightExpr = oneExpression(lhs.denominator)
+        ? rhs.numerator
+        : ({ t: 'mul', a: rhs.numerator, b: lhs.denominator } as Expr);
+      steps.push({
+        note: 'Multiply both sides by the denominators to clear the fraction.',
+        latex: `${toLatex(crossLeftExpr)} = ${toLatex(crossRightExpr)}`,
+        annotation: 'clears the fraction',
+      });
+    }
+    steps.push({
+      note: 'Expand the brackets and collect like terms.',
+      latex: `${polyLatex(crossLeft)} = ${polyLatex(crossRight)}`,
+    });
+
+    const moved = crossRight.sub(crossLeft);
+    steps.push({
+      note: 'Move everything to one side to make a polynomial equal to zero.',
+      latex: `${polyLatex(moved)} = 0`,
+    });
+    let standard = moved;
+    if (standard.get(standard.degree()).isNeg()) {
+      standard = standard.scale(Rational.int(-1));
+      steps.push({
+        note: 'Multiply every term by −1 so the leading coefficient is positive.',
+        latex: `${polyLatex(standard)} = 0`,
+      });
+    }
+    const commonFactor = integerCommonFactor(standard);
+    if (commonFactor > 1) {
+      standard = standard.scale(new Rational(1, commonFactor));
+      steps.push({
+        note: `Divide every term by ${commonFactor} to simplify the polynomial.`,
+        latex: `${polyLatex(standard)} = 0`,
+      });
+    }
+
+    const standardText = `${polyAscii(standard)} = 0`;
+    const inner = collectSolver.solve(standardText, 'formula');
+    if (!inner.ok) return { ok: false, error: inner.error };
+    // The first line is the standard-form equation we have just shown. Keep
+    // the specialised quadratic/linear solver's remaining algebraic lines.
+    for (const step of inner.solution.steps.slice(1)) {
+      const previous = steps[steps.length - 1];
+      if (step.latex && previous?.latex === step.latex) continue;
+      steps.push(step);
+    }
+
+    const candidates = numericSolutionsOf(standardText);
+    const valid = candidates.filter(
+      (candidate) =>
+        allArguments.every((argument) => {
+          try {
+            return evaluateExpr(argument, { x: candidate }) > 0;
+          } catch {
+            return false;
+          }
+        }) && verifyAgainst(sides, candidate),
+    );
+    const rejected = candidates.filter(
+      (candidate) => !valid.includes(candidate),
+    );
+    const exact =
+      standard.degree() === 2
+        ? quadraticRoots(
+            standard.get(2).toNumber(),
+            standard.get(1).toNumber(),
+            standard.get(0).toNumber(),
+          )
+        : null;
+    const exactValid = exact
+      ? valid.map((candidate) => exactRootForCandidate(exact, candidate))
+      : valid.map(
+          (candidate) =>
+            inner.solution.answerLatex ?? `x = ${fmt(candidate, 6)}`,
+        );
+    const exactRejected = exact
+      ? rejected.map((candidate) => exactRootForCandidate(exact, candidate))
+      : rejected.map((candidate) => `x = ${fmt(candidate, 6)}`);
+
+    if (rejected.length) {
+      const domainCheckLatex = [
+        ...exactRejected.map((root) => `${root}\\;\\text{rejected}`),
+        ...exactValid.map((root) => `${root}\\;\\text{kept}`),
+      ].join(' \\qquad ');
+      steps.push({
+        note: 'Check the polynomial roots against the logarithm domain. Any root that makes an argument non-positive is rejected.',
+        latex: domainCheckLatex,
+        annotation: 'domain check',
+      });
+    }
+    if (!valid.length) {
+      steps.push({
+        note: 'No polynomial root remains in the domain of the original logarithms.',
+        latex: '\\text{No real solution}',
+        annotation: 'domain check',
+      });
+    } else {
+      const exactAnswer = exactValid.join(' \\quad\\text{or}\\quad ');
+      steps.push({
+        note: 'Keep the exact value, then give a decimal approximation.',
+        latex: `${exactAnswer} \\approx ${valid.map((candidate) => fmt(candidate, 6)).join(' \\quad\\text{or}\\quad ')}`,
+        annotation: 'exact form',
+      });
+    }
+
+    return {
+      ok: true,
+      solution: {
+        headline,
+        methodName: 'Combining logarithm laws',
+        steps,
+        answerLatex: valid.length
+          ? exactValid.join(' \\quad\\text{or}\\quad ')
+          : undefined,
       },
     };
   }
