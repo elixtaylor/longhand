@@ -240,6 +240,19 @@ describe('inductionSolver', () => {
     expect(s.answerLatex).not.toContain('\\dfrac');
   });
 
+  it('accepts textbook ellipsis notation in a full PMI statement', () => {
+    const input = 'prove by induction 1+3+5+...+(2n-1)=n^2';
+    expect(inductionSolver.detect(input)).toBe(0.96);
+    const s = sol(inductionSolver, input, 'sum');
+    expect(s.answerLatex).toContain('n');
+    expect(s.answerLatex).not.toContain('...');
+    expect(
+      s.steps.some((step: { note?: string }) =>
+        step.note?.includes('base case'),
+      ),
+    ).toBe(true);
+  });
+
   it('lays out all three parts of the proof', () => {
     const s = sol(inductionSolver, 'sum r', 'sum');
     const text = s.steps.map((x: { note?: string }) => x.note ?? '').join(' ');

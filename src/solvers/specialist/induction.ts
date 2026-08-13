@@ -165,6 +165,60 @@ function divideByRoot(p: Poly, root: Rational): Poly {
     : out.scale(new Rational(1, root.d));
 }
 
+/** Remove one or more outer pairs without disturbing an inner bracket. */
+function stripOuterParentheses(input: string): string {
+  let text = input.trim();
+  while (text.startsWith('(') && text.endsWith(')')) {
+    let depth = 0;
+    let enclosesWholeExpression = true;
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === '(') depth++;
+      else if (text[i] === ')') depth--;
+      if (depth === 0 && i < text.length - 1) {
+        enclosesWholeExpression = false;
+        break;
+      }
+    }
+    if (!enclosesWholeExpression || depth !== 0) break;
+    text = text.slice(1, -1).trim();
+  }
+  return text;
+}
+
+/**
+ * Read textbook notation such as
+ * `1 + 3 + 5 + ... + (2n - 1) = n²`.
+ *
+ * The induction engine proves a summand, so the final general term is the
+ * useful part of this notation. The finite terms and the ellipsis are not a
+ * polynomial expression and must never be passed to `parsePoly`.
+ */
+function ellipsisSummand(input: string): string | null {
+  const marker = /\.\.\.|…|⋯/.exec(input);
+  if (!marker) return null;
+
+  // Only use the part before the equality that follows the ellipsis. This
+  // leaves `from r=...` options before the series untouched.
+  const afterMarker = marker.index + marker[0].length;
+  const equality = input.indexOf('=', afterMarker);
+  const left = input.slice(0, equality === -1 ? input.length : equality);
+  let finalTerm = left.slice(afterMarker).trim();
+  finalTerm = finalTerm.replace(/^\+\s*/, '');
+  finalTerm = stripOuterParentheses(finalTerm);
+  if (!/[nN]/.test(finalTerm)) return null;
+
+  // In implicit products such as `2n`, n is adjacent to a digit, so a word
+  // boundary would not match. The final term is restricted to polynomial
+  // notation, making a plain variable replacement safe here.
+  const summand = finalTerm.replace(/n/gi, 'r');
+  try {
+    parsePoly(summand, 'r');
+    return summand;
+  } catch {
+    return null;
+  }
+}
+
 type InductionDomain = 'natural' | 'integer';
 
 interface InductionRequest {
@@ -185,6 +239,10 @@ function parseRequest(input: string): InductionRequest {
     throw new ParseError(
       'A natural-number induction domain cannot start below 0.',
     );
+
+  const notationSummand = ellipsisSummand(input);
+  if (notationSummand !== null)
+    return { summand: parsePoly(notationSummand, 'r'), start, domain };
 
   const cleaned = input
     .replace(/\bdomain\s*=\s*(?:natural|integer)\b/gi, ' ')
