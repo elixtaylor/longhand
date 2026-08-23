@@ -23,7 +23,9 @@ async function expectHealthyPage(page: Page, failures: string[]) {
 
 async function openCalculator(page: Page, label: RegExp) {
   await page.goto('/calculators');
-  await page.locator('.calculator-card').filter({ hasText: label }).click();
+  const cards = page.locator('.calculator-card');
+  await expect(cards).toHaveCount(37);
+  await cards.filter({ hasText: label }).click();
   await expect(page.locator('form.structured-form')).toBeVisible();
 }
 
@@ -90,6 +92,7 @@ test('calculator search, topics and empty-state recovery stay usable', async ({
 }) => {
   const failures = captureRuntimeFailures(page);
   await page.goto('/calculators');
+  await expect(page.locator('.calculator-card-blurb').first()).toBeVisible();
 
   const cards = page.locator('.calculator-card');
   await expect(cards).toHaveCount(37);
@@ -120,6 +123,7 @@ test('secondary calculator copy meets AA contrast in every theme', async ({
 }) => {
   const failures = captureRuntimeFailures(page);
   await page.goto('/calculators');
+  await expect(page.locator('.calculator-card-blurb').first()).toBeVisible();
 
   for (const theme of ['mono', 'editorial', 'notebook', 'warm']) {
     for (const dark of ['off', 'on']) {
@@ -170,7 +174,9 @@ test('every calculator directory entry opens a working form', async ({
   test.slow();
   const failures = captureRuntimeFailures(page);
   await page.goto('/calculators');
-  const count = await page.locator('.calculator-card').count();
+  const directoryCards = page.locator('.calculator-card');
+  await expect(directoryCards).toHaveCount(37);
+  const count = await directoryCards.count();
   expect(count).toBe(37);
 
   for (let index = 0; index < count; index++) {
@@ -191,6 +197,7 @@ test('every calculator directory entry opens a working form', async ({
       page.getByRole('button', { name: 'Clear', exact: true }),
     ).toBeVisible();
     await page.goto('/calculators');
+    await expect(page.locator('.calculator-card')).toHaveCount(37);
   }
 
   await expectHealthyPage(page, failures);
