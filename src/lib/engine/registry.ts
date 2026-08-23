@@ -38,6 +38,7 @@ import { calculusApplicationsSolver } from '../../solvers/calculus/applications'
 import { geometricProofSolver } from '../../solvers/geometry/proofs';
 import { circleGeometrySolver } from '../../solvers/geometry/circles';
 import { generalSolver } from '../../solvers/algebra/general';
+import { expressionsSolver } from '../../solvers/algebra/expressions';
 
 /**
  * The list of topics the app offers. Order here is the order shown in the UI,
@@ -53,6 +54,7 @@ export const solvers: Solver[] = [
   inverseSolver,
   absoluteSolver,
   collectSolver,
+  expressionsSolver,
   reduceSolver,
   simultaneousSolver,
   inequalitySolver,

@@ -87,6 +87,47 @@ test('free-text input detects and solves a plain-English quadratic', async ({
   await expectHealthyPage(page, failures);
 });
 
+test('advanced expressions offer expand, simplify and both with the answer last', async ({
+  page,
+}) => {
+  const failures = captureRuntimeFailures(page);
+  await page.goto('/');
+  await page.getByLabel('Your problem').fill('e^(1/2) (5-4e^(4/3))');
+
+  await expect(page.getByText('Operation: Expressions')).toBeVisible();
+  await expect(
+    page.getByRole('tab', { name: 'Expand', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('tab', { name: 'Simplify', exact: true }),
+  ).toBeVisible();
+  const both = page.getByRole('tab', { name: 'Expand + simplify' });
+  await expect(both).toHaveAttribute('aria-selected', 'true');
+
+  await page.getByRole('button', { name: 'Show the working' }).click();
+  const steps = page.locator('.solution .step');
+  await expect(steps.nth(7)).toBeVisible();
+  expect(await steps.count()).toBeGreaterThanOrEqual(8);
+  await expect(steps.nth(2)).toContainText('e');
+  await expect(steps.last()).toContainText('≈');
+
+  const answer = page.locator('.solution .answer-card-end');
+  await expect(answer).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const working = document.querySelector('.solution .steps');
+      const finalAnswer = document.querySelector('.solution .answer-card-end');
+      return Boolean(
+        working &&
+        finalAnswer &&
+        working.compareDocumentPosition(finalAnswer) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    }),
+  ).toBe(true);
+  await expectHealthyPage(page, failures);
+});
+
 test('calculator search, categories and empty-state recovery stay usable', async ({
   page,
 }) => {

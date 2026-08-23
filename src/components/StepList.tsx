@@ -260,6 +260,15 @@ export function StepList({
         })}
       </ol>
 
+      {solution.answerLatex && allShown && (
+        <div className="answer-card answer-card-end">
+          <span className="answer-label">Answer</span>
+          <span className="answer-value">
+            <TeX tex={solution.answerLatex} />
+          </span>
+        </div>
+      )}
+
       <div className="reveal-controls">
         {canCompare && onCompare && (
           <button type="button" className="btn" onClick={onCompare}>

@@ -170,14 +170,15 @@ describe('the printed answer means what it says', () => {
   });
 });
 
-describe('a reader takes the whole expression or refuses it', () => {
+describe('a reader takes the whole expression', () => {
   /**
    * readSurd matched the first √ anywhere and ignored the rest, so
-   * `sqrt(8) + sqrt(18)` — which is 5√2 — was answered 2√2.
+   * `sqrt(8) + sqrt(18)` was once answered from its first term only. The
+   * expression engine now simplifies every surd before collecting them.
    */
-  it('refuses a surd expression it can only partly read', () => {
-    refused('sqrt(8) + sqrt(18)');
-    refused('sqrt(2) * sqrt(8)');
+  it('works a compound surd expression from beginning to end', () => {
+    expect(answer('sqrt(8) + sqrt(18)')).toContain('5\\sqrt{2}');
+    expect(answer('sqrt(2) * sqrt(8)')).toBe('4');
     refused('rationalise 3/(2+sqrt(3))'); // needs the conjugate method
   });
 

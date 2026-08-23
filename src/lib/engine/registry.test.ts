@@ -100,6 +100,7 @@ describe('detectSolver', () => {
     ['3x + 4 = 2x - 5', 'linear'],
     ['2x + 3y = 12 ; x - y = 1', 'simultaneous'],
     ['2x^2 + 7x - 4 = 0', 'quadratics'],
+    ['e^(1/2)(5 - 4e^(4/3))', 'expressions'],
     ['d/dx(x^3 - 4x)', 'differentiate'],
     ['∫ 3x^2 + 2x dx', 'integrate'],
   ];

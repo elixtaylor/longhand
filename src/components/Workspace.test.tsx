@@ -117,6 +117,67 @@ describe('Workspace solution reveal', () => {
     );
   });
 
+  it('offers expression operations before solving and puts the answer after the working', async () => {
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: {
+        ready: Promise.resolve(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+    });
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+
+    const view = render(
+      <Workspace
+        revealMode="all"
+        onRevealMode={vi.fn()}
+        showNotes={false}
+        onShowNotes={vi.fn()}
+        sidebarOpen={false}
+        onSidebarClose={vi.fn()}
+        theme="mono"
+        onTheme={vi.fn()}
+        dark={false}
+        onDark={vi.fn()}
+        textSize="md"
+        onTextSize={vi.fn()}
+        showPalette
+        onShowPalette={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Your problem'), {
+      target: { value: 'e^(1/2) (5-4e^(4/3))' },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText('Operation: Expressions')).toBeTruthy(),
+    );
+    expect(screen.getByRole('tab', { name: 'Expand' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Simplify' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Expand + simplify' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show the working' }));
+    await waitFor(() => expect(screen.getByText('Answer')).toBeTruthy());
+
+    expect(
+      view.container.querySelectorAll('.step').length,
+    ).toBeGreaterThanOrEqual(5);
+    const working = view.container.querySelector('.steps');
+    const answer = view.container.querySelector('.answer-card-end');
+    expect(
+      working!.compareDocumentPosition(answer!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('opens the PMI calculator from the calculator directory', async () => {
     const onCalculatorHandled = vi.fn();
     render(

@@ -255,6 +255,28 @@ for (let i = 0; i < N; i++) {
     'SACE collecting terms',
     true,
   );
+  const expressionA = 2 + (i % 5);
+  const expressionB = 1 + (i % 7);
+  const expressionC = 2 + ((i * 3) % 5);
+  const expressionD = 1 + ((i * 5) % 9);
+  add(
+    'expressions',
+    'expand',
+    `(${expressionA}x + ${expressionB})(${expressionC}x - ${expressionD})`,
+    'SACE algebraic expansion',
+  );
+  add(
+    'expressions',
+    'simplify',
+    `${expressionA}x + ${expressionB}x - ${expressionD}`,
+    'SACE expression simplification',
+  );
+  add(
+    'expressions',
+    'both',
+    `e^(1/${2 + (i % 4)})(${expressionA} - ${expressionB}e^(${2 + (i % 5)}/${3 + (i % 4)}))`,
+    'SACE exponential expressions',
+  );
   add(
     'collect',
     'formula',
@@ -808,7 +830,7 @@ for (let i = 0; i < N; i++) {
 
 describe('SACE-aligned generated regression corpus', () => {
   it('solves thousands of fresh problems with non-empty, explained working', () => {
-    expect(cases.length).toBe(8020);
+    expect(cases.length).toBe(8230);
     const failures: string[] = [];
     for (const problem of cases) {
       const solver = getSolver(problem.solverId);

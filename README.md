@@ -52,6 +52,8 @@ own, so the working shows the join: differentiate, solve what you differentiated
   open in a searchable directory grouped by SACE subject and topic.
 - **Maths first** — the working shows lines only. **Why?**, top right, adds the reason
   for each line when you want it.
+- **Worked expressions**: choose Expand, Simplify or Expand + simplify. Exact
+  algebra stays visible line by line, followed by the final answer and decimal check.
 - **No duplicate methods** — if two methods give identical working for your problem
   (solving `ln x = 5` is the same either way), only one is offered.
 - **Data-driven visuals** — parabolas with roots and turning points marked, shaded normal

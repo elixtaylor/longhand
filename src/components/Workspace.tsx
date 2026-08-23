@@ -31,7 +31,7 @@ import {
 } from '../lib/history';
 import { TopicMethodPicker } from './TopicMethodPicker';
 import { ProblemInput } from './ProblemInput';
-import { TeX, RichText } from './TeX';
+import { RichText } from './TeX';
 import { MAX_INPUT_LENGTH } from '../lib/safety';
 import { notifyRecoverableError } from '../lib/recovery';
 import { useLocalStorage } from '../lib/useLocalStorage';
@@ -883,6 +883,7 @@ function SolutionView({
   const methodPickerLivesInForm =
     hasStructuredMethod &&
     ['circle-geometry', 'complex', 'probability'].includes(solverId);
+  const showMethodBeforeSolve = solverId === 'expressions';
 
   const methodPicker =
     solver.methods.length > 1 && !methodPickerLivesInForm ? (
@@ -892,8 +893,9 @@ function SolutionView({
           input={input}
           methodId={methodId}
           onSelectMethod={onSelectMethod}
-          forceAll={hasStructuredMethod}
+          forceAll={hasStructuredMethod || showMethodBeforeSolve}
           showDescription={false}
+          label={showMethodBeforeSolve ? 'Operation' : 'Method'}
         />
       </div>
     ) : null;
@@ -908,14 +910,6 @@ function SolutionView({
                 <RichText text={result.solution.headline} />
               </div>
             </div>
-            {result.solution.answerLatex && (
-              <div className="answer-card">
-                <span className="answer-label">Answer</span>
-                <span className="answer-value">
-                  <TeX tex={result.solution.answerLatex} />
-                </span>
-              </div>
-            )}
           </header>
         )}
         {methodPicker}
@@ -947,7 +941,7 @@ function SolutionView({
   if (!result) {
     return (
       <div>
-        {hasStructuredMethod && methodPicker}
+        {(hasStructuredMethod || showMethodBeforeSolve) && methodPicker}
         <div className="empty-state">
           <div className="empty-glyph">∴</div>
           <h2>Your working will appear here</h2>
@@ -959,7 +953,7 @@ function SolutionView({
   if (!result.ok) {
     return (
       <div>
-        {hasStructuredMethod && methodPicker}
+        {(hasStructuredMethod || showMethodBeforeSolve) && methodPicker}
         <div className="empty-state">
           <div className="empty-glyph">≠</div>
           <h2>I couldn’t read that one</h2>
@@ -978,14 +972,6 @@ function SolutionView({
             <RichText text={solution.headline} />
           </div>
         </div>
-        {solution.answerLatex && (
-          <div className="answer-card">
-            <span className="answer-label">Answer</span>
-            <span className="answer-value">
-              <TeX tex={solution.answerLatex} />
-            </span>
-          </div>
-        )}
       </header>
 
       {methodPicker}

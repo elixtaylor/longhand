@@ -18,6 +18,7 @@ export function TopicMethodPicker({
   showAllApplicable,
   highlightedMethodId,
   showDescription = false,
+  label = 'Method',
 }: {
   solverId: string;
   input: string;
@@ -39,6 +40,8 @@ export function TopicMethodPicker({
   highlightedMethodId?: string | null;
   /** Hide the prose explanation while keeping the method choices available. */
   showDescription?: boolean;
+  /** Name the choice accurately when the tabs select an operation, not a method. */
+  label?: string;
 }) {
   const solver = getSolver(solverId)!;
   const methods = useMemo(
@@ -66,7 +69,7 @@ export function TopicMethodPicker({
   return (
     <div className="methods">
       <div className="panel-title" style={{ marginBottom: 'var(--sp-2)' }}>
-        Method — {solver.title}
+        {label}: {solver.title}
       </div>
       {methods.length > 1 ? (
         <>

@@ -1,7 +1,7 @@
 import type { Worked, WorkedPart } from '../lib/engine/run';
 import type { RevealMode } from '../lib/ui';
 import { StepList } from './StepList';
-import { TeX, RichText } from './TeX';
+import { RichText } from './TeX';
 import { TopicMethodPicker } from './TopicMethodPicker';
 
 /**
@@ -68,14 +68,6 @@ export function PartedSolution({
                   </p>
                 )}
               </div>
-              {part.result.ok && part.result.solution.answerLatex && (
-                <div className="answer-card answer-card-sm">
-                  <span className="answer-label">Answer</span>
-                  <span className="answer-value">
-                    <TeX tex={part.result.solution.answerLatex} />
-                  </span>
-                </div>
-              )}
             </header>
 
             {onSelectPartMethod && part.solver.methods.length > 1 && (

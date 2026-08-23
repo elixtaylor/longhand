@@ -92,6 +92,13 @@ export const examples: Example[] = [
     label: 'y = 2x + 1 ;  3x + y = 11',
     subject: 'Methods',
   },
+  {
+    solverId: 'expressions',
+    methodId: 'both',
+    input: 'e^(1/2)(5 - 4e^(4/3))',
+    label: 'Expand and simplify an exponential expression',
+    subject: 'Methods',
+  },
 
   // ----------------------------------------------------------------- Quadratics
   {

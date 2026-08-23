@@ -1236,6 +1236,11 @@ button {
   font-size: 1.2rem;
   color: var(--ink);
 }
+.answer-card-end {
+  display: flex;
+  width: fit-content;
+  margin: var(--sp-5) 0 var(--sp-2) auto;
+}
 @media (max-width: 600px) {
   .solution-head {
     flex-direction: column;
@@ -1250,7 +1255,9 @@ button {
   }
   .answer-value {
     max-width: 100%;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
     font-size: 0.9rem;
   }
 }
@@ -1321,7 +1328,10 @@ button {
   min-width: 0;
   font-size: clamp(0.95rem, 1.6vw, calc(1.28rem * var(--text-scale)));
   color: var(--ink);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
   padding: 4px 0;
 }
 
@@ -1361,7 +1371,7 @@ button {
   border-color: var(--line-strong);
   background: var(--surface);
 }
-/* The answer card would otherwise sit under it. */
+/* Keep the working header clear of the Why? control. */
 .solution-head,
 .parts-head {
   padding-right: 5.5rem;
@@ -1538,7 +1548,7 @@ button {
 }
 .part-head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: start;
   gap: var(--sp-3);
   margin-bottom: var(--sp-4);
@@ -1589,12 +1599,6 @@ button {
   color: var(--ink-3);
   padding: var(--sp-3) 0;
 }
-.answer-card-sm {
-  padding: var(--sp-3) var(--sp-4);
-}
-.answer-card-sm .answer-value {
-  font-size: 1.05rem;
-}
 .btn-sm {
   margin-top: var(--sp-4);
   font-size: 0.74rem;
@@ -1603,9 +1607,6 @@ button {
 @media (max-width: 900px) {
   .part-head {
     grid-template-columns: auto 1fr;
-  }
-  .part-head .answer-card-sm {
-    grid-column: 1 / -1;
   }
 }
 .step-enter {

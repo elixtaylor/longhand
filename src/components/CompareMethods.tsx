@@ -64,11 +64,6 @@ export function CompareMethods({
               <p className="compare-na">Doesn’t apply here — {result.error}</p>
             ) : (
               <>
-                {result.solution.answerLatex && (
-                  <div className="compare-answer">
-                    <TeX tex={result.solution.answerLatex} />
-                  </div>
-                )}
                 <ol className="compare-steps">
                   {result.solution.steps.map((s, i) => (
                     <li key={i}>
@@ -85,6 +80,11 @@ export function CompareMethods({
                     </li>
                   ))}
                 </ol>
+                {result.solution.answerLatex && (
+                  <div className="compare-answer">
+                    <TeX tex={result.solution.answerLatex} />
+                  </div>
+                )}
               </>
             )}
           </section>

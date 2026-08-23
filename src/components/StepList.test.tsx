@@ -75,4 +75,31 @@ describe('StepList rendering', () => {
     expect(lines).toContain('x + 0 = \\pm\\sqrt{4}');
     expect(lines).not.toContain(result.solution.answerLatex);
   });
+
+  it('places the final answer after the complete line-by-line working', () => {
+    const view = render(
+      <StepList
+        solution={{
+          headline: 'Evaluate an expression',
+          methodName: 'Expand and simplify',
+          steps: [
+            { note: 'Expand.', latex: '2\left(x + 3\right)' },
+            { note: 'Simplify.', latex: '= 2x + 6' },
+          ],
+          answerLatex: '2x + 6',
+        }}
+        revealMode="all"
+        showNotes={false}
+      />,
+    );
+
+    const working = view.container.querySelector('.steps');
+    const answer = view.container.querySelector('.answer-card-end');
+    expect(working).toBeTruthy();
+    expect(answer).toBeTruthy();
+    expect(
+      working!.compareDocumentPosition(answer!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });
