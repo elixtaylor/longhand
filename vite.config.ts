@@ -9,11 +9,21 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          katex: ['katex'],
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'katex',
+              test: /node_modules[\\/]katex[\\/]/,
+              priority: 20,
+            },
+          ],
         },
       },
     },
