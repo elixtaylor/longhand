@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Solver } from '../lib/engine/types';
 import type {
   ThemeId,
   RevealMode,
@@ -7,26 +6,22 @@ import type {
   DisplayMode,
   LogarithmBase,
 } from '../lib/ui';
-import { importedFor, sourceOf, type ImportedProblem } from '../data/imported';
 import type { HistoryEntry } from '../lib/history';
 import { SettingsPanel } from './SettingsPanel';
 
 /**
- * The collapsible drawer keeps routes, textbook questions, recent work and
- * settings in one compact list.
+ * The collapsible drawer keeps routes, recent work and settings in one compact
+ * list.
  *
  * Mounted only while open (see Workspace), same as the settings modal it
  * replaces — so this owns the scrim, Escape-to-close and focus-on-open it
  * used to own, and `onClose` is its only way out.
  */
 
-type SectionId =
-  'graphing' | 'calculators' | 'textbook' | 'recent' | 'settings';
+type SectionId = 'graphing' | 'calculators' | 'recent' | 'settings';
 
 export function Sidebar({
   onClose,
-  solver,
-  onLoadImported,
   history,
   onLoadHistory,
   onClearHistory,
@@ -47,8 +42,6 @@ export function Sidebar({
   onNavigatePage = () => undefined,
 }: {
   onClose: () => void;
-  solver: Solver;
-  onLoadImported: (p: ImportedProblem) => void;
   history: HistoryEntry[];
   onLoadHistory: (h: HistoryEntry) => void;
   onClearHistory: () => void;
@@ -73,8 +66,6 @@ export function Sidebar({
   const [openSection, setOpenSection] = useState<SectionId | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const imported = importedFor(solver.id);
-
   const sections: Array<{
     id: SectionId;
     label: string;
@@ -87,11 +78,6 @@ export function Sidebar({
       available: true,
     },
     {
-      id: 'textbook',
-      label: 'Textbook questions',
-      available: imported.length > 0,
-    },
-    {
       id: 'recent',
       label: 'Recent',
       available: history.length > 0,
@@ -100,12 +86,10 @@ export function Sidebar({
   ];
   const shown = sections.filter((s) => s.available);
 
-  // Changing topic can pull the open textbook tab out from under the student.
+  // Clearing history can remove the section while it is open.
   useEffect(() => {
-    if (openSection && !shown.some((s) => s.id === openSection))
-      setOpenSection(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [solver.id, history.length]);
+    if (openSection === 'recent' && history.length === 0) setOpenSection(null);
+  }, [history.length, openSection]);
 
   // Close on Escape; focus the panel when it opens.
   useEffect(() => {
@@ -143,11 +127,6 @@ export function Sidebar({
       return;
     }
     toggle(id);
-  }
-
-  function loadImported(p: ImportedProblem) {
-    onLoadImported(p);
-    onClose();
   }
 
   function loadHistory(h: HistoryEntry) {
@@ -212,43 +191,6 @@ export function Sidebar({
 
               {openSection === s.id && (
                 <div className="accordion-panel" id={`sidebar-panel-${s.id}`}>
-                  {s.id === 'textbook' && (
-                    <>
-                      <div className="examples examples-grid">
-                        {imported.map((p) => (
-                          <button
-                            key={p.ref}
-                            type="button"
-                            className="example-row"
-                            onClick={() => loadImported(p)}
-                          >
-                            <span className="example-expr">{p.label}</span>
-                            <span className="example-tag">{p.ref}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <p className="attribution">
-                        Questions from{' '}
-                        <a
-                          href={sourceOf(imported[0]).url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {sourceOf(imported[0]).title}
-                        </a>{' '}
-                        ({sourceOf(imported[0]).publisher}), used under{' '}
-                        <a
-                          href={sourceOf(imported[0]).licenceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {sourceOf(imported[0]).licence}
-                        </a>
-                        . All working is Longhand’s own.
-                      </p>
-                    </>
-                  )}
-
                   {s.id === 'recent' && (
                     <>
                       <div className="examples examples-grid recent-list">

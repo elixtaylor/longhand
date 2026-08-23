@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CALCULATORS, type CalculatorRef } from '../data/calculators';
 import { getSolver } from '../lib/engine/registry';
+import type { SaceSubject } from '../lib/engine/types';
 
 interface DirectoryItem {
   calculator: CalculatorRef;
   label: string;
   blurb: string;
+  subjects: SaceSubject[];
   searchText: string;
 }
 
@@ -36,8 +38,16 @@ const DIRECTORY_GROUPS = CALCULATORS.map((group) => ({
       calculator,
       label,
       blurb,
+      subjects: solver?.subjects ?? [],
       searchText: normaliseSearch(
-        [group.heading, label, blurb, method?.name, solver?.title]
+        [
+          group.heading,
+          label,
+          blurb,
+          method?.name,
+          solver?.title,
+          solver?.subjects.join(' '),
+        ]
           .filter(Boolean)
           .join(' '),
       ),
@@ -49,6 +59,21 @@ const TOTAL_CALCULATORS = DIRECTORY_GROUPS.reduce(
   (count, group) => count + group.items.length,
   0,
 );
+const CALCULATOR_SUBJECTS = [
+  'General',
+  'Methods',
+  'Specialist',
+] as const satisfies readonly SaceSubject[];
+type CalculatorSubject = (typeof CALCULATOR_SUBJECTS)[number];
+const SUBJECT_FILTERS = CALCULATOR_SUBJECTS.map((subject) => ({
+  subject,
+  count: DIRECTORY_GROUPS.reduce(
+    (count, group) =>
+      count +
+      group.items.filter((item) => item.subjects.includes(subject)).length,
+    0,
+  ),
+}));
 
 export function CalculatorsPage({
   onReturn,
@@ -58,27 +83,25 @@ export function CalculatorsPage({
   onOpenCalculator: (calculator: CalculatorRef) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [topic, setTopic] = useState('all');
+  const [subject, setSubject] = useState<'all' | CalculatorSubject>('all');
   const searchRef = useRef<HTMLInputElement>(null);
   const visibleGroups = useMemo(() => {
     const terms = normaliseSearch(query).split(/\s+/).filter(Boolean);
     return DIRECTORY_GROUPS.map((group) => ({
       ...group,
-      items:
-        topic !== 'all' && group.heading !== topic
-          ? []
-          : group.items.filter(
-              (item) =>
-                terms.length === 0 ||
-                terms.every((term) => item.searchText.includes(term)),
-            ),
+      items: group.items.filter(
+        (item) =>
+          (subject === 'all' || item.subjects.includes(subject)) &&
+          (terms.length === 0 ||
+            terms.every((term) => item.searchText.includes(term))),
+      ),
     })).filter((group) => group.items.length > 0);
-  }, [query, topic]);
+  }, [query, subject]);
   const visibleCount = visibleGroups.reduce(
     (count, group) => count + group.items.length,
     0,
   );
-  const hasFilters = query.trim() !== '' || topic !== 'all';
+  const hasFilters = query.trim() !== '' || subject !== 'all';
 
   useEffect(() => {
     function focusSearch(event: KeyboardEvent) {
@@ -96,7 +119,7 @@ export function CalculatorsPage({
 
   function showAllCalculators() {
     setQuery('');
-    setTopic('all');
+    setSubject('all');
   }
 
   return (
@@ -111,20 +134,9 @@ export function CalculatorsPage({
           >
             ← Return
           </button>
-          <span className="graphing-kicker">Calculators</span>
+          <h1 className="graphing-kicker">Calculators</h1>
         </div>
       </header>
-
-      <section className="calculator-directory-intro">
-        <p className="calculator-directory-eyebrow">
-          {TOTAL_CALCULATORS} focused tools
-        </p>
-        <h1>Choose a calculator</h1>
-        <p>
-          Browse by topic or search for the exact result you need. Each tool
-          opens with the right fields and method already selected.
-        </p>
-      </section>
 
       <section
         className="calculator-directory-tools"
@@ -147,7 +159,7 @@ export function CalculatorsPage({
             ref={searchRef}
             id="calculator-search-input"
             type="search"
-            placeholder="Search tools or tasks"
+            placeholder="Search calculators"
             autoComplete="off"
             aria-keyshortcuts="/"
             value={query}
@@ -172,25 +184,28 @@ export function CalculatorsPage({
       </section>
 
       <div className="calculator-browser">
-        <nav className="calculator-topic-nav" aria-label="Calculator topics">
-          <p className="calculator-topic-nav-label">Topics</p>
+        <nav
+          className="calculator-category-nav"
+          aria-label="Calculator categories"
+        >
+          <p className="calculator-category-nav-label">SACE subjects</p>
           <button
             type="button"
-            aria-pressed={topic === 'all'}
-            onClick={() => setTopic('all')}
+            aria-pressed={subject === 'all'}
+            onClick={() => setSubject('all')}
           >
             <span>All calculators</span>
             <span>{TOTAL_CALCULATORS}</span>
           </button>
-          {DIRECTORY_GROUPS.map((group) => (
+          {SUBJECT_FILTERS.map((filter) => (
             <button
               type="button"
-              key={group.heading}
-              aria-pressed={topic === group.heading}
-              onClick={() => setTopic(group.heading)}
+              key={filter.subject}
+              aria-pressed={subject === filter.subject}
+              onClick={() => setSubject(filter.subject)}
             >
-              <span>{group.heading}</span>
-              <span>{group.items.length}</span>
+              <span>{filter.subject}</span>
+              <span>{filter.count}</span>
             </button>
           ))}
         </nav>
@@ -242,7 +257,7 @@ export function CalculatorsPage({
             <section className="calculator-directory-empty">
               <p className="calculator-directory-eyebrow">No matches</p>
               <h2>No calculators found</h2>
-              <p>Try a broader search or return to the full topic list.</p>
+              <p>Try a broader search or choose another subject.</p>
               {hasFilters && (
                 <button
                   type="button"

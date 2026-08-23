@@ -450,25 +450,25 @@ export function Workspace({
     }
   }
 
-  function loadImported(solverIdIn: string, methodIdIn: string, value: string) {
-    const importedSolver = getSolver(solverIdIn);
-    if (!importedSolver) {
+  function loadProblem(solverIdIn: string, methodIdIn: string, value: string) {
+    const targetSolver = getSolver(solverIdIn);
+    if (!targetSolver) {
       notifyRecoverableError();
       return;
     }
-    const importedMethod = importedSolver.methods.some(
+    const targetMethod = targetSolver.methods.some(
       (method) => method.id === methodIdIn,
     )
       ? methodIdIn
-      : importedSolver.defaultMethodId;
+      : targetSolver.defaultMethodId;
     setPartMethodOverrides({});
     setChangedPart(null);
     const pinned: Pin = {
-      solverId: importedSolver.id,
-      methodId: importedMethod,
+      solverId: targetSolver.id,
+      methodId: targetMethod,
     };
-    setSolverId(importedSolver.id);
-    setMethodId(importedMethod);
+    setSolverId(targetSolver.id);
+    setMethodId(targetMethod);
     setPin(pinned);
     setInput(value);
     commit(value, pinned);
@@ -476,7 +476,7 @@ export function Workspace({
   }
 
   function loadHistoryEntry(h: HistoryEntry) {
-    loadImported(h.solverId, h.methodId, h.input);
+    loadProblem(h.solverId, h.methodId, h.input);
   }
 
   /**
@@ -558,14 +558,6 @@ export function Workspace({
         <Suspense fallback={null}>
           <Sidebar
             onClose={onSidebarClose}
-            solver={solver}
-            onLoadImported={(p) =>
-              loadImported(
-                p.solverId,
-                p.methodId ?? getSolver(p.solverId)!.defaultMethodId,
-                p.input,
-              )
-            }
             history={history}
             onLoadHistory={loadHistoryEntry}
             onClearHistory={() => setHistory(clearHistory())}
@@ -802,7 +794,7 @@ export function Workspace({
                 onFocusPart={(part) =>
                   // Working one part alone is how a student gets the method
                   // choices and the comparison for just that topic.
-                  loadImported(part.solver.id, part.methodId, part.text)
+                  loadProblem(part.solver.id, part.methodId, part.text)
                 }
                 onSelectPartMethod={(part, nextMethodId) => {
                   const nextOverrides = {

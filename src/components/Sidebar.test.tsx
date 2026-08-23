@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { solvers } from '../lib/engine/registry';
 import { Sidebar } from './Sidebar';
 
 describe('Sidebar navigation', () => {
@@ -8,8 +7,6 @@ describe('Sidebar navigation', () => {
     render(
       <Sidebar
         onClose={vi.fn()}
-        solver={solvers[0]}
-        onLoadImported={vi.fn()}
         history={[]}
         onLoadHistory={vi.fn()}
         onClearHistory={vi.fn()}
@@ -37,14 +34,15 @@ describe('Sidebar navigation', () => {
     expect(
       screen.queryByRole('button', { name: /Check my answer/ }),
     ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /Textbook questions/ }),
+    ).toBeNull();
   });
 
   it('shows recent equations without topic labels', () => {
     render(
       <Sidebar
         onClose={vi.fn()}
-        solver={solvers[0]}
-        onLoadImported={vi.fn()}
         history={[
           {
             input: '2x + 3 = 9',

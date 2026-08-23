@@ -48,8 +48,8 @@ own, so the working shows the join: differentiate, solve what you differentiated
 
 - **Compare all methods** — every method for the same problem side by side, with a
   step count for each and a check that they agree. The whole point of the app, in one view.
-- **Compact sidebar** — calculators, textbook questions, recent work and settings are one click
-  away. Calculators open in a dedicated directory page grouped by topic.
+- **Compact sidebar** — calculators, recent work and settings are one click away. Calculators
+  open in a searchable directory grouped by SACE subject and topic.
 - **Maths first** — the working shows lines only. **Why?**, top right, adds the reason
   for each line when you want it.
 - **No duplicate methods** — if two methods give identical working for your problem
@@ -146,7 +146,7 @@ Pages, any static host). No backend, no API keys, works offline.
 - [Privacy](PRIVACY.md): problems stay in browser storage; shared links contain the question.
 - [Security policy](SECURITY.md): how to report a suspected issue responsibly.
 - [Contributing](CONTRIBUTING.md): solver and validation conventions.
-- [MIT licence](LICENSE): applies to the original code and worked solutions. Imported textbook questions remain subject to [their separate content licence](CONTENT-LICENSE.md).
+- [MIT licence](LICENSE): applies to the original code and worked solutions.
 
 Asset paths are relative (`base: './'` in `vite.config.ts`), so the same build runs at a domain
 root or under a subpath — state lives in the URL hash, never the path. `npm run deploy` pushes
@@ -202,16 +202,6 @@ Steps that _justify_ the next line are tested by name, because they are the ones
 leave out: `ln x = 5` must show `e^{ln x} = e^5` before `x = e^5`, balancing must write the
 operation on both sides before the tidy-up, and Pythagoras must square, add and root on
 separate lines.
-
-## Practice questions
-
-Longhand writes all of its own working. Some **questions** come from openly-licensed
-textbooks, each recorded with its exact source and section — see
-[CONTENT-LICENSE.md](CONTENT-LICENSE.md). Every imported question is tested: it must
-solve, and its answer is re-derived independently before it ships.
-
-> **If you ever sell Longhand or run ads on it,** delete `src/data/imported.ts` first —
-> that content is NonCommercial. Nothing else in the project is restricted.
 
 ## Scope notes
 

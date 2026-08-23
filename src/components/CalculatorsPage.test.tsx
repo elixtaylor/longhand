@@ -18,6 +18,8 @@ describe('CalculatorsPage', () => {
       0,
     );
     expect(screen.getByText('Calculators')).toBeTruthy();
+    expect(screen.queryByText('Choose a calculator')).toBeNull();
+    expect(screen.queryByText('37 focused tools')).toBeNull();
     const cards = screen
       .getAllByRole('button')
       .filter((button) => button.classList.contains('calculator-card'));
@@ -46,7 +48,7 @@ describe('CalculatorsPage', () => {
     expect(screen.getByText('Circle measurements')).toBeTruthy();
   });
 
-  it('filters the grouped directory by search text and topic', () => {
+  it('filters the grouped directory by search text and SACE subject', () => {
     render(<CalculatorsPage onReturn={vi.fn()} onOpenCalculator={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText('Search calculators'), {
@@ -58,9 +60,8 @@ describe('CalculatorsPage', () => {
     fireEvent.change(screen.getByLabelText('Search calculators'), {
       target: { value: '' },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: /^Circle geometry\s*15$/ }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /^Specialist\s*26$/ }));
+    expect(screen.getByText('Proof by induction (PMI)')).toBeTruthy();
     expect(screen.getByText('Tangent-secant power')).toBeTruthy();
     expect(screen.queryByText('Right-angled triangle')).toBeNull();
   });

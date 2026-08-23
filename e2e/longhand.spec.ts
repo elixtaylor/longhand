@@ -44,7 +44,7 @@ test('all public pages load directly without runtime errors', async ({
     {
       path: '/calculators',
       title: 'Calculators | Longhand',
-      locator: page.getByRole('heading', { name: 'Choose a calculator' }),
+      locator: page.getByRole('heading', { name: 'Calculators' }),
     },
     {
       path: '/graphing',
@@ -87,7 +87,7 @@ test('free-text input detects and solves a plain-English quadratic', async ({
   await expectHealthyPage(page, failures);
 });
 
-test('calculator search, topics and empty-state recovery stay usable', async ({
+test('calculator search, categories and empty-state recovery stay usable', async ({
   page,
 }) => {
   const failures = captureRuntimeFailures(page);
@@ -107,11 +107,9 @@ test('calculator search, topics and empty-state recovery stay usable', async ({
   await page.getByRole('button', { name: 'Show all calculators' }).click();
   await expect(cards).toHaveCount(37);
 
-  await page
-    .getByRole('button', { name: 'Circle geometry 15', exact: true })
-    .click();
-  await expect(cards).toHaveCount(15);
-  await expect(page.getByText('Circle measurements')).toBeVisible();
+  await page.getByRole('button', { name: /^Specialist\s*26$/ }).click();
+  await expect(cards).toHaveCount(26);
+  await expect(page.getByText('Proof by induction (PMI)')).toBeVisible();
   await expect(
     page.locator('.calculator-results').getByText('Right-angled triangle'),
   ).toHaveCount(0);
@@ -276,6 +274,7 @@ test('the calculator directory does not overflow a narrow viewport', async ({
 }) => {
   const failures = captureRuntimeFailures(page);
   await page.goto('/calculators');
+  await expect(page.locator('.calculator-card')).toHaveCount(37);
   const dimensions = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     content: document.documentElement.scrollWidth,

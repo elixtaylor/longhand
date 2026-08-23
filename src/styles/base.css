@@ -1708,25 +1708,7 @@ button {
   font-size: 0.9rem;
   color: var(--ink);
 }
-.example-tag {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-3);
-  font-weight: 600;
-}
-
 /* Sidebar content ---------------------------------------------------------- */
-/* Shared by the sidebar's textbook and recent sections (see Sidebar). */
-.ref-panel-title {
-  font-family: var(--font-ui);
-  font-size: 0.74rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 700;
-  color: var(--ink-3);
-  margin-bottom: var(--sp-3);
-}
 /* One column at the sidebar's width — the grid still earns its keep should
    this content ever sit somewhere wider (e.g. printed output). */
 .examples-grid {
@@ -1748,12 +1730,7 @@ button {
   border-top: 0;
 }
 
-/* Imported question attribution ------------------------------------------- */
-.examples-scroll {
-  max-height: 260px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
+/* Sidebar footer action --------------------------------------------------- */
 .attribution {
   margin-top: var(--sp-3);
   padding-top: var(--sp-3);
@@ -1761,9 +1738,6 @@ button {
   font-size: 0.74rem;
   line-height: 1.5;
   color: var(--ink-3);
-}
-.attribution a {
-  color: var(--ink-2);
 }
 
 /* Formula reference ------------------------------------------------------- */
@@ -1915,8 +1889,8 @@ button {
 }
 
 /* Sidebar ------------------------------------------------------------------ */
-/* The collapsible drawer — calculators, textbook questions, recent work and
-   settings, one accordion section open at a time (see Sidebar). */
+/* The collapsible drawer — calculators, recent work and settings, one
+   accordion section open at a time (see Sidebar). */
 .scrim {
   position: fixed;
   inset: 0;
@@ -2303,37 +2277,19 @@ button {
 .settings-page .page-card {
   margin-top: var(--sp-4);
 }
-.calculator-directory-intro,
 .calculator-directory-tools,
 .calculator-browser {
   width: min(1180px, 100%);
   margin-inline: auto;
 }
-.calculator-directory-intro {
-  padding: clamp(34px, 5vw, 64px) 0 28px;
-}
 .calculator-directory-eyebrow,
-.calculator-topic-nav-label {
+.calculator-category-nav-label {
   color: var(--accent);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.11em;
   line-height: 1.2;
   text-transform: uppercase;
-}
-.calculator-directory-intro h1 {
-  margin-top: 8px;
-  font-family: var(--font-display);
-  font-size: clamp(2.1rem, 5vw, 3.4rem);
-  font-weight: var(--display-weight);
-  letter-spacing: var(--display-tracking);
-  line-height: 1.02;
-}
-.calculator-directory-intro > p:last-child {
-  max-width: 630px;
-  margin-top: 14px;
-  color: var(--ink-2);
-  font-size: 0.96rem;
 }
 .calculator-directory-tools {
   position: sticky;
@@ -2343,9 +2299,9 @@ button {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--sp-3);
+  margin-top: clamp(18px, 3vw, 30px);
   padding: 14px 0;
   background: var(--bg);
-  border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line-strong);
 }
 .calculator-search {
@@ -2418,17 +2374,17 @@ button {
   gap: clamp(28px, 4vw, 54px);
   padding-top: 30px;
 }
-.calculator-topic-nav {
+.calculator-category-nav {
   position: sticky;
   top: 92px;
   display: flex;
   flex-direction: column;
   border-top: 1px solid var(--line-strong);
 }
-.calculator-topic-nav-label {
+.calculator-category-nav-label {
   padding: 15px 10px 10px;
 }
-.calculator-topic-nav button {
+.calculator-category-nav button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -2446,17 +2402,17 @@ button {
     background 0.14s var(--ease),
     border-color 0.14s var(--ease);
 }
-.calculator-topic-nav button > span:last-child {
+.calculator-category-nav button > span:last-child {
   color: var(--ink-3);
   font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
-.calculator-topic-nav button:hover {
+.calculator-category-nav button:hover {
   color: var(--ink);
   background: var(--bg-tint);
 }
-.calculator-topic-nav button[aria-pressed='true'] {
+.calculator-category-nav button[aria-pressed='true'] {
   color: var(--accent);
   background: var(--accent-soft);
   border-left-color: var(--accent);
@@ -2593,7 +2549,7 @@ button {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  .calculator-topic-nav {
+  .calculator-category-nav {
     position: static;
     flex-direction: row;
     gap: 6px;
@@ -2602,7 +2558,7 @@ button {
     border-top: 0;
     scrollbar-width: thin;
   }
-  .calculator-topic-nav-label {
+  .calculator-category-nav-label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -2612,7 +2568,7 @@ button {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
   }
-  .calculator-topic-nav button {
+  .calculator-category-nav button {
     grid-template-columns: auto auto;
     flex: 0 0 auto;
     min-height: 38px;
@@ -2621,19 +2577,14 @@ button {
     border-radius: var(--control-radius);
     white-space: nowrap;
   }
-  .calculator-topic-nav button[aria-pressed='true'] {
+  .calculator-category-nav button[aria-pressed='true'] {
     border-color: var(--accent);
   }
 }
 @media (max-width: 680px) {
-  .calculator-directory-intro {
-    padding: 30px 0 22px;
-  }
-  .calculator-directory-intro h1 {
-    font-size: clamp(2rem, 11vw, 2.7rem);
-  }
   .calculator-directory-tools {
     grid-template-columns: minmax(0, 1fr) auto;
+    margin-top: 16px;
     padding-block: 10px;
   }
   .calculator-result-count {
