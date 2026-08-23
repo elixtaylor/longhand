@@ -58,7 +58,9 @@ describe('CalculatorsPage', () => {
     fireEvent.change(screen.getByLabelText('Search calculators'), {
       target: { value: '' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Circle geometry 15' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Circle geometry\s*15$/ }),
+    );
     expect(screen.getByText('Tangent-secant power')).toBeTruthy();
     expect(screen.queryByText('Right-angled triangle')).toBeNull();
   });
