@@ -105,7 +105,6 @@ function solveByBalance(lin: Linear): SolveResult {
       note: `The constants on the left cancel, and the right is $${rl(before)} ${undo(moved)} = ${rl(rightConst)}$.`,
       latex: `${termX(A)} = ${rl(rightConst)}`,
     });
-    leftConst = Rational.int(0);
   }
   // Divide through by the coefficient.
   if (!A.eq(Rational.int(1))) {

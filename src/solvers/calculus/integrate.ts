@@ -666,7 +666,7 @@ export const integrationSolver: Solver = {
         );
         exactArea = upperExact.sub(lowerExact);
       } catch {
-        exactArea = null;
+        // Fall back to the finite decimal calculation below.
       }
 
       steps.push({
@@ -875,7 +875,7 @@ function solveAffinePower(input: string, q: AffinePower): SolveResult {
         antiderivativeAt(Rational.parse(String(limits.lower))),
       );
     } catch {
-      exactValue = null;
+      // Fall back to the finite decimal calculation below.
     }
     steps.push({
       note: 'Substitute the limits into the antiderivative; the constant cancels.',

@@ -42,11 +42,11 @@ export function distinctMethods(solver: Solver, input: string): Method[] {
 
   const seen = new Map<string, Method>();
   for (const method of solver.methods) {
-    let print: string | null = null;
+    let print: string | null;
     try {
       print = fingerprint(solver, input, method.id);
     } catch {
-      print = null; // a method that throws is not on offer
+      continue; // a method that throws is not on offer
     }
     if (print === null) continue;
     if (!seen.has(print)) seen.set(print, method);
