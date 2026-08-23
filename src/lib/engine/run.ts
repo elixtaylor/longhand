@@ -43,10 +43,14 @@ export function interpret(raw: string): Interpretation {
   // try it with the arithmetic worked out, so that live detection agrees
   // with what the solver will actually do — otherwise "ln x = 5^2" reports
   // "not sure what this is" while solving perfectly well.
-  const detection =
-    detectSolver(reading.text) ??
-    detectSolver(raw) ??
-    detectSolver(foldArithmetic(reading.text));
+  let detection = detectSolver(reading.text);
+  if (!detection && raw !== reading.text) detection = detectSolver(raw);
+  if (!detection) {
+    const folded = foldArithmetic(reading.text);
+    if (folded !== reading.text && folded !== raw) {
+      detection = detectSolver(folded);
+    }
+  }
   return { ...reading, detection };
 }
 
@@ -60,16 +64,20 @@ export function runSolve(
   // Measurement inputs carry dimensional units which the general prose
   // normaliser intentionally strips. Give that solver the raw form first so
   // `r=5 cm` can be converted rather than silently becoming unitless.
+  let original: SolveResult | undefined;
   if (solver.id === 'measurement') {
-    const original = safeSolverCall(solver, raw, methodId, options);
+    original = safeSolverCall(solver, raw, methodId, options);
     if (original.ok) return original;
   }
   const { text } = normalise(raw);
+  if (text === raw) {
+    return original ?? safeSolverCall(solver, raw, methodId, options);
+  }
   const first = safeSolverCall(solver, text, methodId, options);
   if (first.ok) return first;
   // If the rewrite confused this solver, give the original a chance before
   // reporting failure — the student's own phrasing may already have been valid.
-  const original = safeSolverCall(solver, raw, methodId, options);
+  original ??= safeSolverCall(solver, raw, methodId, options);
   return original.ok ? original : first;
 }
 

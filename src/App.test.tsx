@@ -33,12 +33,12 @@ describe('home reset', () => {
     ).not.toBeNull();
   });
 
-  it('gives the settings route a page heading', () => {
+  it('gives the settings route a page heading', async () => {
     window.history.replaceState(null, '', '/settings');
     render(<App />);
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Settings' }),
+      await screen.findByRole('heading', { level: 1, name: 'Settings' }),
     ).toBeTruthy();
     window.history.replaceState(null, '', '/');
   });

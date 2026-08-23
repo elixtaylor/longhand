@@ -171,6 +171,9 @@ describe('detectSolver', () => {
 
 describe('engine failure boundary', () => {
   it('turns an unexpected solver exception into a recoverable result', () => {
+    const solve = vi.fn(() => {
+      throw new Error('internal detail');
+    });
     const broken: Solver = {
       id: 'broken-test',
       title: 'Broken test solver',
@@ -180,11 +183,10 @@ describe('engine failure boundary', () => {
       methods: [{ id: 'default', name: 'Default', blurb: '' }],
       defaultMethodId: 'default',
       detect: () => 1,
-      solve: () => {
-        throw new Error('internal detail');
-      },
+      solve,
     };
     const result = runSolve(broken, 'anything', 'default');
+    expect(solve).toHaveBeenCalledTimes(1);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain('could not be completed safely');

@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -30,14 +31,6 @@ import {
 } from '../lib/history';
 import { TopicMethodPicker } from './TopicMethodPicker';
 import { ProblemInput } from './ProblemInput';
-import { StructuredInputForm } from './StructuredInputForm';
-import { VectorOperationForm } from './VectorOperationForm';
-import { ComplexOperationForm } from './ComplexOperationForm';
-import { ProbabilityOperationForm } from './ProbabilityOperationForm';
-import { InductionOperationForm } from './InductionOperationForm';
-import { MatrixOperationForm } from './MatrixOperationForm';
-import { StepList } from './StepList';
-import { PartedSolution } from './PartedSolution';
 import { TeX, RichText } from './TeX';
 import { MAX_INPUT_LENGTH } from '../lib/safety';
 import { notifyRecoverableError } from '../lib/recovery';
@@ -50,6 +43,44 @@ const Sidebar = lazy(() =>
 const CompareMethods = lazy(() =>
   import('./CompareMethods').then((module) => ({
     default: module.CompareMethods,
+  })),
+);
+const StructuredInputForm = lazy(() =>
+  import('./StructuredInputForm').then((module) => ({
+    default: module.StructuredInputForm,
+  })),
+);
+const VectorOperationForm = lazy(() =>
+  import('./VectorOperationForm').then((module) => ({
+    default: module.VectorOperationForm,
+  })),
+);
+const ComplexOperationForm = lazy(() =>
+  import('./ComplexOperationForm').then((module) => ({
+    default: module.ComplexOperationForm,
+  })),
+);
+const ProbabilityOperationForm = lazy(() =>
+  import('./ProbabilityOperationForm').then((module) => ({
+    default: module.ProbabilityOperationForm,
+  })),
+);
+const InductionOperationForm = lazy(() =>
+  import('./InductionOperationForm').then((module) => ({
+    default: module.InductionOperationForm,
+  })),
+);
+const MatrixOperationForm = lazy(() =>
+  import('./MatrixOperationForm').then((module) => ({
+    default: module.MatrixOperationForm,
+  })),
+);
+const StepList = lazy(() =>
+  import('./StepList').then((module) => ({ default: module.StepList })),
+);
+const PartedSolution = lazy(() =>
+  import('./PartedSolution').then((module) => ({
+    default: module.PartedSolution,
   })),
 );
 
@@ -127,14 +158,27 @@ export function Workspace({
   onCalculatorHandled?: () => void;
   resetKey?: number;
 }) {
-  const shared =
-    typeof window !== 'undefined' ? decodeShare(window.location.hash) : null;
-  const malformedSharedLink =
-    typeof window !== 'undefined' &&
-    window.location.hash.length > 1 &&
-    shared === null;
-  const sharedPin = pinFromShare(shared);
-  const sharedSolver = sharedPin ? getSolver(sharedPin.solverId) : undefined;
+  const [{ shared, malformedSharedLink, sharedPin, sharedSolver }] = useState(
+    () => {
+      const initialShared =
+        typeof window !== 'undefined'
+          ? decodeShare(window.location.hash)
+          : null;
+      const initialMalformedSharedLink =
+        typeof window !== 'undefined' &&
+        window.location.hash.length > 1 &&
+        initialShared === null;
+      const initialSharedPin = pinFromShare(initialShared);
+      return {
+        shared: initialShared,
+        malformedSharedLink: initialMalformedSharedLink,
+        sharedPin: initialSharedPin,
+        sharedSolver: initialSharedPin
+          ? getSolver(initialSharedPin.solverId)
+          : undefined,
+      };
+    },
+  );
 
   const [pin, setPin] = useState<Pin>(sharedPin);
   const [solverId, setSolverId] = useState(
@@ -497,6 +541,10 @@ export function Workspace({
   // One part is the ordinary case; the single-solution view and the method
   // comparison both speak in terms of it.
   const single = worked && worked.parts.length === 1 ? worked.parts[0] : null;
+  const canCompare = useMemo(
+    () => !!single?.result.ok && hasMethodChoice(single.solver, single.text),
+    [single],
+  );
   // Prefer what the question turned out to be over what was guessed live.
   const topics = worked
     ? [...new Set(worked.parts.map((p) => p.solver.title))]
@@ -546,144 +594,148 @@ export function Workspace({
         </p>
         <aside className="controls">
           <section className="panel">
-            {structuredMethod ? (
-              <StructuredInputForm
-                // Remount whenever the field *set* changes (not on every
-                // method switch) — see StructuredInputForm's own doc comment
-                // for why an effect-based reset isn't safe here.
-                key={structuredMethod.fields!.map((f) => f.id).join('|')}
-                method={structuredMethod}
-                solver={solver}
-                methodPicker={
-                  solver.id === 'circle-geometry' ? (
-                    <div className="structured-method-picker">
-                      <TopicMethodPicker
-                        solverId={solver.id}
-                        input={input}
-                        methodId={methodId}
-                        onSelectMethod={chooseMethod}
-                        forceAll
-                        showDescription={false}
-                      />
-                    </div>
-                  ) : undefined
-                }
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'vector' ? (
-              <VectorOperationForm
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'complex' ? (
-              <ComplexOperationForm
-                methodId={methodId as 'rectangular' | 'polar'}
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-                onOperationChange={(id) => {
-                  if (id !== methodId) chooseMethod(id);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'probability' ? (
-              <ProbabilityOperationForm
-                methodId={
-                  methodId as
-                    'single' | 'union' | 'intersection' | 'conditional'
-                }
-                onOperationChange={(id) => {
-                  if (id !== methodId) chooseMethod(id);
-                }}
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'induction' ? (
-              <InductionOperationForm
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : pin && activeMethod?.opForm === 'matrix' ? (
-              <MatrixOperationForm
-                methodId={
-                  methodId as
-                    | 'standard'
-                    | 'determinant'
-                    | 'inverse'
-                    | 'transpose'
-                    | 'system'
-                }
-                onSubmit={(serialized) => {
-                  setInput(serialized);
-                  commit(serialized, pin);
-                }}
-              />
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  commit(input, pin);
-                }}
-              >
-                <ProblemInput
-                  value={input}
-                  onChange={(v) => {
-                    // A new question is a new question: stop forcing the topic and
-                    // method that were chosen for the last one.
-                    setInput(v.slice(0, MAX_INPUT_LENGTH));
-                    setPin(null);
-                    setPartMethodOverrides({});
-                    setChangedPart(null);
-                  }}
-                  placeholder={
-                    pin ? solver.placeholder : 'e.g. x^2 + 5x + 6 = 0'
+            <Suspense
+              fallback={<p className="empty-state">Loading calculator…</p>}
+            >
+              {structuredMethod ? (
+                <StructuredInputForm
+                  // Remount whenever the field *set* changes (not on every
+                  // method switch) — see StructuredInputForm's own doc comment
+                  // for why an effect-based reset isn't safe here.
+                  key={structuredMethod.fields!.map((f) => f.id).join('|')}
+                  method={structuredMethod}
+                  solver={solver}
+                  methodPicker={
+                    solver.id === 'circle-geometry' ? (
+                      <div className="structured-method-picker">
+                        <TopicMethodPicker
+                          solverId={solver.id}
+                          input={input}
+                          methodId={methodId}
+                          onSelectMethod={chooseMethod}
+                          forceAll
+                          showDescription={false}
+                        />
+                      </div>
+                    ) : undefined
                   }
-                  preview={reading}
-                  showPalette={showPalette}
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
                 />
+              ) : pin && activeMethod?.opForm === 'vector' ? (
+                <VectorOperationForm
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                />
+              ) : pin && activeMethod?.opForm === 'complex' ? (
+                <ComplexOperationForm
+                  methodId={methodId as 'rectangular' | 'polar'}
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                  onOperationChange={(id) => {
+                    if (id !== methodId) chooseMethod(id);
+                  }}
+                />
+              ) : pin && activeMethod?.opForm === 'probability' ? (
+                <ProbabilityOperationForm
+                  methodId={
+                    methodId as
+                      'single' | 'union' | 'intersection' | 'conditional'
+                  }
+                  onOperationChange={(id) => {
+                    if (id !== methodId) chooseMethod(id);
+                  }}
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                />
+              ) : pin && activeMethod?.opForm === 'induction' ? (
+                <InductionOperationForm
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                />
+              ) : pin && activeMethod?.opForm === 'matrix' ? (
+                <MatrixOperationForm
+                  methodId={
+                    methodId as
+                      | 'standard'
+                      | 'determinant'
+                      | 'inverse'
+                      | 'transpose'
+                      | 'system'
+                  }
+                  onSubmit={(serialized) => {
+                    setInput(serialized);
+                    commit(serialized, pin);
+                  }}
+                />
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    commit(input, pin);
+                  }}
+                >
+                  <ProblemInput
+                    value={input}
+                    onChange={(v) => {
+                      // A new question is a new question: stop forcing the topic and
+                      // method that were chosen for the last one.
+                      setInput(v.slice(0, MAX_INPUT_LENGTH));
+                      setPin(null);
+                      setPartMethodOverrides({});
+                      setChangedPart(null);
+                    }}
+                    placeholder={
+                      pin ? solver.placeholder : 'e.g. x^2 + 5x + 6 = 0'
+                    }
+                    preview={reading}
+                    showPalette={showPalette}
+                  />
 
-                {showReading && reading && (
-                  <p className="reading" role="status">
-                    <span className="reading-label">Read as</span>
-                    <code className="reading-text">{reading}</code>
-                  </p>
-                )}
+                  {showReading && reading && (
+                    <p className="reading" role="status">
+                      <span className="reading-label">Read as</span>
+                      <code className="reading-text">{reading}</code>
+                    </p>
+                  )}
 
-                {/* Name the topics and nothing else. Once a question has been
+                  {/* Name the topics and nothing else. Once a question has been
                   worked, use what it actually turned out to be: live detection
                   only ever sees one topic, so on a split question it would name
                   whichever half it liked best. */}
-                {topics.length > 0 && (
-                  <p className="detected" role="status">
-                    <span className="detected-dot" aria-hidden="true" />
-                    <strong>{topics.join(' → ')}</strong>
-                  </p>
-                )}
-                {unknown && (
-                  <p className="detected detected-unknown" role="status">
-                    Not sure what this one is yet — try rewording it.
-                  </p>
-                )}
+                  {topics.length > 0 && (
+                    <p className="detected" role="status">
+                      <span className="detected-dot" aria-hidden="true" />
+                      <strong>{topics.join(' → ')}</strong>
+                    </p>
+                  )}
+                  {unknown && (
+                    <p className="detected detected-unknown" role="status">
+                      Not sure what this one is yet — try rewording it.
+                    </p>
+                  )}
 
-                <button
-                  type="submit"
-                  className="btn-primary"
-                  style={{ marginTop: 'var(--sp-3)' }}
-                  disabled={input.trim() === '' || (!detected && !pin)}
-                >
-                  Show the working
-                </button>
-              </form>
-            )}
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    style={{ marginTop: 'var(--sp-3)' }}
+                    disabled={input.trim() === '' || (!detected && !pin)}
+                  >
+                    Show the working
+                  </button>
+                </form>
+              )}
+            </Suspense>
           </section>
         </aside>
 
@@ -708,85 +760,84 @@ export function Workspace({
               {showNotes ? 'Hide why' : 'Why?'}
             </button>
           )}
-          {comparing && single?.result.ok ? (
-            <>
-              <header className="solution-head">
-                <div>
-                  <div className="solution-title">
-                    <RichText text={single.result.solution.headline} />
+          <Suspense fallback={<p className="empty-state">Loading working…</p>}>
+            {comparing && single?.result.ok ? (
+              <>
+                <header className="solution-head">
+                  <div>
+                    <div className="solution-title">
+                      <RichText text={single.result.solution.headline} />
+                    </div>
+                    <div className="solution-sub">
+                      Comparing all <em>{single.solver.methods.length}</em>{' '}
+                      methods
+                    </div>
                   </div>
-                  <div className="solution-sub">
-                    Comparing all <em>{single.solver.methods.length}</em>{' '}
-                    methods
+                  <div className="solution-tools">
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setComparing(false)}
+                    >
+                      Back to one method
+                    </button>
                   </div>
-                </div>
-                <div className="solution-tools">
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => setComparing(false)}
-                  >
-                    Back to one method
-                  </button>
-                </div>
-              </header>
-              <Suspense
-                fallback={<p className="empty-state">Loading comparison…</p>}
-              >
-                <CompareMethods
-                  solver={single.solver}
-                  input={single.text}
-                  options={{ logarithmBase }}
-                />
-              </Suspense>
-            </>
-          ) : worked && worked.parts.length > 1 ? (
-            <PartedSolution
-              worked={worked}
-              revealMode={revealMode}
-              showNotes={showNotes}
-              changedPart={changedPart}
-              onFocusPart={(part) =>
-                // Working one part alone is how a student gets the method
-                // choices and the comparison for just that topic.
-                loadImported(part.solver.id, part.methodId, part.text)
-              }
-              onSelectPartMethod={(part, nextMethodId) => {
-                const nextOverrides = {
-                  ...partMethodOverrides,
-                  [partMethodKey(part.solver.id, part.text)]: nextMethodId,
-                };
-                setPartMethodOverrides(nextOverrides);
-                setChangedPart({ label: part.label, methodId: nextMethodId });
-                if (changedPartTimer.current !== null) {
-                  window.clearTimeout(changedPartTimer.current);
+                </header>
+                <Suspense
+                  fallback={<p className="empty-state">Loading comparison…</p>}
+                >
+                  <CompareMethods
+                    solver={single.solver}
+                    input={single.text}
+                    options={{ logarithmBase }}
+                  />
+                </Suspense>
+              </>
+            ) : worked && worked.parts.length > 1 ? (
+              <PartedSolution
+                worked={worked}
+                revealMode={revealMode}
+                showNotes={showNotes}
+                changedPart={changedPart}
+                onFocusPart={(part) =>
+                  // Working one part alone is how a student gets the method
+                  // choices and the comparison for just that topic.
+                  loadImported(part.solver.id, part.methodId, part.text)
                 }
-                changedPartTimer.current = window.setTimeout(
-                  () => setChangedPart(null),
-                  1400,
-                );
-                solveWith(input, null, nextOverrides);
-              }}
-            />
-          ) : (
-            <SolutionView
-              result={single?.result ?? null}
-              revealMode={revealMode}
-              showNotes={showNotes}
-              canCompare={
-                !!single?.result.ok &&
-                hasMethodChoice(single.solver, single.text)
-              }
-              onCompare={() => setComparing(true)}
-              onCopyLink={copyLink}
-              copied={copied}
-              solverId={solverId}
-              input={input}
-              methodId={methodId}
-              onSelectMethod={chooseMethod}
-              pinned={!!pin}
-            />
-          )}
+                onSelectPartMethod={(part, nextMethodId) => {
+                  const nextOverrides = {
+                    ...partMethodOverrides,
+                    [partMethodKey(part.solver.id, part.text)]: nextMethodId,
+                  };
+                  setPartMethodOverrides(nextOverrides);
+                  setChangedPart({ label: part.label, methodId: nextMethodId });
+                  if (changedPartTimer.current !== null) {
+                    window.clearTimeout(changedPartTimer.current);
+                  }
+                  changedPartTimer.current = window.setTimeout(
+                    () => setChangedPart(null),
+                    1400,
+                  );
+                  solveWith(input, null, nextOverrides);
+                }}
+              />
+            ) : (
+              <SolutionView
+                result={single?.result ?? null}
+                revealMode={revealMode}
+                showNotes={showNotes}
+                canCompare={canCompare}
+                onCompare={() => setComparing(true)}
+                onCopyLink={copyLink}
+                copied={copied}
+                solverId={solverId}
+                input={input}
+                methodId={methodId}
+                onSelectMethod={chooseMethod}
+                pinned={!!pin}
+              />
+            )}
+          </Suspense>
         </section>
       </main>
     </>

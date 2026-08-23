@@ -1,8 +1,13 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { TeX } from './TeX';
 import { isExpression } from '../lib/nl/vocabulary';
 import { parseExpr, toLatex } from '../lib/math/expr';
-import { BasicCalculator } from './BasicCalculator';
+
+const BasicCalculator = lazy(() =>
+  import('./BasicCalculator').then((module) => ({
+    default: module.BasicCalculator,
+  })),
+);
 
 interface Key {
   label: string;
@@ -125,6 +130,11 @@ export function ProblemInput({
   // solver will actually see. Keep the preview out of the layout until the
   // student has started typing.
   const trimmed = (preview ?? value).trim();
+  const previewLatex = useMemo(
+    () =>
+      trimmed !== '' && isExpression(trimmed) ? toPreviewLatex(trimmed) : null,
+    [trimmed],
+  );
 
   return (
     <div className="problem-input-shell">
@@ -142,12 +152,20 @@ export function ProblemInput({
           >
             Simple calculator
           </button>
-          {calculatorOpen && (
-            <BasicCalculator
-              id="equation-calculator"
-              onClose={() => setCalculatorOpen(false)}
-            />
-          )}
+          <Suspense
+            fallback={
+              <span className="sr-only" role="status">
+                Loading calculator
+              </span>
+            }
+          >
+            {calculatorOpen && (
+              <BasicCalculator
+                id="equation-calculator"
+                onClose={() => setCalculatorOpen(false)}
+              />
+            )}
+          </Suspense>
         </div>
       </div>
       <input
@@ -185,8 +203,8 @@ export function ProblemInput({
       {trimmed !== '' && (
         <div className="preview" aria-live="polite">
           <span className="preview-body">
-            {isExpression(trimmed) ? (
-              <TeX tex={toPreviewLatex(trimmed)} display />
+            {previewLatex !== null ? (
+              <TeX tex={previewLatex} display />
             ) : (
               <span className="preview-plain">{trimmed}</span>
             )}

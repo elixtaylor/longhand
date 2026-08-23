@@ -50,13 +50,13 @@ describe('ProblemInput', () => {
     ).toBe('arctan()');
   });
 
-  it('opens the basic calculator from the input heading', () => {
+  it('opens the basic calculator from the input heading', async () => {
     render(<Harness />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Simple calculator' }));
 
     expect(
-      screen.getByRole('dialog', { name: 'Basic calculator' }),
+      await screen.findByRole('dialog', { name: 'Basic calculator' }),
     ).toBeTruthy();
   });
 });

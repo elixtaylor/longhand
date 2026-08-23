@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentProps } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocalStorage } from './lib/useLocalStorage';
 import type {
   ThemeId,
@@ -9,11 +9,25 @@ import type {
 } from './lib/ui';
 import { Workspace } from './components/Workspace';
 import { DisplayModeContext } from './components/TeX';
-import { GraphingWorkspace } from './components/GraphingWorkspace';
-import { CalculatorsPage } from './components/CalculatorsPage';
-import { SettingsPanel } from './components/SettingsPanel';
+import type { SettingsPanelProps } from './components/SettingsPanel';
 import type { CalculatorRef } from './data/calculators';
 import { pageFromPath, pagePath, type PageId } from './lib/routes';
+
+const GraphingWorkspace = lazy(() =>
+  import('./components/GraphingWorkspace').then((module) => ({
+    default: module.GraphingWorkspace,
+  })),
+);
+const CalculatorsPage = lazy(() =>
+  import('./components/CalculatorsPage').then((module) => ({
+    default: module.CalculatorsPage,
+  })),
+);
+const SettingsPanel = lazy(() =>
+  import('./components/SettingsPanel').then((module) => ({
+    default: module.SettingsPanel,
+  })),
+);
 
 export default function App() {
   const [theme, setTheme] = useLocalStorage<ThemeId>('longhand.theme', 'mono');
@@ -164,107 +178,119 @@ export default function App() {
           </header>
         )}
 
-        {page === 'graphing' ? (
-          <GraphingWorkspace onClose={() => navigate('home')} />
-        ) : page === 'calculators' ? (
-          <CalculatorsPage
-            onReturn={() => navigate('home')}
-            onOpenCalculator={(calculator) => {
-              setPendingCalculator(calculator);
-              navigate('home');
-            }}
-          />
-        ) : page === 'settings' ? (
-          <SettingsPage
-            onReturn={() => navigate('home')}
-            theme={theme}
-            onTheme={setTheme}
-            revealMode={revealMode}
-            onRevealMode={setRevealMode}
-            dark={dark}
-            onDark={setDark}
-            textSize={textSize}
-            onTextSize={setTextSize}
-            showPalette={showPalette}
-            onShowPalette={setShowPalette}
-            displayMode={displayMode}
-            onDisplayMode={setDisplayMode}
-            logarithmBase={logarithmBase}
-            onLogarithmBase={setLogarithmBase}
-            autoScroll={autoScroll}
-            onAutoScroll={setAutoScroll}
-            showReading={showReading}
-            onShowReading={setShowReading}
-            showNotes={showNotes}
-            onShowNotes={setShowNotes}
-            onResetPreferences={() => {
-              setTheme('mono');
-              setRevealMode('all');
-              setDark(false);
-              setTextSize('md');
-              setDisplayMode('exact');
-              setLogarithmBase('natural');
-              setShowPalette(true);
-              setAutoScroll(true);
-              setShowReading(true);
-              setShowNotes(false);
-            }}
-          />
-        ) : (
-          <div className="home-workspace">
-            <div className="masthead-menu">
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="Open menu"
-                aria-haspopup="dialog"
-                onClick={() => setSidebarOpen((open) => !open)}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M3 6h18M3 12h18M3 18h18" />
-                </svg>
-              </button>
-            </div>
-            <Workspace
-              revealMode={revealMode}
-              onRevealMode={setRevealMode}
-              showNotes={showNotes}
-              onShowNotes={setShowNotes}
-              sidebarOpen={sidebarOpen}
-              onSidebarClose={closeSidebar}
+        <Suspense fallback={<RouteLoading page={page} />}>
+          {page === 'graphing' ? (
+            <GraphingWorkspace onClose={() => navigate('home')} />
+          ) : page === 'calculators' ? (
+            <CalculatorsPage
+              onReturn={() => navigate('home')}
+              onOpenCalculator={(calculator) => {
+                setPendingCalculator(calculator);
+                navigate('home');
+              }}
+            />
+          ) : page === 'settings' ? (
+            <SettingsPage
+              onReturn={() => navigate('home')}
               theme={theme}
               onTheme={setTheme}
+              revealMode={revealMode}
+              onRevealMode={setRevealMode}
               dark={dark}
               onDark={setDark}
               textSize={textSize}
               onTextSize={setTextSize}
               showPalette={showPalette}
               onShowPalette={setShowPalette}
-              resetKey={resetKey}
               displayMode={displayMode}
               onDisplayMode={setDisplayMode}
               logarithmBase={logarithmBase}
               onLogarithmBase={setLogarithmBase}
               autoScroll={autoScroll}
+              onAutoScroll={setAutoScroll}
               showReading={showReading}
-              onNavigatePage={navigate}
-              pendingCalculator={pendingCalculator}
-              onCalculatorHandled={() => setPendingCalculator(null)}
+              onShowReading={setShowReading}
+              showNotes={showNotes}
+              onShowNotes={setShowNotes}
+              onResetPreferences={() => {
+                setTheme('mono');
+                setRevealMode('all');
+                setDark(false);
+                setTextSize('md');
+                setDisplayMode('exact');
+                setLogarithmBase('natural');
+                setShowPalette(true);
+                setAutoScroll(true);
+                setShowReading(true);
+                setShowNotes(false);
+              }}
             />
-          </div>
-        )}
+          ) : (
+            <div className="home-workspace">
+              <div className="masthead-menu">
+                <button
+                  type="button"
+                  className="icon-btn"
+                  aria-label="Open menu"
+                  aria-haspopup="dialog"
+                  onClick={() => setSidebarOpen((open) => !open)}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 6h18M3 12h18M3 18h18" />
+                  </svg>
+                </button>
+              </div>
+              <Workspace
+                revealMode={revealMode}
+                onRevealMode={setRevealMode}
+                showNotes={showNotes}
+                onShowNotes={setShowNotes}
+                sidebarOpen={sidebarOpen}
+                onSidebarClose={closeSidebar}
+                theme={theme}
+                onTheme={setTheme}
+                dark={dark}
+                onDark={setDark}
+                textSize={textSize}
+                onTextSize={setTextSize}
+                showPalette={showPalette}
+                onShowPalette={setShowPalette}
+                resetKey={resetKey}
+                displayMode={displayMode}
+                onDisplayMode={setDisplayMode}
+                logarithmBase={logarithmBase}
+                onLogarithmBase={setLogarithmBase}
+                autoScroll={autoScroll}
+                showReading={showReading}
+                onNavigatePage={navigate}
+                pendingCalculator={pendingCalculator}
+                onCalculatorHandled={() => setPendingCalculator(null)}
+              />
+            </div>
+          )}
+        </Suspense>
       </div>
     </DisplayModeContext.Provider>
+  );
+}
+
+function RouteLoading({ page }: { page: PageId }) {
+  return (
+    <main className="page-shell" aria-busy="true">
+      <p className="sr-only" role="status">
+        Loading {page}
+      </p>
+    </main>
   );
 }
 
@@ -272,7 +298,7 @@ function SettingsPage({
   onReturn,
   onResetPreferences,
   ...settings
-}: ComponentProps<typeof SettingsPanel> & {
+}: SettingsPanelProps & {
   onReturn: () => void;
   onResetPreferences: () => void;
 }) {

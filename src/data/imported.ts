@@ -480,8 +480,16 @@ export const IMPORTED: ImportedProblem[] = [
   },
 ];
 
-export function importedFor(solverId: string): ImportedProblem[] {
-  return IMPORTED.filter((p) => p.solverId === solverId);
+const importedBySolver = new Map<string, ImportedProblem[]>();
+for (const problem of IMPORTED) {
+  const group = importedBySolver.get(problem.solverId);
+  if (group) group.push(problem);
+  else importedBySolver.set(problem.solverId, [problem]);
+}
+const NO_IMPORTED_PROBLEMS: readonly ImportedProblem[] = [];
+
+export function importedFor(solverId: string): readonly ImportedProblem[] {
+  return importedBySolver.get(solverId) ?? NO_IMPORTED_PROBLEMS;
 }
 
 export function sourceOf(p: ImportedProblem): Source {

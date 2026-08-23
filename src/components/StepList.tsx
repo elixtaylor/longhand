@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Solution, Step } from '../lib/engine/types';
 import type { RevealMode } from '../lib/ui';
 import { TeX, RichText } from './TeX';
@@ -82,7 +82,7 @@ export function StepList({
   onCopyLink?: () => void;
   copied?: boolean;
 }) {
-  const steps = workingSteps(solution);
+  const steps = useMemo(() => workingSteps(solution), [solution]);
   const total = steps.length;
   const [revealed, setRevealed] = useState(total);
   const [wide, setWide] = useState(false);

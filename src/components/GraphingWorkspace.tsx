@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { evaluateExpr, parseExpr } from '../lib/math/expr';
+import { evaluateExpr, parseExpr, type Expr } from '../lib/math/expr';
 import { fmt } from '../lib/math/num';
 
 interface GraphExpression {
   id: number;
   text: string;
   colour: string;
+}
+
+interface CompiledGraphExpression extends GraphExpression {
+  parsed: Expr | null;
+  error: string;
 }
 
 interface TablePoint {
@@ -28,12 +33,34 @@ interface AxisSteps {
 
 const COLOURS = ['#2f6fed', '#d05242', '#2f8b68', '#9a63c7', '#d18a2a'];
 
-/** Evaluate the same expression grammar used by the numerical fallback. */
-export function evaluateGraphExpression(expression: string, x: number): number {
+function parseGraphExpression(expression: string): Expr {
   const source = expression.replace(/^\s*y\s*=\s*/i, '').trim();
   if (!source) throw new Error('Enter an expression after y =.');
-  const parsed = parseExpr(source);
-  return evaluateExpr(parsed, { x });
+  return parseExpr(source);
+}
+
+/** Evaluate the same expression grammar used by the numerical fallback. */
+export function evaluateGraphExpression(expression: string, x: number): number {
+  return evaluateExpr(parseGraphExpression(expression), { x });
+}
+
+function compileGraphExpression(
+  expression: GraphExpression,
+): CompiledGraphExpression {
+  try {
+    return {
+      ...expression,
+      parsed: parseGraphExpression(expression.text),
+      error: '',
+    };
+  } catch (caught) {
+    return {
+      ...expression,
+      parsed: null,
+      error:
+        caught instanceof Error ? caught.message : 'Check this expression.',
+    };
+  }
 }
 
 function parseX(value: string): number | null {
@@ -41,17 +68,22 @@ function parseX(value: string): number | null {
   return Number.isFinite(x) ? x : null;
 }
 
-function tableFor(expression: string, xValues: string[]): TablePoint[] {
+function tableFor(expression: Expr | null, xValues: string[]): TablePoint[] {
+  if (!expression) return [];
   return xValues.flatMap((source) => {
     const x = parseX(source);
     if (x === null) return [];
-    const y = evaluateGraphExpression(expression, x);
-    return Number.isFinite(y) ? [{ x, y, source }] : [];
+    try {
+      const y = evaluateExpr(expression, { x });
+      return Number.isFinite(y) ? [{ x, y, source }] : [];
+    } catch {
+      return [];
+    }
   });
 }
 
 function samplePath(
-  expression: GraphExpression,
+  expression: CompiledGraphExpression,
   xMin: number,
   xMax: number,
   yMin: number,
@@ -59,6 +91,7 @@ function samplePath(
   sx: (x: number) => number,
   sy: (y: number) => number,
 ): string {
+  if (!expression.parsed) return '';
   const samples = 420;
   const commands: string[] = [];
   let previous: number | null = null;
@@ -66,7 +99,7 @@ function samplePath(
     const x = xMin + ((xMax - xMin) * i) / samples;
     let y: number;
     try {
-      y = evaluateGraphExpression(expression.text, x);
+      y = evaluateExpr(expression.parsed, { x });
     } catch {
       previous = null;
       continue;
@@ -112,7 +145,7 @@ function GraphPlot({
   axisSteps,
   zoomLevel,
 }: {
-  expressions: GraphExpression[];
+  expressions: CompiledGraphExpression[];
   points: TablePoint[];
   bounds: GraphBounds;
   axisSteps: AxisSteps;
@@ -133,18 +166,22 @@ function GraphPlot({
   );
   const baseXMin = bounds.xMin ?? autoXMin;
   const baseXMax = bounds.xMax ?? autoXMax;
-  const sampled: number[] = [];
-  for (const expression of expressions) {
-    for (let i = 0; i <= 120; i++) {
-      const x = baseXMin + ((baseXMax - baseXMin) * i) / 120;
-      try {
-        const y = evaluateGraphExpression(expression.text, x);
-        if (Number.isFinite(y) && Math.abs(y) < 1e6) sampled.push(y);
-      } catch {
-        // The expression row displays its own parsing error.
+  const sampled = useMemo(() => {
+    const values: number[] = [];
+    for (const expression of expressions) {
+      if (!expression.parsed) continue;
+      for (let i = 0; i <= 120; i++) {
+        const x = baseXMin + ((baseXMax - baseXMin) * i) / 120;
+        try {
+          const y = evaluateExpr(expression.parsed, { x });
+          if (Number.isFinite(y) && Math.abs(y) < 1e6) values.push(y);
+        } catch {
+          // The expression row displays its own parsing error.
+        }
       }
     }
-  }
+    return values;
+  }, [baseXMax, baseXMin, expressions]);
   const autoYMin = Math.min(
     -5,
     ...(sampled.length ? [Math.min(...sampled)] : []),
@@ -178,6 +215,31 @@ function GraphPlot({
   const yStep = axisSteps.y ?? niceStep(yMax - yMin, 6);
   const xTicks = ticksFor(xMin, xMax, xStep);
   const yTicks = ticksFor(yMin, yMax, yStep);
+  const paths = useMemo(() => {
+    const scaleX = (x: number) =>
+      pad.left + ((x - xMin) / (xMax - xMin)) * (width - pad.left - pad.right);
+    const scaleY = (y: number) =>
+      height -
+      pad.bottom -
+      ((y - yMin) / (yMax - yMin)) * (height - pad.top - pad.bottom);
+    return expressions.map((expression) => ({
+      id: expression.id,
+      colour: expression.colour,
+      path: samplePath(expression, xMin, xMax, yMin, yMax, scaleX, scaleY),
+    }));
+  }, [
+    expressions,
+    height,
+    pad.bottom,
+    pad.left,
+    pad.right,
+    pad.top,
+    width,
+    xMax,
+    xMin,
+    yMax,
+    yMin,
+  ]);
 
   return (
     <svg
@@ -246,17 +308,14 @@ function GraphPlot({
           {fmt(y, 2)}
         </text>
       ))}
-      {expressions.map((expression) => {
-        const path = samplePath(expression, xMin, xMax, yMin, yMax, sx, sy);
-        return (
-          <path
-            key={expression.id}
-            d={path}
-            className="graph-expression-line"
-            style={{ stroke: expression.colour }}
-          />
-        );
-      })}
+      {paths.map((path) => (
+        <path
+          key={path.id}
+          d={path.path}
+          className="graph-expression-line"
+          style={{ stroke: path.colour }}
+        />
+      ))}
       {points
         .filter(
           (point) =>
@@ -356,13 +415,14 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [focusTableRow, setFocusTableRow] = useState<number | null>(null);
   const tableInputRefs = useRef<Array<HTMLInputElement | null>>([]);
-  const table = useMemo(() => {
-    try {
-      return tableFor(expressions[0]?.text ?? '', xValues);
-    } catch {
-      return [];
-    }
-  }, [expressions, xValues]);
+  const compiledExpressions = useMemo(
+    () => expressions.map(compileGraphExpression),
+    [expressions],
+  );
+  const table = useMemo(
+    () => tableFor(compiledExpressions[0]?.parsed ?? null, xValues),
+    [compiledExpressions, xValues],
+  );
 
   useEffect(() => {
     if (focusTableRow === null) return;
@@ -477,15 +537,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
           </div>
           <div className="graph-expression-list">
             {expressions.map((expression, index) => {
-              let error = '';
-              try {
-                evaluateGraphExpression(expression.text || 'x', 0);
-              } catch (caught) {
-                error =
-                  caught instanceof Error
-                    ? caught.message
-                    : 'Check this expression.';
-              }
+              const error = compiledExpressions[index]?.error ?? '';
               return (
                 <div className="graph-expression-row" key={expression.id}>
                   <span
@@ -694,7 +746,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
           )}
           <div className="graphing-plot-wrap" onWheel={handleGraphWheel}>
             <GraphPlot
-              expressions={expressions}
+              expressions={compiledExpressions}
               points={table}
               bounds={bounds}
               axisSteps={axisSteps}

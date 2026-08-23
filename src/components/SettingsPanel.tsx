@@ -7,33 +7,35 @@ import {
   type LogarithmBase,
 } from '../lib/ui';
 
-/**
- * The settings controls used by the dedicated Settings page. It owns no
- * navigation or open/close state.
- */
-export function SettingsPanel({
-  theme,
-  onTheme,
-  revealMode,
-  onRevealMode,
-  dark,
-  onDark,
-  textSize,
-  onTextSize,
-  showPalette,
-  onShowPalette,
-  displayMode = 'exact',
-  onDisplayMode = () => undefined,
-  logarithmBase = 'natural',
-  onLogarithmBase = () => undefined,
-  autoScroll = true,
-  onAutoScroll = () => undefined,
-  showReading = true,
-  onShowReading = () => undefined,
-  showNotes = false,
-  onShowNotes = () => undefined,
-  onResetPreferences,
+const NOOP = () => undefined;
+
+function Switch({
+  label,
+  value,
+  onChange,
 }: {
+  label: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="setting-switch"
+      role="switch"
+      aria-label={label}
+      aria-checked={value}
+      onClick={() => onChange(!value)}
+    >
+      <span className="setting-switch-track" aria-hidden="true">
+        <span className="setting-switch-thumb" />
+      </span>
+      <span>{value ? 'On' : 'Off'}</span>
+    </button>
+  );
+}
+
+export interface SettingsPanelProps {
   theme: ThemeId;
   onTheme: (t: ThemeId) => void;
   revealMode: RevealMode;
@@ -55,33 +57,35 @@ export function SettingsPanel({
   showNotes?: boolean;
   onShowNotes?: (value: boolean) => void;
   onResetPreferences?: () => void;
-}) {
-  function Switch({
-    label,
-    value,
-    onChange,
-  }: {
-    label: string;
-    value: boolean;
-    onChange: (value: boolean) => void;
-  }) {
-    return (
-      <button
-        type="button"
-        className="setting-switch"
-        role="switch"
-        aria-label={label}
-        aria-checked={value}
-        onClick={() => onChange(!value)}
-      >
-        <span className="setting-switch-track" aria-hidden="true">
-          <span className="setting-switch-thumb" />
-        </span>
-        <span>{value ? 'On' : 'Off'}</span>
-      </button>
-    );
-  }
+}
 
+/**
+ * The settings controls used by the dedicated Settings page. It owns no
+ * navigation or open/close state.
+ */
+export function SettingsPanel({
+  theme,
+  onTheme,
+  revealMode,
+  onRevealMode,
+  dark,
+  onDark,
+  textSize,
+  onTextSize,
+  showPalette,
+  onShowPalette,
+  displayMode = 'exact',
+  onDisplayMode = NOOP,
+  logarithmBase = 'natural',
+  onLogarithmBase = NOOP,
+  autoScroll = true,
+  onAutoScroll = NOOP,
+  showReading = true,
+  onShowReading = NOOP,
+  showNotes = false,
+  onShowNotes = NOOP,
+  onResetPreferences,
+}: SettingsPanelProps) {
   return (
     <div className="settings-fields">
       <div className="setting-row setting-row-theme">

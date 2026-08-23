@@ -12,6 +12,17 @@ describe('graphing expression table', () => {
     expect(evaluateGraphExpression('sin(x)', Math.PI / 2)).toBeCloseTo(1, 8);
   });
 
+  it('keeps valid table rows when a function is undefined at one x value', () => {
+    render(<GraphingWorkspace onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Expression 1'), {
+      target: { value: '1/x' },
+    });
+
+    expect(screen.getByLabelText('y value 1').textContent).toBe('—');
+    expect(screen.getByLabelText('y value 2').textContent).toBe('1');
+    expect(screen.getByLabelText('y value 3').textContent).toBe('0.5');
+  });
+
   it('opens a compact viewing-window settings modal and shows table labels', () => {
     render(<GraphingWorkspace onClose={vi.fn()} />);
     expect(

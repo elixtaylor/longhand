@@ -86,8 +86,10 @@ export const solvers: Solver[] = [
   generalSolver,
 ];
 
+const solversById = new Map(solvers.map((solver) => [solver.id, solver]));
+
 export function getSolver(id: string): Solver | undefined {
-  return solvers.find((s) => s.id === id);
+  return solversById.get(id);
 }
 
 /** Minimum confidence before we'll claim to know what a problem is. */
@@ -96,6 +98,14 @@ const DETECT_THRESHOLD = 0.3;
 export interface Detection {
   solver: Solver;
   score: number;
+}
+
+function scoreSolver(solver: Solver, input: string): number {
+  try {
+    return solver.detect(input);
+  } catch {
+    return 0;
+  }
 }
 
 /**
@@ -110,12 +120,7 @@ export function detectSolvers(input: string): Detection[] {
 
   const found: Detection[] = [];
   for (const solver of solvers) {
-    let score = 0;
-    try {
-      score = solver.detect(trimmed);
-    } catch {
-      score = 0; // a detector must never break the app
-    }
+    const score = scoreSolver(solver, trimmed);
     if (score >= DETECT_THRESHOLD) found.push({ solver, score });
   }
   return found.sort((a, b) => b.score - a.score);
@@ -123,5 +128,15 @@ export function detectSolvers(input: string): Detection[] {
 
 /** The strongest confident topic, retained for the live UI label. */
 export function detectSolver(input: string): Detection | null {
-  return detectSolvers(input)[0] ?? null;
+  const trimmed = input.trim();
+  if (trimmed === '') return null;
+
+  let best: Detection | null = null;
+  for (const solver of solvers) {
+    const score = scoreSolver(solver, trimmed);
+    if (score >= DETECT_THRESHOLD && (!best || score > best.score)) {
+      best = { solver, score };
+    }
+  }
+  return best;
 }

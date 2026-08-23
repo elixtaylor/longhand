@@ -185,13 +185,16 @@ function attempt(
   solveOne: (solver: Solver, text: string, methodId: string) => SolveResult,
   methodOverrides: Record<string, string> = {},
 ): { solver: Solver; methodId: string; result: SolveResult } | null {
-  const detected = [
-    ...detectSolvers(normalise(text).text),
-    ...detectSolvers(text),
-  ].filter(
-    (d, i, all) =>
-      all.findIndex((other) => other.solver.id === d.solver.id) === i,
-  );
+  const canonical = normalise(text).text;
+  const detected = detectSolvers(canonical);
+  if (canonical !== text) {
+    const seen = new Set(detected.map(({ solver }) => solver.id));
+    for (const candidate of detectSolvers(text)) {
+      if (seen.has(candidate.solver.id)) continue;
+      seen.add(candidate.solver.id);
+      detected.push(candidate);
+    }
+  }
   detected.sort((a, b) => b.score - a.score);
   // Only genuinely competing readings get a chance. A broad fallback such as
   // inverse operations (0.7) must not override a high-confidence specialist
