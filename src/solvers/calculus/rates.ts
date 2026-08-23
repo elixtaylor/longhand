@@ -27,6 +27,28 @@ function read(input: string): Growth {
     doubling: p.doubling,
   };
 
+  // Read the notation students actually use for the differential equation.
+  // parseParams deliberately only accepts a named key on the left, so an
+  // equation such as dy/dt = 0.05y needs its own parser.
+  const odeRate = input.match(
+    /d[yz]\s*\/\s*d[tx]\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)\s*[yz]\b/i,
+  );
+  if (odeRate && g.k === undefined) g.k = Number(odeRate[1]);
+
+  const initialCondition = input.match(
+    /\by\s*\(\s*0\s*\)\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)/i,
+  );
+  if (initialCondition && g.initial === undefined)
+    g.initial = Number(initialCondition[1]);
+
+  // “find y(10)” gives the evaluation time. Ignore y(0)=… because that is
+  // the initial condition rather than a requested time.
+  for (const evaluation of input.matchAll(
+    /\by\s*\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)\s*\)(?!\s*=)/gi,
+  )) {
+    if (g.t === undefined) g.t = Number(evaluation[1]);
+  }
+
   const half = input.match(/half[\s-]?life\s*(?:of|is|=)?\s*(-?\d*\.?\d+)/i);
   if (half) g.halfLife = Number(half[1]);
   const dbl = input.match(
@@ -53,7 +75,7 @@ function read(input: string): Growth {
    */
   if (g.initial === undefined) {
     const CLAIMED =
-      /(?:%|per|after|for|t\s*=|k\s*=|half[\s-]?life|doubling|target|reaches?|drops?|falls?|grows?\s+to|down\s+to)/i;
+      /(?:%|per|after|for|t\s*=|k\s*=|d[yz]\s*\/\s*d[tx]\s*=|y\s*\(\s*0\s*\)\s*=|half[\s-]?life|doubling|target|reaches?|drops?|falls?|grows?\s+to|down\s+to)/i;
     for (const m of input.matchAll(/(-?\d*\.?\d+)/g)) {
       const before = input.slice(Math.max(0, m.index - 14), m.index);
       const after = input.slice(
@@ -116,6 +138,36 @@ export const ratesSolver: Solver = {
   },
   solve(input): SolveResult {
     const g = read(input);
+    if (
+      [g.k, g.initial, g.t, g.target, g.halfLife, g.doubling].some(
+        (value) => value !== undefined && !Number.isFinite(value),
+      )
+    )
+      return { ok: false, error: 'Every growth-model value must be finite.' };
+    if (g.halfLife !== undefined && g.doubling !== undefined)
+      return {
+        ok: false,
+        error: 'Give either a half-life or a doubling time, not both.',
+      };
+    if (g.halfLife !== undefined && g.halfLife <= 0)
+      return { ok: false, error: 'A half-life must be greater than zero.' };
+    if (g.doubling !== undefined && g.doubling <= 0)
+      return {
+        ok: false,
+        error: 'A doubling time must be greater than zero.',
+      };
+    if (g.initial !== undefined && g.initial <= 0)
+      return {
+        ok: false,
+        error: 'The starting amount must be greater than zero.',
+      };
+    if (g.t !== undefined && g.t < 0)
+      return { ok: false, error: 'The elapsed time cannot be negative.' };
+    if (g.target !== undefined && g.target <= 0)
+      return {
+        ok: false,
+        error: 'The target amount must be greater than zero.',
+      };
     const steps: Step[] = [
       {
         note: 'When something changes at a rate proportional to its size, the model is a separable differential equation.',
@@ -135,14 +187,34 @@ export const ratesSolver: Solver = {
     // Recover k from a half-life or doubling time when that is what was given.
     let k = g.k;
     if (g.halfLife !== undefined && g.halfLife > 0) {
-      k = -Math.LN2 / g.halfLife;
+      const derivedK = -Math.LN2 / g.halfLife;
+      if (
+        g.k !== undefined &&
+        Math.abs(g.k - derivedK) >
+          1e-8 * Math.max(1, Math.abs(g.k), Math.abs(derivedK))
+      )
+        return {
+          ok: false,
+          error: 'The supplied rate is inconsistent with the half-life.',
+        };
+      k = derivedK;
       steps.push({
         note: 'A half-life means the amount falls to one half, so substitute $y = \\tfrac{1}{2}y_0$ and solve for $k$.',
         latex: `\\tfrac{1}{2} = e^{k \\times ${fmt(g.halfLife, 6)}} \\;\\Rightarrow\\; k = \\dfrac{-\\ln 2}{${fmt(g.halfLife, 6)}} = ${fmt(k, 8)}`,
         annotation: 'k is negative — decay',
       });
     } else if (g.doubling !== undefined && g.doubling > 0) {
-      k = Math.LN2 / g.doubling;
+      const derivedK = Math.LN2 / g.doubling;
+      if (
+        g.k !== undefined &&
+        Math.abs(g.k - derivedK) >
+          1e-8 * Math.max(1, Math.abs(g.k), Math.abs(derivedK))
+      )
+        return {
+          ok: false,
+          error: 'The supplied rate is inconsistent with the doubling time.',
+        };
+      k = derivedK;
       steps.push({
         note: 'A doubling time means the amount reaches twice its size, so substitute $y = 2y_0$.',
         latex: `2 = e^{k \\times ${fmt(g.doubling, 6)}} \\;\\Rightarrow\\; k = \\dfrac{\\ln 2}{${fmt(g.doubling, 6)}} = ${fmt(k, 8)}`,
@@ -177,6 +249,12 @@ export const ratesSolver: Solver = {
 
     if (g.t !== undefined) {
       const y = y0 * Math.exp(k * g.t);
+      if (!Number.isFinite(y))
+        return {
+          ok: false,
+          error:
+            'Those values produce an amount outside the calculator’s numeric range.',
+        };
       steps.push({
         note: `Substitute $t = ${fmt(g.t)}$.`,
         latex: `y = ${fmt(y0)}e^{${fmt(k, 8)} \\times ${fmt(g.t)}} = ${fmt(y0)}e^{${fmt(k * g.t, 6)}}`,
@@ -188,17 +266,48 @@ export const ratesSolver: Solver = {
       });
       answer = `y = ${fmt(y, 4)}`;
     } else if (g.target !== undefined && g.target > 0 && y0 > 0) {
-      const t = Math.log(g.target / y0) / k;
-      steps.push({
-        note: `Set $y = ${fmt(g.target)}$ and solve for $t$ by taking natural logs.`,
-        latex: `${fmt(g.target)} = ${fmt(y0)}e^{${fmt(k, 8)}t} \\;\\Rightarrow\\; t = \\dfrac{\\ln\\left(${fmt(g.target / y0, 6)}\\right)}{${fmt(k, 8)}}`,
-      });
-      steps.push({
-        note: 'Work it out.',
-        latex: `t = ${fmt(t, 4)}`,
-        annotation: 'time taken',
-      });
-      answer = `t = ${fmt(t, 4)}`;
+      if (k === 0) {
+        const reached = Math.abs(g.target - y0) <= 1e-10 * Math.max(1, y0);
+        steps.push({
+          note: reached
+            ? 'With k = 0 the amount is constant, so it equals the target at every time.'
+            : 'With k = 0 the amount never changes, so this different target is never reached.',
+          latex: reached
+            ? `y = ${fmt(y0)} \\quad\\text{for every }t`
+            : `y = ${fmt(y0)} \\ne ${fmt(g.target)}`,
+          annotation: reached ? 'all times' : 'no solution',
+        });
+        answer = reached
+          ? '\\text{every }t\\ge 0'
+          : '\\text{target is never reached}';
+      } else {
+        const rawTime = Math.log(g.target / y0) / k;
+        const t = Math.abs(rawTime) < 1e-12 ? 0 : rawTime;
+        if (!Number.isFinite(t))
+          return {
+            ok: false,
+            error: 'Could not determine a finite time for that target.',
+          };
+        steps.push({
+          note: `Set $y = ${fmt(g.target)}$ and solve for $t$ by taking natural logs.`,
+          latex: `${fmt(g.target)} = ${fmt(y0)}e^{${fmt(k, 8)}t} \\;\\Rightarrow\\; t = \\dfrac{\\ln\\left(${fmt(g.target / y0, 6)}\\right)}{${fmt(k, 8)}}`,
+        });
+        steps.push({
+          note:
+            t < 0
+              ? 'This algebraic time is before the model starts. For elapsed time $t \\ge 0$, the amount moves away from the target, so the target is not reached.'
+              : 'Work it out.',
+          latex:
+            t < 0
+              ? `t = ${fmt(t, 4)} < 0 \;\Rightarrow\; \text{no solution for }t \\ge 0`
+              : `t = ${fmt(t, 4)}`,
+          annotation: t < 0 ? 'outside the time domain' : 'time taken',
+        });
+        answer =
+          t < 0
+            ? '\\text{target is not reached for }t \\ge 0'
+            : `t = ${fmt(t, 4)}`;
+      }
     } else {
       steps.push({
         note: 'Add a time (t=10) or a target amount (target=25) to get a number out of the model.',

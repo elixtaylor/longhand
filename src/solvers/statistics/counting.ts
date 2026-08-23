@@ -1,4 +1,3 @@
-import { factorial, nCr, fmt } from '../../lib/math/num';
 import type {
   Solver,
   Step,
@@ -65,7 +64,28 @@ function parse(input: string, methodId: string): Query {
   throw new Error('Try  10C3,  10P3,  5!,  or “choose 3 from 10”.');
 }
 
-const MAX_N = 170; // beyond this a factorial overflows to Infinity
+const MAX_N = 170;
+
+function bigFactorial(n: number): bigint {
+  let result = 1n;
+  for (let value = 2n; value <= BigInt(n); value++) result *= value;
+  return result;
+}
+
+function bigPermutation(n: number, r: number): bigint {
+  let result = 1n;
+  for (let index = 0; index < r; index++) result *= BigInt(n - index);
+  return result;
+}
+
+function bigCombination(n: number, r: number): bigint {
+  const chosen = Math.min(r, n - r);
+  let result = 1n;
+  for (let index = 1; index <= chosen; index++) {
+    result = (result * BigInt(n - chosen + index)) / BigInt(index);
+  }
+  return result;
+}
 
 const NR_FIELDS: FieldSchema[] = [
   { id: 'n', label: 'n', kind: 'number' },
@@ -141,7 +161,7 @@ export const countingSolver: Solver = {
     }
 
     if (kind === 'factorial') {
-      const value = factorial(n);
+      const value = bigFactorial(n);
       const expansion =
         n <= 12
           ? Array.from({ length: n }, (_, i) => n - i).join(' \\times ')
@@ -154,15 +174,15 @@ export const countingSolver: Solver = {
         { note: 'Write it out.', latex: `${n}! = ${expansion || '1'}` },
         {
           note: 'Multiply.',
-          latex: `${n}! = ${fmt(value, 0)}`,
+          latex: `${n}! = ${value}`,
           annotation: 'arrangements',
         },
       ];
-      return done(`Work out $${n}!$`, 'Factorial', steps, fmt(value, 0));
+      return done(`Work out $${n}!$`, 'Factorial', steps, value.toString());
     }
 
     if (kind === 'permutation') {
-      const value = factorial(n) / factorial(n - r);
+      const value = bigPermutation(n, r);
       const terms = Array.from({ length: r }, (_, i) => n - i);
       const steps: Step[] = [
         {
@@ -179,7 +199,7 @@ export const countingSolver: Solver = {
         },
         {
           note: 'Multiply.',
-          latex: `^{${n}}P_{${r}} = ${fmt(value, 0)}`,
+          latex: `^{${n}}P_{${r}} = ${value}`,
           annotation: 'ordered arrangements',
         },
       ];
@@ -187,12 +207,13 @@ export const countingSolver: Solver = {
         `Work out $^{${n}}P_{${r}}$`,
         'Permutation',
         steps,
-        fmt(value, 0),
+        value.toString(),
       );
     }
 
-    const value = nCr(n, r);
-    const perm = factorial(n) / factorial(n - r);
+    const value = bigCombination(n, r);
+    const perm = bigPermutation(n, r);
+    const rFactorial = bigFactorial(r);
     const topTerms = Array.from({ length: r }, (_, i) => n - i);
     const steps: Step[] = [
       {
@@ -205,16 +226,16 @@ export const countingSolver: Solver = {
       },
       {
         note: 'Cancel the larger factorial.',
-        latex: `= \\dfrac{${topTerms.join(' \\times ')}}{${r}!} = \\dfrac{${fmt(perm, 0)}}{${fmt(factorial(r), 0)}}`,
+        latex: `= \\dfrac{${topTerms.join(' \\times ')}}{${r}!} = \\dfrac{${perm}}{${rFactorial}}`,
       },
       {
         note: 'Divide.',
-        latex: `^{${n}}C_{${r}} = ${fmt(value, 0)}`,
+        latex: `^{${n}}C_{${r}} = ${value}`,
         annotation: 'selections',
       },
       {
         note: 'Check with the symmetry rule — choosing what to leave out gives the same count.',
-        latex: `\\dbinom{${n}}{${r}} = \\dbinom{${n}}{${n - r}} = ${fmt(nCr(n, n - r), 0)}`,
+        latex: `\\dbinom{${n}}{${r}} = \\dbinom{${n}}{${n - r}} = ${bigCombination(n, n - r)}`,
         annotation: 'checks out',
       },
     ];
@@ -222,7 +243,7 @@ export const countingSolver: Solver = {
       `Work out $^{${n}}C_{${r}}$`,
       'Combination',
       steps,
-      fmt(value, 0),
+      value.toString(),
     );
   },
 };

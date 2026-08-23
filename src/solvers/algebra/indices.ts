@@ -129,6 +129,27 @@ interface IndexOp {
 
 function indexLaws(o: IndexOp): SolveResult {
   const { base, p, q, op } = o;
+  if (
+    !Number.isFinite(base) ||
+    !Number.isSafeInteger(base) ||
+    !Number.isSafeInteger(p) ||
+    !Number.isSafeInteger(q)
+  ) {
+    return {
+      ok: false,
+      error:
+        'The base and indices must be whole numbers in the supported range.',
+    };
+  }
+  if (
+    base === 0 &&
+    (p <= 0 || (op === '*' && q <= 0) || op === '/' || (op === '^' && q <= 0))
+  ) {
+    return {
+      ok: false,
+      error: 'That expression contains an undefined power or division by zero.',
+    };
+  }
   const law =
     op === '*'
       ? {
@@ -179,10 +200,18 @@ function indexLaws(o: IndexOp): SolveResult {
   if (Number.isInteger(value) && Math.abs(value) < 1e12) {
     steps.push({ note: 'Evaluate if you need a number.', latex: `= ${value}` });
   } else if (law.result < 0) {
-    steps.push({
-      note: 'A negative index means a reciprocal.',
-      latex: `= \\dfrac{1}{${base}^{${-law.result}}} = \\dfrac{1}{${Math.pow(base, -law.result)}}`,
-    });
+    const denominator = Math.pow(base, -law.result);
+    steps.push(
+      Number.isFinite(denominator)
+        ? {
+            note: 'A negative index means a reciprocal.',
+            latex: `= \\dfrac{1}{${base}^{${-law.result}}} = \\dfrac{1}{${denominator}}`,
+          }
+        : {
+            note: 'A negative index means a reciprocal. Keep the denominator in exact index form.',
+            latex: `= \\dfrac{1}{${base}^{${-law.result}}}`,
+          },
+    );
   }
   return ok(
     `Simplify $${written}$`,
@@ -218,7 +247,7 @@ function bare(input: string): string {
  * different question it cannot yet do.
  */
 function readSurd(input: string): number | null {
-  const m = bare(input).match(/^(?:sqrt|√|squareroot)\(?(\d+)\)?$/i);
+  const m = bare(input).match(/^(?:sqrt|√|squareroot)\(?(-?\d+)\)?$/i);
   return m ? Number(m[1]) : null;
 }
 
@@ -289,8 +318,26 @@ export const indicesSolver: Solver = {
   },
   solve(input, methodId): SolveResult {
     const rat = readRationalise(input);
-    if (rat && methodId !== 'index-laws')
+    if (rat && methodId !== 'index-laws') {
+      if (rat.rootOf === 0)
+        return {
+          ok: false,
+          error: 'The denominator is zero, so that fraction is undefined.',
+        };
+      if (
+        !Number.isSafeInteger(rat.rootOf) ||
+        rat.rootOf < 0 ||
+        rat.rootOf > 1_000_000_000
+      )
+        return {
+          ok: false,
+          error:
+            rat.rootOf < 0
+              ? 'A negative radicand is not real. Use Complex numbers instead.'
+              : 'Use a radicand no larger than 1,000,000,000 so exact factorisation remains responsive.',
+        };
       return rationalise(rat.num, rat.rootOf);
+    }
 
     const idx = readIndex(input);
     if (idx) return indexLaws(idx);
@@ -302,6 +349,12 @@ export const indicesSolver: Solver = {
           ok: false,
           error:
             'A negative number has no real square root — try Complex numbers.',
+        };
+      if (!Number.isSafeInteger(n) || n > 1_000_000_000)
+        return {
+          ok: false,
+          error:
+            'Use an integer radicand no larger than 1,000,000,000 so exact factorisation remains responsive.',
         };
       return simplify(n);
     }

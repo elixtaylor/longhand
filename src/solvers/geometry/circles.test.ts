@@ -8,6 +8,11 @@ function solution(input: string, method: string) {
 }
 
 describe('circleGeometrySolver', () => {
+  it('detects its canonical calculator inputs on the main solver', () => {
+    expect(circleGeometrySolver.detect('measure r=5')).toBe(0.96);
+    expect(circleGeometrySolver.detect('theorem circumference=34')).toBe(0.96);
+  });
+
   it('finds area and circumference from a radius and fills diameter', () => {
     const result = solution('measure r=5', 'measurements');
     expect(result.answerLatex).toContain('C = 31.42');
@@ -101,5 +106,50 @@ describe('circleGeometrySolver', () => {
       'chord-distance',
     );
     expect(result.ok).toBe(false);
+  });
+
+  it('rejects inconsistent complete circle measurements', () => {
+    expect(
+      circleGeometrySolver.solve(
+        'power-of-point tangent=12 external=9 whole=20',
+        'power-of-point',
+      ).ok,
+    ).toBe(false);
+    expect(
+      circleGeometrySolver.solve(
+        'chord-distance r=5 c=6 distance=3',
+        'chord-distance',
+      ).ok,
+    ).toBe(false);
+    expect(
+      circleGeometrySolver.solve(
+        'tangent-length r=5 distance=13 tangent=10',
+        'tangent-length',
+      ).ok,
+    ).toBe(false);
+  });
+
+  it('rejects non-finite circle lengths', () => {
+    expect(
+      circleGeometrySolver.solve('measure r=1e309', 'measurements').ok,
+    ).toBe(false);
+  });
+
+  it('rejects finite inputs whose derived circle values overflow', () => {
+    expect(
+      circleGeometrySolver.solve('measure r=1e200', 'measurements').ok,
+    ).toBe(false);
+    expect(
+      circleGeometrySolver.solve(
+        'power-of-point tangent=1e308 external=1',
+        'power-of-point',
+      ).ok,
+    ).toBe(false);
+    expect(
+      circleGeometrySolver.solve(
+        'chord-distance c=2 distance=1e308',
+        'chord-distance',
+      ).ok,
+    ).toBe(false);
   });
 });

@@ -40,6 +40,13 @@ describe('normalise — words into symbols', () => {
     expect(n('7 times 8')).toBe('7 × 8');
     expect(n('20 divided by 4')).toBe('20 ÷ 4');
     expect(n('3 plus 4')).toBe('3 + 4');
+    expect(n('subtract 3 from 8')).toBe('8 - 3');
+    expect(n('5 less than x')).toBe('x - 5');
+  });
+  it('preserves inequality phrases as relations', () => {
+    expect(n('x is less than 3')).toBe('x < 3');
+    expect(n('2x is greater than or equal to 8')).toBe('2x >= 8');
+    expect(n('x is at most 5')).toBe('x <= 5');
   });
   it('handles squared and cubed', () => {
     expect(n('x squared + 5x + 6 = 0')).toBe('x^2 + 5x + 6 = 0');
@@ -120,6 +127,13 @@ describe('normalise — sequences and statistics', () => {
     expect(out).toContain('mean=100');
     expect(out).toContain('sd=15');
   });
+  it('keeps a stated confidence level under the key the solver reads', () => {
+    expect(
+      n(
+        '92% confidence interval with mean 50, standard deviation 8, sample size 100',
+      ),
+    ).toContain('confidence=92');
+  });
   it('reads log base notation', () => {
     expect(n('log base 2 of 32')).toBe('log2 32');
   });
@@ -150,6 +164,7 @@ describe('natural language end to end', () => {
     ],
     ['10th term of 3, 7, 11, 15', 'sequences'],
     ['log base 2 of 32', 'logarithms'],
+    ['solve 2x is greater than or equal to 8', 'inequalities', 'x \\ge 4'],
   ];
 
   for (const [phrase, topic, expected] of cases) {
@@ -183,5 +198,16 @@ describe('normalise — robustness', () => {
     const started = Date.now();
     normalise('what is the area of a circle with radius 5 '.repeat(200));
     expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it('carries a non-standard confidence level through normalisation', () => {
+    const solver = getSolver('distributions')!;
+    const solved = runSolve(
+      solver,
+      '92% confidence interval with mean 50, standard deviation 8, sample size 100',
+      'confidence',
+    );
+    expect(solved.ok).toBe(true);
+    if (solved.ok) expect(solved.solution.derivedValues?.confidence).toBe(92);
   });
 });

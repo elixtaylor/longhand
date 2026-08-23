@@ -79,9 +79,13 @@ function gradientEitherSide(
   fd: Poly,
   x: number,
   all: number[],
-): { left: number; right: number } {
+): { left: number; right: number; h: number } {
   const h = probeStep(x, all);
-  return { left: evaluatePoly(fd, x - h), right: evaluatePoly(fd, x + h) };
+  return {
+    left: evaluatePoly(fd, x - h),
+    right: evaluatePoly(fd, x + h),
+    h,
+  };
 }
 
 /**
@@ -93,13 +97,6 @@ function gradientEitherSide(
  * answer. The first-derivative test settles it: the gradient changes sign
  * through a turning point and keeps its sign through an inflection.
  */
-function natureBySign(fd: Poly, x: number, all: number[]): string {
-  const { left, right } = gradientEitherSide(fd, x, all);
-  if (left < 0 && right > 0) return 'minimum';
-  if (left > 0 && right < 0) return 'maximum';
-  return 'stationary point of inflection';
-}
-
 function describeSign(v: number): string {
   return v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero';
 }
@@ -115,9 +112,17 @@ function gradientAt(input: string): SolveResult {
         'Say where to measure the gradient, e.g. “gradient of y = x^2 at x = 3”.',
     };
   }
+  if (!Number.isFinite(x))
+    return { ok: false, error: 'The x-coordinate must be a finite number.' };
   const fd = differentiate(f);
   const m = evaluatePoly(fd, x);
   const y = evaluatePoly(f, x);
+  if (![m, y].every(Number.isFinite))
+    return {
+      ok: false,
+      error:
+        'That point produces values outside the calculator’s numeric range.',
+    };
 
   const steps: Step[] = [
     ...derivativeSteps(f, fd),
@@ -179,6 +184,13 @@ function stationaryPoints(
   const fdd = differentiate(fd);
   const xs = realRoots(fd).sort((a, b) => a - b);
 
+  if (xs.some((x) => !Number.isFinite(x)))
+    return {
+      ok: false,
+      error:
+        'The stationary points are outside the calculator’s numeric range.',
+    };
+
   const steps: Step[] = [
     ...derivativeSteps(f, fd),
     {
@@ -216,6 +228,25 @@ function stationaryPoints(
   const described: string[] = [];
   for (const x of xs) {
     const y = evaluatePoly(f, x);
+    const curvature = evaluatePoly(fdd, x);
+    if (![x, y, curvature].every(Number.isFinite))
+      return {
+        ok: false,
+        error:
+          'A stationary-point value is outside the calculator’s numeric range.',
+      };
+
+    const signTest =
+      curvature === 0 ? gradientEitherSide(fd, x, xs) : undefined;
+    if (
+      signTest &&
+      ![signTest.left, signTest.right, signTest.h].every(Number.isFinite)
+    )
+      return {
+        ok: false,
+        error:
+          'The stationary point cannot be classified within the calculator’s numeric range.',
+      };
     steps.push({
       note: `Substitute x = ${fmt(x, 4)} back into f(x) to get the height of the point.`,
       latex: `f(${par(x)}) = ${fmt(y, 4)} \\quad\\Rightarrow\\quad \\left(${fmt(x, 4)},\\; ${fmt(y, 4)}\\right)`,
@@ -223,13 +254,16 @@ function stationaryPoints(
 
     // The second derivative decides which way the curve bends there, which is
     // what turns a bare coordinate into "maximum" or "minimum".
-    const curvature = evaluatePoly(fdd, x);
     const nature =
       curvature > 0
         ? 'minimum'
         : curvature < 0
           ? 'maximum'
-          : natureBySign(fd, x, xs);
+          : signTest!.left < 0 && signTest!.right > 0
+            ? 'minimum'
+            : signTest!.left > 0 && signTest!.right < 0
+              ? 'maximum'
+              : 'stationary point of inflection';
     steps.push({
       note:
         curvature === 0
@@ -239,10 +273,10 @@ function stationaryPoints(
       annotation: nature,
     });
     if (curvature === 0) {
-      const { left, right } = gradientEitherSide(fd, x, xs);
+      const { left, right, h } = signTest!;
       steps.push({
         note: `Just left of the point the gradient is ${describeSign(left)}; just right it is ${describeSign(right)}.`,
-        latex: `f'(${fmt(x - 0.0001, 4)}) = ${fmt(left, 6)}, \\qquad f'(${fmt(x + 0.0001, 4)}) = ${fmt(right, 6)}`,
+        latex: `f'(${fmt(x - h, 6)}) = ${fmt(left, 6)}, \\qquad f'(${fmt(x + h, 6)}) = ${fmt(right, 6)}`,
         annotation: nature,
       });
     }
@@ -273,9 +307,18 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
       error: `Say where the ${kind} touches, e.g. “${kind} to y = x^2 at x = 3”.`,
     };
   }
+  if (!Number.isFinite(x1))
+    return { ok: false, error: 'The x-coordinate must be a finite number.' };
   const fd = differentiate(f);
   const slope = evaluatePoly(fd, x1);
   const y1 = evaluatePoly(f, x1);
+
+  if (![slope, y1].every(Number.isFinite))
+    return {
+      ok: false,
+      error:
+        'That point produces values outside the calculator’s numeric range.',
+    };
 
   if (kind === 'normal' && slope === 0) {
     const steps: Step[] = [
@@ -306,6 +349,11 @@ function lineAt(input: string, kind: 'tangent' | 'normal'): SolveResult {
   }
   const m = kind === 'tangent' ? slope : -1 / slope;
   const c = y1 - m * x1;
+  if (![m, c].every(Number.isFinite))
+    return {
+      ok: false,
+      error: 'That line has values outside the calculator’s numeric range.',
+    };
 
   const steps: Step[] = [
     ...derivativeSteps(f, fd),

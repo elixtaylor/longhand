@@ -42,6 +42,11 @@ describe('divisionSolver', () => {
   it('rejects division by zero', () => {
     expect(divisionSolver.solve('5 / 0', 'short').ok).toBe(false);
   });
+  it('rejects unsafe integers rather than rounding them', () => {
+    expect(divisionSolver.solve('9007199254740993 / 3', 'short').ok).toBe(
+      false,
+    );
+  });
 });
 
 describe('fractionsSolver', () => {
@@ -61,6 +66,11 @@ describe('fractionsSolver', () => {
   });
   it('divides by the reciprocal', () => {
     expect(ans(fractionsSolver, '3/4 ÷ 1/2', 'standard')).toBe('\\frac{3}{2}');
+  });
+  it('rejects division by a zero fraction cleanly', () => {
+    const result = fractionsSolver.solve('3/4 ÷ 0/2', 'standard');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('You can’t divide by zero.');
   });
   it('reduces to a whole number', () => {
     expect(ans(fractionsSolver, '1/2 + 1/2', 'standard')).toBe('1');

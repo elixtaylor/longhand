@@ -14,6 +14,16 @@ const sol = (
 };
 
 describe('complexSolver', () => {
+  it('applies the quadrant after finding a polar reference angle', () => {
+    const result = complexSolver.solve('polar -1', 'polar');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const working = JSON.stringify(result.solution.steps);
+      expect(working).toContain('correct quadrant');
+      expect(working).toContain('180');
+      expect(working).not.toContain('= 0^{\\\\circ} = 180');
+    }
+  });
   it('multiplies two complex numbers', () => {
     // (3+4i)(1−2i) = 3 − 6i + 4i − 8i² = 11 − 2i
     expect(sol(complexSolver, '(3+4i)*(1-2i)', 'rectangular').answerLatex).toBe(
@@ -49,6 +59,17 @@ describe('complexSolver', () => {
     const s = sol(complexSolver, 'polar 3+4i', 'polar');
     expect(s.answerLatex).toContain('5');
     expect(s.answerLatex).toContain('53.13');
+  });
+  it('handles zero without inventing a unique complex argument', () => {
+    expect(complexSolver.detect('polar 0')).toBe(0.96);
+    const s = sol(complexSolver, 'polar 0', 'polar');
+    expect(s.answerLatex).toBe('z = 0');
+    expect(JSON.stringify(s.steps)).toContain('undefined');
+  });
+  it('rejects complex overflow instead of printing invalid working', () => {
+    expect(
+      complexSolver.solve('(1e308+1e308i)*(1e308+1e308i)', 'rectangular').ok,
+    ).toBe(false);
   });
 });
 
@@ -87,6 +108,12 @@ describe('vectorsSolver', () => {
   });
   it('refuses a cross product in two dimensions', () => {
     expect(vectorsSolver.solve('(1,2) x (3,4)', 'component').ok).toBe(false);
+  });
+  it('rejects vector overflow instead of printing invalid working', () => {
+    expect(
+      vectorsSolver.solve('(1e308,1e308) + (1e308,1e308)', 'component').ok,
+    ).toBe(false);
+    expect(vectorsSolver.solve('|(1e308,1e308)|', 'component').ok).toBe(false);
   });
 });
 
@@ -214,9 +241,46 @@ describe('matricesSolver', () => {
       sol(matricesSolver, '[[2,1,5],[1,-1,1]]', 'system').answerLatex,
     ).toContain('(2, 1)');
   });
+  it('does not mistake a small-scale invertible system for a singular one', () => {
+    expect(
+      sol(matricesSolver, 'solve [[1e-7,0,1e-7],[0,1e-7,2e-7]]', 'system')
+        .answerLatex,
+    ).toContain('(1, 2)');
+  });
+  it('bounds expensive determinant expansion and numeric overflow', () => {
+    const identity =
+      '[' +
+      Array.from(
+        { length: 7 },
+        (_, row) =>
+          `[${Array.from({ length: 7 }, (_, column) => (row === column ? 1 : 0)).join(',')}]`,
+      ).join(',') +
+      ']';
+    expect(matricesSolver.solve(`det ${identity}`, 'determinant').ok).toBe(
+      false,
+    );
+    expect(matricesSolver.solve('[[1e308]] * [[1e308]]', 'standard').ok).toBe(
+      false,
+    );
+  });
 });
 
 describe('inductionSolver', () => {
+  it('labels the proof with the State–TAPE structure', () => {
+    const result = inductionSolver.solve('sum r', 'sum');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const notes = result.solution.steps.map((step) => step.note).join(' ');
+      for (const label of [
+        'State',
+        'T (Test)',
+        'A (Assume)',
+        'P (Prove)',
+        'E (End)',
+      ])
+        expect(notes).toContain(label);
+    }
+  });
   it('derives and proves the sum of the first n integers', () => {
     const s = sol(inductionSolver, 'sum r', 'sum');
     // n(n+1)/2
@@ -251,6 +315,43 @@ describe('inductionSolver', () => {
         step.note?.includes('base case'),
       ),
     ).toBe(true);
+  });
+
+  it('validates a supplied PMI formula instead of silently replacing it', () => {
+    const result = inductionSolver.solve(
+      'prove by induction 1+3+5+...+(2n-1)=n^3',
+      'sum',
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.answerLatex).toContain('false');
+      expect(
+        result.solution.steps.some(
+          (step) => step.annotation === 'counterexample',
+        ),
+      ).toBe(true);
+      const working = result.solution.steps
+        .map((step) => step.latex ?? '')
+        .join(' ');
+      expect(working).toContain('n^{3}');
+      expect(
+        result.solution.steps.some(
+          (step) => step.annotation === 'correct identity',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it('accepts a complete summation identity without ellipsis', () => {
+    const result = inductionSolver.solve(
+      'prove by induction sum r = n(n+1)/2',
+      'sum',
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.answerLatex).not.toContain('false');
+      expect(result.solution.answerLatex).toContain('\\dfrac');
+    }
   });
 
   it('lays out all three parts of the proof', () => {

@@ -16,9 +16,19 @@ interface Problem {
 function parseFrac(tok: string): Frac {
   if (tok.includes('/')) {
     const [n, d] = tok.split('/');
-    return { num: parseInt(n, 10), den: parseInt(d, 10) };
+    const fraction = { num: parseInt(n, 10), den: parseInt(d, 10) };
+    if (![fraction.num, fraction.den].every(Number.isSafeInteger))
+      throw new Error(
+        'Use whole numbers small enough to keep the fraction exact.',
+      );
+    return fraction;
   }
-  return { num: parseInt(tok, 10), den: 1 };
+  const num = parseInt(tok, 10);
+  if (!Number.isSafeInteger(num))
+    throw new Error(
+      'Use whole numbers small enough to keep the fraction exact.',
+    );
+  return { num, den: 1 };
 }
 
 function parseProblem(input: string): Problem {
@@ -71,6 +81,8 @@ function reduceStepIfNeeded(
 
 export function solveFraction(p: Problem): SolveResult {
   const { a, b, op } = p;
+  if (op === '÷' && b.num === 0)
+    return { ok: false, error: 'You can’t divide by zero.' };
   const start = `${fracLatex(a.num, a.den)} ${opSymbol(op)} ${fracLatex(b.num, b.den)}`;
   const steps: Step[] = [{ note: 'Write out the calculation.', latex: start }];
 
@@ -92,11 +104,21 @@ export function solveFraction(p: Problem): SolveResult {
       note: `${op === '+' ? 'Add' : 'Subtract'} the numerators, keep the denominator.`,
       latex: `= \\frac{${resN}}{${L}}`,
     });
+    if (![L, an, bn, resN].every(Number.isSafeInteger))
+      return {
+        ok: false,
+        error: 'Those fractions are too large to keep the working exact.',
+      };
     reduced = new Rational(resN, L);
     reduceStepIfNeeded(resN, L, reduced, steps);
   } else if (op === '*') {
     const rn = a.num * b.num;
     const rd = a.den * b.den;
+    if (![rn, rd].every(Number.isSafeInteger))
+      return {
+        ok: false,
+        error: 'Those fractions are too large to keep the working exact.',
+      };
     steps.push({
       note: 'Multiply the numerators together, and the denominators together.',
       latex: `= \\frac{${a.num} \\times ${b.num}}{${a.den} \\times ${b.den}} = ${fracLatex(rn, rd)}`,
@@ -111,6 +133,11 @@ export function solveFraction(p: Problem): SolveResult {
     });
     let rn = a.num * b.den;
     let rd = a.den * b.num;
+    if (![rn, rd].every(Number.isSafeInteger))
+      return {
+        ok: false,
+        error: 'Those fractions are too large to keep the working exact.',
+      };
     if (rd < 0) {
       rn = -rn;
       rd = -rd;

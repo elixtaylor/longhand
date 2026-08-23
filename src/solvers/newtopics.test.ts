@@ -33,6 +33,9 @@ describe('percentages', () => {
   });
   it('expresses one number as a percentage of another', () => {
     expect(ans(percentageSolver, '30 as a percentage of 150')).toBe('20\\%');
+    expect(ans(percentageSolver, 'what percentage is 30 of 150')).toBe('20\\%');
+    expect(ans(percentageSolver, '30 is what percentage of 150')).toBe('20\\%');
+    expect(ans(percentageSolver, 'what percent of 150 is 30')).toBe('20\\%');
   });
   it('reverses a percentage increase', () => {
     // 80 increased by 10% is 88, so working back must give 80
@@ -70,6 +73,20 @@ describe('indices & surds', () => {
   it('applies the power-of-a-power law', () => {
     expect(ans(indicesSolver, '(3^2)^4')).toBe('3^{8}');
   });
+  it('rejects undefined and unbounded index inputs without hanging', () => {
+    expect(indicesSolver.solve('1/sqrt 0', 'rationalise').ok).toBe(false);
+    expect(indicesSolver.solve('sqrt -4', 'simplify-surd').ok).toBe(false);
+    expect(
+      indicesSolver.solve('sqrt 9007199254740881', 'simplify-surd').ok,
+    ).toBe(false);
+    expect(indicesSolver.solve('0^-1 × 0^2', 'index-laws').ok).toBe(false);
+  });
+  it('keeps enormous negative powers symbolic instead of printing Infinity', () => {
+    const result = indicesSolver.solve('2^-2000 × 2^0', 'index-laws');
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(JSON.stringify(result.solution)).not.toContain('Infinity');
+  });
 });
 
 describe('inequalities', () => {
@@ -86,6 +103,16 @@ describe('inequalities', () => {
   it('solves a quadratic inequality outside the roots', () => {
     expect(ans(inequalitySolver, 'x^2 - 5x + 6 > 0')).toBe(
       'x < 2 \\;\\text{or}\\; x > 3',
+    );
+  });
+  it('keeps irrational quadratic boundaries exact', () => {
+    expect(ans(inequalitySolver, 'x^2 + 6x + 2 < 0')).toBe(
+      '-3 - \\sqrt{7} < x < -3 + \\sqrt{7}',
+    );
+  });
+  it('handles fractional quadratic coefficients exactly', () => {
+    expect(ans(inequalitySolver, '0.5x^2 - 2.5x + 3 <= 0')).toBe(
+      '2 \\le x \\le 3',
     );
   });
   it('handles an inequality that is always true', () => {
@@ -147,17 +174,50 @@ describe('probability', () => {
   });
   it('applies the addition rule', () => {
     // P(A)=0.5, P(B)=0.4 independent → 0.5+0.4−0.2 = 0.7
-    const r = probabilitySolver.solve('P(A)=0.5, P(B)=0.4 union', 'union');
+    const r = probabilitySolver.solve(
+      'P(A)=0.5, P(B)=0.4 independent union',
+      'union',
+    );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toBe('\\frac{7}{10}');
   });
   it('applies conditional probability', () => {
     const r = probabilitySolver.solve(
-      'P(A)=0.5, P(B)=0.4 given',
+      'P(A)=0.5, P(B)=0.4 independent given',
       'conditional',
     );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toBe('\\frac{1}{2}');
+  });
+  it('does not invent independence when the overlap is missing', () => {
+    const r = probabilitySolver.solve('P(A)=0.5, P(B)=0.4 union', 'union');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('P(A∩B)');
+  });
+  it('rejects an impossible overlap', () => {
+    const r = probabilitySolver.solve(
+      'P(A)=0.2, P(B)=0.3, P(A and B)=0.4 union',
+      'union',
+    );
+    expect(r.ok).toBe(false);
+  });
+  it('rejects negative named probabilities and unsafe outcome counts cleanly', () => {
+    expect(
+      probabilitySolver.solve('P(A)=-0.2, P(B)=0.4 independent union', 'union')
+        .ok,
+    ).toBe(false);
+    expect(() =>
+      probabilitySolver.solve(
+        '999999999999999999 out of 999999999999999999',
+        'single',
+      ),
+    ).not.toThrow();
+    expect(
+      probabilitySolver.solve(
+        '999999999999999999 out of 999999999999999999',
+        'single',
+      ).ok,
+    ).toBe(false);
   });
 });
 
@@ -176,6 +236,12 @@ describe('counting', () => {
   });
   it('refuses to choose more than there are', () => {
     expect(countingSolver.solve('3C10', 'combination').ok).toBe(false);
+  });
+  it('keeps large combinatorial integers exact', () => {
+    expect(ans(countingSolver, '50C25')).toBe('126410606437752');
+    const factorial = ans(countingSolver, '170!');
+    expect(factorial).toMatch(/^\d+$/);
+    expect(factorial).not.toContain('e+');
   });
 });
 
@@ -199,6 +265,48 @@ describe('networks', () => {
   it('reports an unreachable destination', () => {
     expect(
       networksSolver.solve('A-B 5, C-D 2 shortest path A to D', 'shortest-path')
+        .ok,
+    ).toBe(false);
+  });
+
+  it('supports the smallest valid two-node network', () => {
+    const r = networksSolver.solve(
+      'A-B 5 shortest path A to B',
+      'shortest-path',
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.solution.answerLatex).toContain('5');
+  });
+
+  it('rejects a requested endpoint that is not in the network', () => {
+    const r = networksSolver.solve(
+      `${graph} shortest path A to Z`,
+      'shortest-path',
+    );
+    expect(r.ok).toBe(false);
+  });
+
+  it('matches endpoint names without case sensitivity', () => {
+    const r = networksSolver.solve(
+      `${graph} shortest path a to d`,
+      'shortest-path',
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.solution.answerLatex).toContain('A \\to B');
+  });
+
+  it('reads scientific network weights without truncating them', () => {
+    const r = networksSolver.solve(
+      'A-B 1e3 shortest path A to B',
+      'shortest-path',
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.solution.answerLatex).toContain('1000');
+  });
+
+  it('rejects non-finite network weights', () => {
+    expect(
+      networksSolver.solve('A-B 1e309 shortest path A to B', 'shortest-path')
         .ok,
     ).toBe(false);
   });
@@ -231,9 +339,53 @@ describe('growth, decay & rates', () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.solution.answerLatex).toBe('t = 20');
   });
+  it('reads a differential equation, initial condition and requested value', () => {
+    const r = ratesSolver.solve(
+      'dy/dt = 0.05y, y(0)=200, find y(10)',
+      'exponential',
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.solution.answerLatex).toBe('y = 329.7443');
+  });
+  it('does not present a negative elapsed time as a reachable target', () => {
+    const r = ratesSolver.solve(
+      'k=0.05, initial=100, target=50',
+      'exponential',
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.solution.answerLatex).toContain('not reached');
+      expect(r.solution.answerLatex).toContain('t \\ge 0');
+    }
+  });
   it('asks for a rate when none is given', () => {
     expect(ratesSolver.solve('exponential growth', 'exponential').ok).toBe(
       false,
     );
+  });
+  it('rejects invalid or conflicting time constants', () => {
+    expect(
+      ratesSolver.solve('half-life -5, initial 100, t=10', 'half-life').ok,
+    ).toBe(false);
+    expect(
+      ratesSolver.solve(
+        'half-life 5, doubling time 5, initial 100, t=10',
+        'half-life',
+      ).ok,
+    ).toBe(false);
+  });
+  it('handles a zero-rate target without dividing by zero', () => {
+    const never = ratesSolver.solve(
+      'k=0, initial=100, target=200',
+      'exponential',
+    );
+    expect(never.ok).toBe(true);
+    if (never.ok) expect(never.solution.answerLatex).toContain('never reached');
+    const always = ratesSolver.solve(
+      'k=0, initial=100, target=100',
+      'exponential',
+    );
+    expect(always.ok).toBe(true);
+    if (always.ok) expect(always.solution.answerLatex).toContain('every');
   });
 });

@@ -25,6 +25,21 @@ function frequency(input: string): { n: number; word: string } {
   return { n: 1, word: 'yearly' };
 }
 
+function frequencyWord(input: string, n: number): string {
+  const stated = frequency(input);
+  if (stated.n === n) return stated.word;
+  const words: Record<number, string> = {
+    1: 'yearly',
+    2: 'half-yearly',
+    4: 'quarterly',
+    12: 'monthly',
+    26: 'fortnightly',
+    52: 'weekly',
+    365: 'daily',
+  };
+  return words[n] ?? fmt(n) + ' times per year';
+}
+
 function read(input: string): Finance {
   const p = parseParams(input);
   const freq = frequency(input);
@@ -61,11 +76,20 @@ function read(input: string): Finance {
 
 const AUD = (x: number) => `\\$${money(x)}`;
 
+function numericFailure(): SolveResult {
+  return {
+    ok: false,
+    error:
+      'Those values produce a result outside the calculator’s numeric range.',
+  };
+}
+
 /* -------------------------------------------------------- simple interest */
 function simple(f: Finance): SolveResult {
   const { P, r, t } = f;
   const rate = r / 100;
   const I = P * rate * t;
+  if (!Number.isFinite(I) || !Number.isFinite(P + I)) return numericFailure();
   const steps: Step[] = [
     {
       note: 'Simple interest is charged on the original amount only.',
@@ -104,7 +128,8 @@ function compound(f: Finance, input: string): SolveResult {
   const periods = n * t;
   const perPeriod = rate / n;
   const A = P * Math.pow(1 + perPeriod, periods);
-  const word = frequency(input).word;
+  if (!Number.isFinite(A)) return numericFailure();
+  const word = frequencyWord(input, n);
 
   const steps: Step[] = [
     {
@@ -155,6 +180,7 @@ function depreciation(f: Finance): SolveResult {
   const { P, r, t } = f;
   const rate = r / 100;
   const A = P * Math.pow(1 - rate, t);
+  if (!Number.isFinite(A)) return numericFailure();
   const steps: Step[] = [
     {
       note: 'Reducing-balance depreciation takes a percentage off the value each year.',
@@ -194,7 +220,7 @@ function repayment(f: Finance, input: string): SolveResult {
   const { P, r, t, n } = f;
   const i = r / 100 / n;
   const N = n * t;
-  const word = frequency(input).word;
+  const word = frequencyWord(input, n);
   if (i === 0) {
     const R = P / N;
     return {
@@ -214,6 +240,7 @@ function repayment(f: Finance, input: string): SolveResult {
   }
   const R = (P * i) / (1 - Math.pow(1 + i, -N));
   const total = R * N;
+  if (!Number.isFinite(R) || !Number.isFinite(total)) return numericFailure();
 
   const steps: Step[] = [
     {
@@ -319,6 +346,36 @@ export const financialSolver: Solver = {
           : /compound/.test(l)
             ? 'compound'
             : methodId;
+
+    if (
+      !Number.isFinite(f.P) ||
+      !Number.isFinite(f.r) ||
+      !Number.isFinite(f.t) ||
+      !Number.isFinite(f.n)
+    ) {
+      return { ok: false, error: 'Every financial input must be finite.' };
+    }
+    if (f.P <= 0)
+      return { ok: false, error: 'The principal must be greater than zero.' };
+    if (f.r < 0)
+      return { ok: false, error: 'The annual rate cannot be negative.' };
+    if (f.t <= 0)
+      return { ok: false, error: 'The time must be greater than zero.' };
+    if (!Number.isInteger(f.n) || f.n <= 0)
+      return {
+        ok: false,
+        error: 'Compounding periods per year must be a positive whole number.',
+      };
+    if (asked === 'depreciation' && f.r > 100)
+      return {
+        ok: false,
+        error: 'A depreciation rate cannot exceed 100%.',
+      };
+    if (asked === 'repayment' && !Number.isInteger(f.n * f.t))
+      return {
+        ok: false,
+        error: 'The loan term must contain a whole number of repayments.',
+      };
 
     if (asked === 'simple') return simple(f);
     if (asked === 'depreciation') return depreciation(f);

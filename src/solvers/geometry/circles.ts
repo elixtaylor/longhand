@@ -27,7 +27,28 @@ function fields(ids: Array<[string, string, boolean]>): FieldSchema[] {
 
 function positive(value: number | undefined, label: string): string | null {
   if (value === undefined) return null;
-  return value > 0 ? null : `${label} must be greater than zero.`;
+  return Number.isFinite(value) && value > 0
+    ? null
+    : `${label} must be a finite value greater than zero.`;
+}
+
+function nonNegative(value: number | undefined, label: string): string | null {
+  if (value === undefined) return null;
+  return Number.isFinite(value) && value >= 0
+    ? null
+    : `${label} must be a finite value of zero or greater.`;
+}
+
+function numericFailure(): SolveResult {
+  return {
+    ok: false,
+    error:
+      'Those values produce a result outside the calculator’s numeric range.',
+  };
+}
+
+function finiteResults(...values: number[]): boolean {
+  return values.every(Number.isFinite);
 }
 
 function angle(
@@ -57,6 +78,7 @@ function solveMeasurement(input: string): SolveResult {
   if (invalid) return { ok: false, error: invalid };
   const circumference = 2 * Math.PI * r;
   const area = Math.PI * r * r;
+  if (!finiteResults(circumference, area)) return numericFailure();
   const steps: Step[] = [
     {
       note: 'Relate the radius and diameter.',
@@ -108,6 +130,7 @@ function solveArcSector(input: string): SolveResult {
   const fraction = theta / 360;
   const arc = fraction * 2 * Math.PI * r;
   const sector = fraction * Math.PI * r * r;
+  if (!finiteResults(arc, sector)) return numericFailure();
   return {
     ok: true,
     solution: {
@@ -150,6 +173,7 @@ function solveChord(input: string): SolveResult {
   const distance = r * Math.cos(deg2rad(theta / 2));
   const segment =
     (theta / 360) * Math.PI * r * r - 0.5 * r * r * Math.sin(deg2rad(theta));
+  if (!finiteResults(chord, distance, segment)) return numericFailure();
   return {
     ok: true,
     solution: {
@@ -575,6 +599,8 @@ function solveIntersectingChords(input: string): SolveResult {
   else if (b === undefined) b = (c! * d!) / a;
   else if (c === undefined) c = (a * b!) / d!;
   else if (d === undefined) d = (a * b) / c!;
+  if (![a, b, c, d].every((value) => Number.isFinite(value) && value > 0))
+    return numericFailure();
   if (Math.abs(a * b - c * d) > 1e-8 * Math.max(1, a * b, c * d)) {
     return {
       ok: false,
@@ -614,13 +640,12 @@ function solvePowerOfPoint(input: string): SolveResult {
   if (known < 2) {
     return { ok: false, error: 'Give any two of tangent, external and whole.' };
   }
-  if (
-    [tangent, external, whole].some(
-      (value) => value !== undefined && value <= 0,
-    )
-  ) {
-    return { ok: false, error: 'All lengths must be greater than zero.' };
-  }
+  const invalid = [
+    positive(tangent, 'The tangent length'),
+    positive(external, 'The external secant'),
+    positive(whole, 'The whole secant'),
+  ].find((message) => message !== null);
+  if (invalid) return { ok: false, error: invalid };
   if (tangent !== undefined && external !== undefined && whole === undefined) {
     whole = (tangent * tangent) / external;
   } else if (
@@ -652,6 +677,16 @@ function solvePowerOfPoint(input: string): SolveResult {
       ok: false,
       error:
         'The whole secant must be at least as long as the external segment.',
+    };
+  }
+  if (!finiteResults(tangent, external, whole)) return numericFailure();
+  if (
+    Math.abs(tangent * tangent - external * whole) >
+    1e-8 * Math.max(1, tangent * tangent, external * whole)
+  ) {
+    return {
+      ok: false,
+      error: 'The supplied lengths do not satisfy t² = external × whole.',
     };
   }
   return {
@@ -688,11 +723,8 @@ function solveChordDistance(input: string): SolveResult {
     return { ok: false, error: positive(r, 'The radius')! };
   if (c !== undefined && positive(c, 'The chord length'))
     return { ok: false, error: positive(c, 'The chord length')! };
-  if (distance !== undefined && distance < 0)
-    return {
-      ok: false,
-      error: 'The centre-to-chord distance cannot be negative.',
-    };
+  const invalidDistance = nonNegative(distance, 'The centre-to-chord distance');
+  if (invalidDistance) return { ok: false, error: invalidDistance };
   if (r !== undefined && c !== undefined && distance === undefined) {
     if (c > 2 * r)
       return {
@@ -711,6 +743,25 @@ function solveChordDistance(input: string): SolveResult {
     r = Math.sqrt((c / 2) ** 2 + distance * distance);
   } else if (r === undefined || c === undefined || distance === undefined) {
     return { ok: false, error: 'Give any two valid chord measurements.' };
+  }
+  if (!finiteResults(r, c, distance)) return numericFailure();
+  if (c > 2 * r || distance > r) {
+    return {
+      ok: false,
+      error:
+        'The chord cannot exceed the diameter and its centre distance cannot exceed the radius.',
+    };
+  }
+  const chordResidual = r * r - distance * distance - (c / 2) ** 2;
+  if (
+    Math.abs(chordResidual) >
+    1e-8 * Math.max(1, r * r, distance * distance, (c / 2) ** 2)
+  ) {
+    return {
+      ok: false,
+      error:
+        'The supplied chord measurements do not form the required right triangle.',
+    };
   }
   return {
     ok: true,
@@ -747,11 +798,17 @@ function solveTangentLength(input: string): SolveResult {
       ok: false,
       error: 'Give any two of r=…, distance=… and tangent=….',
     };
-  if (
-    [r, distance, tangent].some((value) => value !== undefined && value < 0)
-  ) {
-    return { ok: false, error: 'Lengths cannot be negative.' };
-  }
+  const invalidRadius = positive(r, 'The radius');
+  const invalidCentreDistance = positive(
+    distance,
+    'The centre-to-point distance',
+  );
+  const invalidTangent = nonNegative(tangent, 'The tangent length');
+  if (invalidRadius || invalidCentreDistance || invalidTangent)
+    return {
+      ok: false,
+      error: invalidRadius ?? invalidCentreDistance ?? invalidTangent!,
+    };
   if (r !== undefined && distance !== undefined && tangent === undefined) {
     if (distance < r)
       return {
@@ -783,6 +840,25 @@ function solveTangentLength(input: string): SolveResult {
     tangent === undefined
   ) {
     return { ok: false, error: 'Give any two valid tangent measurements.' };
+  }
+  if (!finiteResults(r, distance, tangent)) return numericFailure();
+  if (distance < r || tangent > distance) {
+    return {
+      ok: false,
+      error:
+        'The centre-to-point distance must be the longest side of the right triangle.',
+    };
+  }
+  const tangentResidual = distance * distance - r * r - tangent * tangent;
+  if (
+    Math.abs(tangentResidual) >
+    1e-8 * Math.max(1, distance * distance, r * r, tangent * tangent)
+  ) {
+    return {
+      ok: false,
+      error:
+        'The supplied tangent measurements do not satisfy OP² = OT² + PT².',
+    };
   }
   return {
     ok: true,
@@ -987,6 +1063,13 @@ export const circleGeometrySolver: Solver = {
   ],
   defaultMethodId: 'measurements',
   detect(input) {
+    const canonicalMeasurement =
+      /^\s*measure\b/i.test(input) &&
+      /\b(?:r|d|radius|diameter)\s*=/i.test(input);
+    const canonicalTheorem =
+      /^\s*theorem\b/i.test(input) &&
+      /\b(?:centre|circumference)\s*=/i.test(input);
+    if (canonicalMeasurement || canonicalTheorem) return 0.96;
     const circleSignal =
       /\bcircles?\b|\barcs?\b|\bsectors?\b|\bchords?\b|\bcyclic\b|semicircle|same\s+segment|equal\s+(?:chords?|tangents?)|intersecting\s+(?:chords?|secants?)|power\s+of\s+(?:a\s+)?point|tangent[- ]secant|radius\s+(?:and\s+)?tangent|tangent[- ]chord|tangent\s+length|alternate\s+segment|angle\s+at\s+(?:the\s+)?(?:centre|circumference)/i;
     if (!circleSignal.test(input)) return 0;

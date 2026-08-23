@@ -29,6 +29,19 @@ describe('quadraticRoots (exact core)', () => {
     expect(r.numericRoots).toHaveLength(0);
     expect(r.answerLatex).toContain('i');
   });
+
+  it('integerises decimal coefficients before simplifying roots', () => {
+    const r = quadraticRoots(1, -0.000000000001, 0);
+    expect(r.nature).toBe('two-rational');
+    expect(r.numericRoots).toContain(0.000000000001);
+    expect(r.numericRoots).toContain(0);
+  });
+
+  it('does not throw when coefficients cannot be integerised safely', () => {
+    const r = quadraticRoots(1 / 3, Math.PI, -Math.E);
+    expect(r.numericRoots).toHaveLength(2);
+    expect(r.numericRoots.every(Number.isFinite)).toBe(true);
+  });
 });
 
 describe('quadraticsSolver — all three methods agree', () => {

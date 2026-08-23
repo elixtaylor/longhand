@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { MethodDiagram } from './MethodDiagram';
 import { vectorsSolver } from '../solvers/specialist/vectors';
 import { CalculatorPreview } from './CalculatorPreview';
 
@@ -124,10 +123,17 @@ export function VectorOperationForm({
     });
   }
 
+  function clearValues() {
+    setDims(2);
+    setA(['', '', '']);
+    setB(['', '', '']);
+    setK('');
+  }
+
   function pointField(label: string, values: string[], which: 'a' | 'b') {
     return (
       <div className="structured-field">
-        <label className="field-label">{label}</label>
+        <span className="field-label">{label}</span>
         <div className="point-inputs">
           {values.slice(0, dims).map((v, i) => (
             <input
@@ -138,6 +144,10 @@ export function VectorOperationForm({
               autoComplete="off"
               placeholder={['x', 'y', 'z'][i]}
               aria-label={`${label} — ${['x', 'y', 'z'][i]}`}
+              aria-invalid={
+                (v.trim() !== '' && !Number.isFinite(Number(v.trim()))) ||
+                undefined
+              }
               value={v}
               onChange={(e) => setComponent(which, i, e.target.value)}
             />
@@ -149,66 +159,85 @@ export function VectorOperationForm({
 
   return (
     <form className="structured-form" onSubmit={submit}>
-      <MethodDiagram methodId={op} />
-
-      <div className="op-picker" role="radiogroup" aria-label="Operation">
-        {OPS.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            aria-pressed={op === o.id}
-            onClick={() => setOp(o.id)}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-
-      <div
-        className="dims-toggle"
-        role="radiogroup"
-        aria-label="Number of dimensions"
-      >
-        <button
-          type="button"
-          aria-pressed={dims === 2}
-          onClick={() => setDims(2)}
-        >
-          2D
-        </button>
-        <button
-          type="button"
-          aria-pressed={dims === 3}
-          onClick={() => setDims(3)}
-        >
-          3D
-        </button>
-      </div>
-
-      {pointField(current.needsB ? 'Vector a' : 'Vector', a, 'a')}
-
-      {current.needsK && (
-        <div className="structured-field">
-          <label className="field-label">Scalar k</label>
-          <input
-            className="expr-input num-input"
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            aria-label="Scalar k"
-            value={k}
-            onChange={(e) => setK(e.target.value)}
-          />
+      <fieldset className="calculator-choice">
+        <legend className="calculator-section-label">Operation</legend>
+        <div className="op-picker" role="radiogroup" aria-label="Operation">
+          {OPS.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              aria-pressed={op === o.id}
+              onClick={() => setOp(o.id)}
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
-      )}
+      </fieldset>
 
-      {current.needsB && pointField('Vector b', b, 'b')}
+      <div className="calculator-input-region">
+        <div className="calculator-setting-row">
+          <span className="calculator-section-label">Dimensions</span>
+          <div
+            className="dims-toggle"
+            role="radiogroup"
+            aria-label="Number of dimensions"
+          >
+            <button
+              type="button"
+              aria-pressed={dims === 2}
+              onClick={() => setDims(2)}
+            >
+              2D
+            </button>
+            <button
+              type="button"
+              aria-pressed={dims === 3}
+              onClick={() => setDims(3)}
+            >
+              3D
+            </button>
+          </div>
+        </div>
+
+        <div className="calculator-field-stack">
+          {pointField(current.needsB ? 'Vector a' : 'Vector', a, 'a')}
+
+          {current.needsK && (
+            <div className="structured-field">
+              <label className="field-label" htmlFor="vector-scalar">
+                Scalar k
+              </label>
+              <input
+                id="vector-scalar"
+                className="expr-input num-input"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                aria-label="Scalar k"
+                aria-invalid={
+                  (k.trim() !== '' && !Number.isFinite(kNum)) || undefined
+                }
+                value={k}
+                onChange={(e) => setK(e.target.value)}
+              />
+            </div>
+          )}
+
+          {current.needsB && pointField('Vector b', b, 'b')}
+        </div>
+      </div>
 
       <CalculatorPreview result={liveResult} />
 
-      <button type="submit" className="btn-primary" disabled={!complete}>
-        Solve
-      </button>
+      <div className="calculator-actions">
+        <button type="submit" className="btn-primary" disabled={!complete}>
+          Solve
+        </button>
+        <button type="button" className="btn-secondary" onClick={clearValues}>
+          Clear
+        </button>
+      </div>
     </form>
   );
 }

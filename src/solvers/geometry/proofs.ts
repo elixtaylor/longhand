@@ -164,11 +164,11 @@ function solveProof(kind: ProofKind, input: string): SolveResult {
           },
           {
             note: 'Draw the angle bisector AD to meet BC at D; AD is common to both triangles.',
-            latex: `\\angle ${apex}${base[0]}D = \\angle D${apex}${base[1]},\\quad ${apex}D = ${apex}D`,
+            latex: `\\angle ${base[0]}${apex}D = \\angle D${apex}${base[1]},\\quad ${apex}D = ${apex}D`,
           },
           {
             note: 'The two smaller triangles have equal side, included angle, and side (SAS).',
-            latex: `${equalSides[0]} = ${equalSides[1]},\\quad \\angle ${apex}${base[0]}D = \\angle D${apex}${base[1]},\\quad ${apex}D = ${apex}D`,
+            latex: `${equalSides[0]} = ${equalSides[1]},\\quad \\angle ${base[0]}${apex}D = \\angle D${apex}${base[1]},\\quad ${apex}D = ${apex}D`,
           },
           {
             note: 'Therefore the two smaller triangles are congruent by SAS.',
@@ -191,7 +191,7 @@ function solveProof(kind: ProofKind, input: string): SolveResult {
   const [d, e, f] = second.split('');
   const explicit = [
     ...input.matchAll(
-      /(?:angle\s*)?([A-Z]{1,2})\s*=\s*(?:angle\s*)?([A-Z]{1,2})/gi,
+      /(?:angle\s*)?([A-Z]{1,3})\s*=\s*(?:angle\s*)?([A-Z]{1,3})/gi,
     ),
   ].map((match) => `${match[1].toUpperCase()} = ${match[2].toUpperCase()}`);
   const given =

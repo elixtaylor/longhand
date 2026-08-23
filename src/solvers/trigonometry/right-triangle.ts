@@ -44,6 +44,62 @@ function countKnown(rt: RT): number {
   return [rt.a, rt.b, rt.c, rt.A, rt.B].filter((v) => v !== undefined).length;
 }
 
+function closeEnough(
+  actual: number,
+  expected: number,
+  absolute = 0.2,
+): boolean {
+  return (
+    Math.abs(actual - expected) <=
+    Math.max(absolute, Math.abs(expected) * 0.002)
+  );
+}
+
+function whyImpossible(rt: RT): string | null {
+  for (const side of [rt.a, rt.b, rt.c]) {
+    if (side !== undefined && (!Number.isFinite(side) || side <= 0))
+      return 'Side lengths must be finite and positive.';
+  }
+  for (const angle of [rt.A, rt.B]) {
+    if (
+      angle !== undefined &&
+      (!Number.isFinite(angle) || angle <= 0 || angle >= 90)
+    )
+      return 'A right-triangle angle must be between 0° and 90°.';
+  }
+  if (rt.A !== undefined && rt.B !== undefined && !closeEnough(rt.A + rt.B, 90))
+    return 'The two acute angles in a right triangle must add to 90°.';
+  if (
+    rt.c !== undefined &&
+    ((rt.a !== undefined && rt.a >= rt.c) ||
+      (rt.b !== undefined && rt.b >= rt.c))
+  )
+    return 'The hypotenuse (c) must be the longest side.';
+
+  let expectedA: number | null = null;
+  if (rt.a !== undefined && rt.b !== undefined)
+    expectedA = rad2deg(Math.atan(rt.a / rt.b));
+  else if (rt.a !== undefined && rt.c !== undefined)
+    expectedA = rad2deg(Math.asin(rt.a / rt.c));
+  else if (rt.b !== undefined && rt.c !== undefined)
+    expectedA = rad2deg(Math.acos(rt.b / rt.c));
+
+  if (
+    rt.a !== undefined &&
+    rt.b !== undefined &&
+    rt.c !== undefined &&
+    !closeEnough(Math.hypot(rt.a, rt.b), rt.c, 0.02)
+  )
+    return 'The three sides do not satisfy a² + b² = c².';
+  if (
+    expectedA !== null &&
+    ((rt.A !== undefined && !closeEnough(rt.A, expectedA)) ||
+      (rt.B !== undefined && !closeEnough(rt.B, 90 - expectedA)))
+  )
+    return 'The supplied angle is inconsistent with the side lengths.';
+  return null;
+}
+
 /** Fill every side and acute angle that follows from a valid right triangle. */
 function completeRightTriangle(rt: RT): Record<string, number> | null {
   let { a, b, c, A, B } = rt;
@@ -419,26 +475,18 @@ export const rightTriangleSolver: Solver = {
   },
   solve(input, methodId): SolveResult {
     const rt = read(input);
-    if (countKnown(rt) < 2) {
+    const sides = [rt.a, rt.b, rt.c].filter((v) => v !== undefined).length;
+    const angleCount = [rt.A, rt.B].filter((v) => v !== undefined).length;
+    if (sides < 1 || (sides < 2 && angleCount < 1)) {
       return {
         ok: false,
-        error: 'Give two known values, e.g.  a=3, b=4  or  A=30, c=10.',
+        error:
+          'Give two usable values including a side, e.g. a=3, b=4 or A=30, c=10.',
       };
     }
-    const sides = [rt.a, rt.b, rt.c].filter((v) => v !== undefined).length;
     const hasAngle = rt.A !== undefined || rt.B !== undefined;
-
-    for (const side of [rt.a, rt.b, rt.c]) {
-      if (side !== undefined && side <= 0)
-        return { ok: false, error: 'Side lengths must be positive.' };
-    }
-    for (const angle of [rt.A, rt.B]) {
-      if (angle !== undefined && (angle <= 0 || angle >= 90))
-        return {
-          ok: false,
-          error: 'A right-triangle angle must be between 0° and 90°.',
-        };
-    }
+    const impossible = whyImpossible(rt);
+    if (impossible) return { ok: false, error: impossible };
 
     // Pythagoras needs two sides; fall back sensibly rather than erroring.
     if (methodId === 'pythagoras') {

@@ -88,20 +88,29 @@ export const binomialSolver: Solver = {
       };
     }
 
-    const denominator = fraction.den.get(0);
-    const basePoly = fraction.num.scale(Rational.int(1).div(denominator));
-    let expanded = new Map<number, Rational>([[0, Rational.int(1)]]);
-    for (let i = 0; i < power; i++) {
-      const next = new Map<number, Rational>();
-      for (const [p, a] of expanded) {
-        for (const { power: qPower, coeff: b } of basePoly.terms()) {
-          const key = p + qPower;
-          next.set(key, (next.get(key) ?? Rational.int(0)).add(a.mul(b)));
+    let poly: Poly;
+    try {
+      const denominator = fraction.den.get(0);
+      const basePoly = fraction.num.scale(Rational.int(1).div(denominator));
+      let expanded = new Map<number, Rational>([[0, Rational.int(1)]]);
+      for (let i = 0; i < power; i++) {
+        const next = new Map<number, Rational>();
+        for (const [p, a] of expanded) {
+          for (const { power: qPower, coeff: b } of basePoly.terms()) {
+            const key = p + qPower;
+            next.set(key, (next.get(key) ?? Rational.int(0)).add(a.mul(b)));
+          }
         }
+        expanded = next;
       }
-      expanded = next;
+      poly = new Poly(expanded, 'x');
+    } catch {
+      return {
+        ok: false,
+        error:
+          'That expansion has coefficients outside the exact arithmetic range.',
+      };
     }
-    const poly = new Poly(expanded, 'x');
     const answer = polyLatex(poly);
     const baseLatex = toLatex(base);
     const steps: Step[] = [

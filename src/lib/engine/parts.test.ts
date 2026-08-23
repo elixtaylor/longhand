@@ -40,6 +40,27 @@ describe('questions that span two topics', () => {
     expect(got).toEqual(['multiplication', 'division', 'fractions']);
   });
 
+  it('works mixed strong and weak separators in the same question', () => {
+    const got = ids('234 × 56 then 864 ÷ 24 and 3/4 + 1/6');
+    expect(got).toEqual(['multiplication', 'division', 'fractions']);
+  });
+
+  it('carries each answer through a three-part mixed question', () => {
+    const w = runWorked(
+      '3x + 4 = 10 then find 20% of the answer then increase the answer by 10%',
+    );
+    expect(w.parts.map((p) => p.solver.id)).toEqual([
+      'linear',
+      'percentages',
+      'percentages',
+    ]);
+    expect(
+      answers(
+        '3x + 4 = 10 then find 20% of the answer then increase the answer by 10%',
+      ),
+    ).toEqual(['x = 2', '0.4', '0.44']);
+  });
+
   it('labels the parts a, b, c', () => {
     expect(
       runWorked('234 × 56 then 864 ÷ 24').parts.map((p) => p.label),
@@ -155,6 +176,17 @@ describe('a later part referring to an earlier one', () => {
     expect(
       w.parts[1].result.ok && w.parts[1].result.solution.answerLatex,
     ).toContain('0.0');
+  });
+
+  it('evaluates an exact surd root as a whole before choosing it', () => {
+    const w = runWorked(
+      'solve x^2 + 6x + 2 = 0 then find 20% of the larger root',
+    );
+    expect(w.parts).toHaveLength(2);
+    expect(w.parts[1].solver.id).toBe('percentages');
+    const answer =
+      w.parts[1].result.ok && w.parts[1].result.solution.answerLatex;
+    expect(Number(answer)).toBeCloseTo(0.2 * (-3 + Math.sqrt(7)), 3);
   });
 
   it('records what the student actually wrote', () => {

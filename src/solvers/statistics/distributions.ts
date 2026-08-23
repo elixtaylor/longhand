@@ -40,8 +40,32 @@ function zStar(confidence: number): number {
     98: 2.326,
     99: 2.576,
   };
-  return table[Math.round(confidence)] ?? 1.96;
+  const familiar = table[Math.round(confidence)];
+  if (
+    familiar !== undefined &&
+    Math.abs(confidence - Math.round(confidence)) < 1e-9
+  )
+    return familiar;
+  const target = 0.5 + confidence / 200;
+  let lower = 0;
+  let upper = 8;
+  for (let iteration = 0; iteration < 80; iteration++) {
+    const middle = (lower + upper) / 2;
+    if (phi(middle) < target) lower = middle;
+    else upper = middle;
+  }
+  return (lower + upper) / 2;
 }
+
+function finite(...values: Array<number | undefined>): boolean {
+  return values.every((value) => value === undefined || Number.isFinite(value));
+}
+
+function probabilityRange(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+const MAX_BINOMIAL_TRIALS = 1000;
 
 const BINOMIAL_FIELDS: FieldSchema[] = [
   { id: 'n', label: 'Trials (n)', kind: 'number' },
@@ -169,14 +193,28 @@ export const distributionsSolver: Solver = {
       }
       if (prob < 0 || prob > 1)
         return { ok: false, error: 'A probability must be between 0 and 1.' };
-      if (!Number.isInteger(n) || n < 0)
+      if (!Number.isSafeInteger(n) || n < 0)
         return {
           ok: false,
-          error: 'The number of trials must be a whole number.',
+          error: 'The number of trials must be a safe whole number.',
+        };
+      if (x !== undefined && n > MAX_BINOMIAL_TRIALS)
+        return {
+          ok: false,
+          error:
+            'Exact binomial probabilities support up to ' +
+            MAX_BINOMIAL_TRIALS +
+            ' trials.',
         };
 
       const mean = n * prob;
       const variance = n * prob * (1 - prob);
+      if (![mean, variance].every(Number.isFinite))
+        return {
+          ok: false,
+          error:
+            'Those values produce a distribution outside the calculator’s numeric range.',
+        };
       const steps: Step[] = [
         {
           note: 'A binomial random variable counts successes in a fixed number of independent trials.',
@@ -217,6 +255,12 @@ export const distributionsSolver: Solver = {
       }
       const c = nCr(n, x);
       const px = c * Math.pow(prob, x) * Math.pow(1 - prob, n - x);
+      if (![c, px].every(Number.isFinite))
+        return {
+          ok: false,
+          error:
+            'That binomial probability is outside the calculator’s numeric range.',
+        };
       steps.push({
         note: 'Write down the binomial probability formula.',
         latex: `P(X = x) = \\binom{n}{x} p^{x}(1-p)^{\\,n-x}`,
@@ -262,21 +306,32 @@ export const distributionsSolver: Solver = {
             'Give the sample mean, standard deviation and sample size, e.g.  confidence mean=50, sd=8, n=100.',
         };
       }
-      if (n <= 0 || sd < 0)
+      if (!finite(mean, sd, n, level))
+        return {
+          ok: false,
+          error: 'Every confidence-interval value must be finite.',
+        };
+      if (!Number.isInteger(n) || n <= 0 || sd < 0)
         return {
           ok: false,
           error:
-            'The sample size must be positive and the standard deviation cannot be negative.',
+            'The sample size must be a positive whole number and the standard deviation cannot be negative.',
         };
-      if (![90, 95, 98, 99].some((allowed) => Math.abs(level - allowed) < 1e-9))
+      if (level <= 0 || level >= 100)
         return {
           ok: false,
-          error: 'Use a 90%, 95%, 98% or 99% confidence level.',
+          error: 'The confidence level must be between 0% and 100%.',
         };
 
       const z = zStar(level);
       const se = sd / Math.sqrt(n);
       const margin = z * se;
+      if (![z, se, margin, mean - margin, mean + margin].every(Number.isFinite))
+        return {
+          ok: false,
+          error:
+            'Those values produce a confidence interval outside the calculator’s numeric range.',
+        };
       return {
         ok: true,
         solution: {
@@ -328,12 +383,21 @@ export const distributionsSolver: Solver = {
             'Give the population mean, population SD and sample size, e.g.  sampling mean=50, sd=8, n=100.',
         };
       }
-      if (sd <= 0 || n <= 0)
+      if (!finite(mean, sd, n, xbar))
+        return { ok: false, error: 'Every sampling value must be finite.' };
+      if (sd <= 0 || !Number.isInteger(n) || n <= 0)
         return {
           ok: false,
-          error: 'The population SD and sample size must both be positive.',
+          error:
+            'The population SD must be positive and the sample size must be a positive whole number.',
         };
       const se = sd / Math.sqrt(n);
+      if (!Number.isFinite(se) || se <= 0)
+        return {
+          ok: false,
+          error:
+            'Those values produce a standard error outside the calculator’s numeric range.',
+        };
       const steps: Step[] = [
         {
           note: 'The sampling distribution of the sample mean is centred on the population mean.',
@@ -357,7 +421,13 @@ export const distributionsSolver: Solver = {
         };
       }
       const z = (xbar - mean) / se;
-      const probability = phi(z);
+      if (!Number.isFinite(z))
+        return {
+          ok: false,
+          error:
+            'Those values produce a z-score outside the calculator’s numeric range.',
+        };
+      const probability = probabilityRange(phi(z));
       steps.push(
         {
           note: 'Standardise the sample mean using the sampling distribution.',
@@ -411,21 +481,35 @@ export const distributionsSolver: Solver = {
             'Give mean, SD and a lower or upper bound, e.g.  normal between 80 and 120, mean=100, sd=15.',
         };
       }
+      if (!finite(mean, sd, lower, upper))
+        return {
+          ok: false,
+          error: 'Every normal-distribution value must be finite.',
+        };
       if (sd <= 0)
         return { ok: false, error: 'The standard deviation must be positive.' };
       const lowerZ = lower === undefined ? -Infinity : (lower - mean) / sd;
       const upperZ = upper === undefined ? Infinity : (upper - mean) / sd;
+      if (
+        (lower !== undefined && !Number.isFinite(lowerZ)) ||
+        (upper !== undefined && !Number.isFinite(upperZ))
+      )
+        return {
+          ok: false,
+          error:
+            'Those values produce a z-score outside the calculator’s numeric range.',
+        };
       if (lower !== undefined && upper !== undefined && lower > upper)
         return {
           ok: false,
           error: 'The lower bound must not exceed the upper bound.',
         };
-      const probability = phi(upperZ) - phi(lowerZ);
+      const probability = probabilityRange(phi(upperZ) - phi(lowerZ));
       const bounds =
         lower === undefined
-          ? `X \\ge ${fmt(upper!)}`
+          ? `X \\le ${fmt(upper!)}`
           : upper === undefined
-            ? `X \\le ${fmt(lower)}`
+            ? `X \\ge ${fmt(lower)}`
             : `${fmt(lower)} \\le X \\le ${fmt(upper)}`;
       return {
         ok: true,
@@ -459,11 +543,22 @@ export const distributionsSolver: Solver = {
           'Give the mean, standard deviation and value, e.g.  normal mean=100, sd=15, x=120.',
       };
     }
+    if (!finite(mean, sd, x))
+      return {
+        ok: false,
+        error: 'Every normal-distribution value must be finite.',
+      };
     if (sd <= 0)
       return { ok: false, error: 'The standard deviation must be positive.' };
 
     const z = (x - mean) / sd;
-    const below = phi(z);
+    if (!Number.isFinite(z))
+      return {
+        ok: false,
+        error:
+          'Those values produce a z-score outside the calculator’s numeric range.',
+      };
+    const below = probabilityRange(phi(z));
     return {
       ok: true,
       solution: {

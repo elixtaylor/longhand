@@ -6,6 +6,8 @@ import type { Solver, Step, SolveResult } from '../../lib/engine/types';
  * matrices"): addition, multiplication, determinant and inverse.
  */
 type Matrix = number[][];
+const MAX_MATRIX_SIZE = 10;
+const MAX_DETERMINANT_SIZE = 6;
 
 function mTex(m: Matrix, dp = 4): string {
   return `\\begin{pmatrix} ${m.map((row) => row.map((x) => fmt(x, dp)).join(' & ')).join(' \\\\ ')} \\end{pmatrix}`;
@@ -27,7 +29,34 @@ function parseMatrix(s: string): Matrix {
   if (width === 0 || out.some((r) => r.length !== width)) {
     throw new Error('Every row of a matrix needs the same number of entries.');
   }
+  if (out.length > MAX_MATRIX_SIZE || width > MAX_MATRIX_SIZE) {
+    throw new Error(
+      'Matrices are limited to ' +
+        MAX_MATRIX_SIZE +
+        ' rows and columns so the working remains readable.',
+    );
+  }
   return out;
+}
+
+function finiteMatrix(matrix: Matrix): boolean {
+  return matrix.every((row) => row.every(Number.isFinite));
+}
+
+function numericFailure(): SolveResult {
+  return {
+    ok: false,
+    error:
+      'Those entries produce values outside the calculator’s numeric range.',
+  };
+}
+
+function nearZeroDeterminant(matrix: Matrix, det: number): boolean {
+  const scale = Math.max(0, ...matrix.flat().map(Math.abs));
+  return (
+    det === 0 ||
+    Math.abs(det) <= Number.EPSILON * 32 * Math.pow(scale, matrix.length)
+  );
 }
 
 /** Split "[[…]] op [[…]]" into the two matrices and the operator. */
@@ -100,26 +129,31 @@ export const matricesSolver: Solver = {
       id: 'standard',
       name: 'Matrix arithmetic',
       blurb: 'Add, subtract, scale, or multiply matrices row by column.',
+      opForm: 'matrix',
     },
     {
       id: 'determinant',
       name: 'Determinants',
       blurb: 'Find 2×2 or larger determinants by expansion.',
+      opForm: 'matrix',
     },
     {
       id: 'inverse',
       name: 'Inverse matrices',
       blurb: 'Find a 2×2 inverse using the determinant and adjugate.',
+      opForm: 'matrix',
     },
     {
       id: 'transpose',
       name: 'Transpose',
       blurb: 'Reflect a matrix across its main diagonal.',
+      opForm: 'matrix',
     },
     {
       id: 'system',
       name: 'Matrix systems',
       blurb: 'Solve a two-variable linear system from an augmented matrix.',
+      opForm: 'matrix',
     },
   ],
   defaultMethodId: 'standard',
@@ -163,6 +197,7 @@ export const matricesSolver: Solver = {
       }
       const sign = op === '+' ? 1 : -1;
       const out = a.map((row, i) => row.map((v, j) => v + sign * b[i][j]));
+      if (!finiteMatrix(out)) return numericFailure();
       return {
         ok: true,
         solution: {
@@ -190,6 +225,7 @@ export const matricesSolver: Solver = {
 
     if (op === 'scale') {
       const out = a.map((row) => row.map((v) => v * k!));
+      if (!finiteMatrix(out)) return numericFailure();
       return {
         ok: true,
         solution: {
@@ -222,6 +258,7 @@ export const matricesSolver: Solver = {
       const out = a.map((row) =>
         b[0].map((_, j) => row.reduce((s, v, kk) => s + v * b[kk][j], 0)),
       );
+      if (!finiteMatrix(out)) return numericFailure();
       const workings = a
         .map((row) =>
           b[0]
@@ -288,7 +325,16 @@ export const matricesSolver: Solver = {
       }
       const [[aa, bb, cc], [dd, ee, ff]] = a;
       const detCoefficients = aa * ee - bb * dd;
-      if (Math.abs(detCoefficients) < 1e-12) {
+      if (
+        !Number.isFinite(detCoefficients) ||
+        nearZeroDeterminant(
+          [
+            [aa, bb],
+            [dd, ee],
+          ],
+          detCoefficients,
+        )
+      ) {
         return {
           ok: false,
           error:
@@ -297,6 +343,7 @@ export const matricesSolver: Solver = {
       }
       const x = (cc * ee - bb * ff) / detCoefficients;
       const y = (aa * ff - cc * dd) / detCoefficients;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return numericFailure();
       return {
         ok: true,
         solution: {
@@ -333,7 +380,19 @@ export const matricesSolver: Solver = {
         error: 'Only a square matrix has a determinant or an inverse.',
       };
     }
+    if (a.length > MAX_DETERMINANT_SIZE) {
+      return {
+        ok: false,
+        error:
+          'Determinant expansion is limited to ' +
+          MAX_DETERMINANT_SIZE +
+          '×' +
+          MAX_DETERMINANT_SIZE +
+          ' matrices.',
+      };
+    }
     const det = determinant(a);
+    if (!Number.isFinite(det)) return numericFailure();
 
     if (op === 'det') {
       const steps: Step[] = [
@@ -378,7 +437,7 @@ export const matricesSolver: Solver = {
           'This handles inverses of 2×2 matrices. For the determinant of a bigger matrix, try  det [[…]].',
       };
     }
-    if (det === 0) {
+    if (nearZeroDeterminant(a, det)) {
       return {
         ok: true,
         solution: {
@@ -403,6 +462,7 @@ export const matricesSolver: Solver = {
       [s / det, -q / det],
       [-r / det, p / det],
     ];
+    if (!finiteMatrix(out)) return numericFailure();
     return {
       ok: true,
       solution: {

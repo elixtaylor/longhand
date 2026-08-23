@@ -4,6 +4,8 @@
  * classmate or hand it to a teacher.
  */
 
+import { MAX_INPUT_LENGTH } from './safety';
+
 export interface HistoryEntry {
   input: string;
   solverId: string;
@@ -26,9 +28,11 @@ export function loadHistory(): HistoryEntry[] {
       ? list.filter(
           (e): e is HistoryEntry =>
             typeof e?.input === 'string' &&
+            e.input.length <= MAX_INPUT_LENGTH &&
             validId(e.solverId) &&
             validId(e.methodId) &&
-            typeof e.at === 'number',
+            typeof e.at === 'number' &&
+            Number.isFinite(e.at),
         )
       : [];
   } catch {

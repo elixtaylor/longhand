@@ -65,7 +65,32 @@ function parse(input: string): Parsed {
   );
   if (m) return { kind: 'decrease', a: Number(m[1]), b: Number(m[2]) };
 
-  // "what percentage is 30 of 150" / "30 as a percentage of 150"
+  // "what percentage is 30 of 150" / "30 is what percentage of 150"
+  m = s.match(
+    new RegExp(
+      `^what\\s+percent(?:age)?\\s+is\\s+${N}\\s+(?:of|out\\s+of)\\s+${N}$`,
+      'i',
+    ),
+  );
+  if (m) return { kind: 'express', a: Number(m[1]), b: Number(m[2]) };
+  m = s.match(
+    new RegExp(
+      `^${N}\\s+is\\s+what\\s+percent(?:age)?\\s+(?:of|out\\s+of)\\s+${N}$`,
+      'i',
+    ),
+  );
+  if (m) return { kind: 'express', a: Number(m[1]), b: Number(m[2]) };
+
+  // "what percent of 150 is 30" has the whole before the part.
+  m = s.match(
+    new RegExp(
+      `^what\\s+percent(?:age)?\\s+(?:of\\s+)?${N}\\s+is\\s+${N}$`,
+      'i',
+    ),
+  );
+  if (m) return { kind: 'express', a: Number(m[2]), b: Number(m[1]) };
+
+  // "30 as a percentage of 150"
   m = s.match(
     new RegExp(`${N}\\s*(?:as\\s*a?\\s*)?(?:percent(?:age)?|%)${OF}${N}`, 'i'),
   );
@@ -144,10 +169,20 @@ export const percentageSolver: Solver = {
       };
     }
     const { kind, a, b } = p;
+    if (![a, b].every(Number.isFinite))
+      return {
+        ok: false,
+        error: 'Use finite numbers in a percentage problem.',
+      };
     const steps: Step[] = [];
 
     if (kind === 'of') {
       const value = (a / 100) * b;
+      if (!Number.isFinite(value))
+        return {
+          ok: false,
+          error: 'Those values are too large to calculate accurately.',
+        };
       if (methodId === 'unitary') {
         steps.push({
           note: 'Find 1% first by dividing by 100.',
@@ -155,14 +190,14 @@ export const percentageSolver: Solver = {
         });
         steps.push({
           note: `Multiply by ${fmt(a)} to get ${fmt(a)}%.`,
-          latex: `${fmt(a)}\\% = ${fmt(b / 100, 6)} \\times ${fmt(a)} = ${fmt(value)}`,
+          latex: `${fmt(a)}\\% = ${fmt(b / 100, 6)} \\times ${fmt(a)} = ${fmt(value, 4)}`,
           annotation: 'answer',
         });
       } else {
         steps.push(decimalStep(a));
         steps.push({
           note: 'Multiply the amount by that decimal.',
-          latex: `${fmt(a / 100, 6)} \\times ${fmt(b)} = ${fmt(value)}`,
+          latex: `${fmt(a / 100, 6)} \\times ${fmt(b)} = ${fmt(value, 4)}`,
           annotation: 'answer',
         });
       }
@@ -170,7 +205,7 @@ export const percentageSolver: Solver = {
         `Work out $${fmt(a)}\\%$ of $${fmt(b)}$`,
         methodId === 'unitary' ? 'Unitary method' : 'Decimal multiplier',
         steps,
-        fmt(value),
+        fmt(value, 4),
       );
     }
 
@@ -182,6 +217,11 @@ export const percentageSolver: Solver = {
       const pct = b;
       const f = up ? 1 + pct / 100 : 1 - pct / 100;
       const value = amount * f;
+      if (!Number.isFinite(value))
+        return {
+          ok: false,
+          error: 'Those values are too large to calculate accurately.',
+        };
       if (methodId === 'unitary') {
         const part = (pct / 100) * amount;
         steps.push({
@@ -190,7 +230,7 @@ export const percentageSolver: Solver = {
         });
         steps.push({
           note: up ? 'Add it on.' : 'Take it off.',
-          latex: `${fmt(amount)} ${up ? '+' : '-'} ${fmt(part)} = ${fmt(value)}`,
+          latex: `${fmt(amount)} ${up ? '+' : '-'} ${fmt(part, 4)} = ${fmt(value, 4)}`,
           annotation: 'answer',
         });
       } else {
@@ -200,7 +240,7 @@ export const percentageSolver: Solver = {
         });
         steps.push({
           note: 'Multiply by the multiplier.',
-          latex: `${fmt(amount)} \\times ${fmt(f, 6)} = ${fmt(value)}`,
+          latex: `${fmt(amount)} \\times ${fmt(f, 6)} = ${fmt(value, 4)}`,
           annotation: 'answer',
         });
       }
@@ -208,7 +248,7 @@ export const percentageSolver: Solver = {
         `${up ? 'Increase' : 'Decrease'} $${fmt(amount)}$ by $${fmt(pct)}\\%$`,
         methodId === 'unitary' ? 'Unitary method' : 'Decimal multiplier',
         steps,
-        fmt(value),
+        fmt(value, 4),
       );
     }
 
@@ -219,20 +259,25 @@ export const percentageSolver: Solver = {
           error: 'You can’t express a number as a percentage of zero.',
         };
       const value = (a / b) * 100;
+      if (!Number.isFinite(value))
+        return {
+          ok: false,
+          error: 'Those values are too large to calculate accurately.',
+        };
       steps.push({
         note: 'Write it as a fraction of the whole.',
         latex: `\\dfrac{${fmt(a)}}{${fmt(b)}}`,
       });
       steps.push({
         note: 'Multiply by 100 to turn the fraction into a percentage.',
-        latex: `\\dfrac{${fmt(a)}}{${fmt(b)}} \\times 100 = ${fmt(value)}\\%`,
+        latex: `\\dfrac{${fmt(a)}}{${fmt(b)}} \\times 100 = ${fmt(value, 4)}\\%`,
         annotation: 'answer',
       });
       return done(
         `Express $${fmt(a)}$ as a percentage of $${fmt(b)}$`,
         'As a percentage',
         steps,
-        `${fmt(value)}\\%`,
+        `${fmt(value, 4)}\\%`,
       );
     }
 
@@ -245,25 +290,30 @@ export const percentageSolver: Solver = {
         error: 'A 100% decrease leaves nothing to work back from.',
       };
     const original = b / f;
+    if (!Number.isFinite(original))
+      return {
+        ok: false,
+        error: 'Those values are too large to calculate accurately.',
+      };
     steps.push({
       note: `After a ${fmt(a)}% ${up ? 'increase' : 'decrease'}, the new value is ${fmt(f * 100)}% of the original.`,
       latex: `\\text{new} = \\text{original} \\times ${fmt(f, 6)}`,
     });
     steps.push({
       note: 'Divide to undo the multiplication.',
-      latex: `\\text{original} = \\dfrac{${fmt(b)}}{${fmt(f, 6)}} = ${fmt(original)}`,
+      latex: `\\text{original} = \\dfrac{${fmt(b)}}{${fmt(f, 6)}} = ${fmt(original, 4)}`,
       annotation: 'original value',
     });
     steps.push({
       note: 'Check by applying the change forwards.',
-      latex: `${fmt(original)} \\times ${fmt(f, 6)} = ${fmt(original * f)}`,
+      latex: `${fmt(original, 4)} \\times ${fmt(f, 6)} = ${fmt(original * f, 4)}`,
       annotation: 'checks out',
     });
     return done(
       `Find the original value before a $${fmt(a)}\\%$ ${up ? 'increase' : 'decrease'}`,
       'Reverse percentage',
       steps,
-      fmt(original),
+      fmt(original, 4),
     );
   },
 };

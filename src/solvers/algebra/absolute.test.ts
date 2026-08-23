@@ -34,6 +34,15 @@ describe('absolute value equations', () => {
     expect(answers(solve('|x - 3| = 0').answerLatex)).toEqual([3]);
   });
 
+  it('does not round the right-hand side before solving', () => {
+    const decimal = solve('|x| = 0.1234').answerLatex ?? '';
+    expect(decimal).toContain('\\frac{617}{5000}');
+    expect(decimal).not.toContain('0.12');
+
+    const fraction = solve('|x| = 1/3').answerLatex ?? '';
+    expect(fraction.match(/\\frac\{1\}\{3\}/g)).toHaveLength(2);
+  });
+
   it('has no solution when k < 0, since a distance can never be negative', () => {
     const r = solve('|x - 3| = -5');
     expect(r.answerLatex).toBeUndefined();

@@ -248,6 +248,8 @@ function parseTerm(raw: string): QuadTerm | null {
         : Number(multStr);
   const k = expMatch[3] ? Number(expMatch[3]) : 0;
 
+  if (![coeff, base, mult, k].every(Number.isFinite)) return null;
+
   return {
     kind: 'exp',
     coeff: sign * coeff,
@@ -289,6 +291,7 @@ function parseExpQuadratic(
   const rhsRaw = s.slice(eqIdx + 1);
   if (!/^-?\d*\.?\d+$/.test(rhsRaw)) return null;
   const rhs = Number(rhsRaw);
+  if (!Number.isFinite(rhs)) return null;
 
   const termStrs = splitTerms(lhsRaw);
   if (termStrs.length < 2) return null;
@@ -322,6 +325,8 @@ function parseExpQuadratic(
   terms.forEach((t) => {
     if (t.kind === 'const') c += t.value;
   });
+
+  if (![unitBase, a, b, c].every(Number.isFinite)) return null;
 
   return {
     kind: 'exponential-quadratic',
@@ -393,10 +398,64 @@ function solveExponential(
 ): SolveResult {
   const { coeff, base, mult, variable, value } = p;
   const bNum = base === 'e' ? Math.E : base;
-  const rhs = value / coeff;
+
+  if (![coeff, bNum, mult, value].every(Number.isFinite))
+    return {
+      ok: false,
+      error: 'Every exponential-equation value must be finite.',
+    };
+  if (bNum <= 0)
+    return {
+      ok: false,
+      error: 'An exponential base must be greater than zero.',
+    };
 
   const original = `${coeff === 1 ? '' : `${fmt(coeff)} \\times `}${baseTex(base)}^{${indexTex(mult, variable)}} = ${fmt(value)}`;
   const steps: Step[] = [{ note: 'Write down the equation.', latex: original }];
+
+  // A zero outside coefficient, base 1, or zero variable multiplier makes
+  // the left-hand side constant. Handle the identity/contradiction directly
+  // instead of dividing by zero or taking log(1).
+  if (coeff === 0 || bNum === 1 || mult === 0) {
+    const constant = coeff;
+    const identity = constant === value;
+    steps.push({
+      note:
+        coeff === 0
+          ? 'The outside coefficient is zero, so the whole left-hand side is zero.'
+          : bNum === 1
+            ? 'One to any real power is one, so the left-hand side is constant.'
+            : 'The variable has coefficient zero in the index, so the exponent is zero and the exponential factor is one.',
+      latex: `${coeff === 0 ? '0' : `${fmt(coeff)} \\times 1`} = ${fmt(value)}`,
+    });
+    if (!identity)
+      return {
+        ok: false,
+        error: `The equation reduces to ${fmt(constant)} = ${fmt(value)}, so it has no solution.`,
+      };
+    steps.push({
+      note: 'Both sides are equal for every real value of the variable.',
+      latex: `${variable} \\in \\mathbb{R}`,
+      annotation: 'identity',
+    });
+    return {
+      ok: true,
+      solution: {
+        headline: `Solve $${original}$`,
+        methodName: 'Constant exponential equation',
+        steps,
+        answerLatex: `${variable} \\in \\mathbb{R}`,
+      },
+    };
+  }
+
+  const rhs = value / coeff;
+  if (!Number.isFinite(rhs))
+    return {
+      ok: false,
+      error:
+        'Those values produce a ratio outside the calculator’s numeric range.',
+    };
 
   if (rhs <= 0) {
     return {
@@ -434,6 +493,11 @@ function solveExponential(
       });
     }
     const x = power / mult;
+    if (!Number.isFinite(x))
+      return {
+        ok: false,
+        error: 'The solution is outside the calculator’s numeric range.',
+      };
     return {
       ok: true,
       solution: {
@@ -447,6 +511,11 @@ function solveExponential(
 
   // General case: take logarithms of both sides.
   const x = Math.log(rhs) / (lnOf(base) * mult);
+  if (!Number.isFinite(x))
+    return {
+      ok: false,
+      error: 'The solution is outside the calculator’s numeric range.',
+    };
   const workingLog = workingLogName(options.logarithmBase);
   steps.push({
     note: `Take ${workingLogDescription(options.logarithmBase)} of both sides so the power can come down.`,
@@ -505,7 +574,34 @@ function solveExponentialExpression(
   p: Extract<Problem, { kind: 'exponential-expression' }>,
 ): SolveResult {
   const { coeff, base, mult, variable } = p;
+  const bNum = base === 'e' ? Math.E : base;
+  if (![coeff, bNum, mult].every(Number.isFinite))
+    return {
+      ok: false,
+      error: 'Every exponential-model value must be finite.',
+    };
+  if (bNum <= 0)
+    return {
+      ok: false,
+      error: 'An exponential base must be greater than zero.',
+    };
   const expression = `${coeff === 1 ? '' : `${fmt(coeff)} \\times `}${baseTex(base)}^{${indexTex(mult, variable)}}`;
+  if (coeff === 0 || bNum === 1 || mult === 0) {
+    return {
+      ok: true,
+      solution: {
+        headline: `Simplify $${expression}$`,
+        methodName: 'Exponential model',
+        steps: [
+          {
+            note: 'The exponential factor is constant, so simplify the expression.',
+            latex: `${expression} = ${fmt(coeff)}`,
+          },
+        ],
+        answerLatex: `f(${variable}) = ${fmt(coeff)}`,
+      },
+    };
+  }
   return {
     ok: true,
     solution: {
@@ -568,6 +664,17 @@ function solveExponentialQuadratic(
 ): SolveResult {
   const { terms, rhs, unitBase, variable, a, b, c } = p;
 
+  const termValues = terms.flatMap((term) =>
+    term.kind === 'const'
+      ? [term.value]
+      : [term.coeff, term.base, term.mult, term.k],
+  );
+  if (![rhs, unitBase, a, b, c, ...termValues].every(Number.isFinite))
+    return {
+      ok: false,
+      error: 'Every exponential-equation value must be finite.',
+    };
+
   const original = `${terms.map((t, i) => termTex(t, i === 0)).join(' ')} = ${fmt(rhs)}`;
   const steps: Step[] = [{ note: 'Write down the equation.', latex: original }];
 
@@ -599,35 +706,77 @@ function solveExponentialQuadratic(
   }
 
   steps.push({
-    note: `Let $u = ${fmt(unitBase)}^{${variable}}$. Substituting turns this into an ordinary quadratic in $u$.`,
+    note: `Let $u = ${fmt(unitBase)}^{${variable}}$. Substituting turns this into ${a === 0 ? 'a linear equation' : 'an ordinary quadratic'} in $u$.`,
     latex: quadInULatex(a, b, c),
   });
 
-  const info = quadraticRoots(a, b, c);
-  if (info.nature === 'complex') {
-    return {
-      ok: false,
-      error:
-        'That quadratic has no real solutions for u, so the original equation has none either.',
-    };
+  let uRoots: number[];
+  if (a === 0) {
+    if (b === 0) {
+      if (c !== 0)
+        return {
+          ok: false,
+          error: `The substitution reduces to ${fmt(c)} = 0, so the equation has no solution.`,
+        };
+      steps.push({
+        note: 'Every term cancels, so the original equation is true for every real value of the variable.',
+        latex: `${variable} \\in \\mathbb{R}`,
+        annotation: 'identity',
+      });
+      return {
+        ok: true,
+        solution: {
+          headline: `Solve $${original}$`,
+          methodName: 'Reducible by substitution',
+          steps,
+          answerLatex: `${variable} \\in \\mathbb{R}`,
+        },
+      };
+    }
+    const u = -c / b;
+    if (!Number.isFinite(u))
+      return {
+        ok: false,
+        error:
+          'The substituted solution is outside the calculator’s numeric range.',
+      };
+    steps.push({
+      note: 'Solve the remaining linear equation for $u$.',
+      latex: `${fmt(b)}u ${c < 0 ? '-' : '+'} ${fmt(Math.abs(c))} = 0 \\;\\Rightarrow\\; u = ${fmt(u, 12)}`,
+    });
+    uRoots = [u];
+  } else {
+    const info = quadraticRoots(a, b, c);
+    if (info.nature === 'complex') {
+      return {
+        ok: false,
+        error:
+          'That quadratic has no real solutions for u, so the original equation has none either.',
+      };
+    }
+
+    steps.push({
+      note: 'Solve this quadratic for $u$ using the quadratic formula.',
+      latex: `u = \\dfrac{-(${par(b)}) \\pm \\sqrt{(${par(b)})^{2} - 4(${par(a)})(${par(c)})}}{2(${par(a)})}`,
+    });
+    steps.push({
+      note: 'Work out the roots.',
+      latex:
+        info.nature === 'double'
+          ? `u = ${fmt(info.numericRoots[0], 6)}`
+          : `u = ${fmt(info.numericRoots[0], 6)} \\quad\\text{or}\\quad u = ${fmt(info.numericRoots[1], 6)}`,
+    });
+    uRoots =
+      info.nature === 'double' ? [info.numericRoots[0]] : info.numericRoots;
   }
 
-  steps.push({
-    note: 'Solve this quadratic for $u$ (see the Quadratics topic for the working) using the quadratic formula.',
-    latex: `u = \\dfrac{-(${par(b)}) \\pm \\sqrt{(${par(b)})^{2} - 4(${par(a)})(${par(c)})}}{2(${par(a)})}`,
-  });
-  steps.push({
-    note: 'Work out the roots.',
-    latex:
-      info.nature === 'double'
-        ? `u = ${fmt(info.numericRoots[0], 6)}`
-        : `u = ${fmt(info.numericRoots[0], 6)} \\quad\\text{or}\\quad u = ${fmt(info.numericRoots[1], 6)}`,
-  });
-
-  const uRoots =
-    info.nature === 'double' ? [info.numericRoots[0]] : info.numericRoots;
-  const valid = uRoots.filter((u) => u > 1e-9);
-  const rejected = uRoots.filter((u) => u <= 1e-9);
+  if (uRoots.some((u) => !Number.isFinite(u)))
+    return {
+      ok: false,
+      error: 'A substituted root is outside the calculator’s numeric range.',
+    };
+  const valid = uRoots.filter((u) => u > 0);
+  const rejected = uRoots.filter((u) => u <= 0);
 
   if (rejected.length > 0) {
     steps.push({
@@ -739,6 +888,16 @@ export const logarithmsSolver: Solver = {
     if (p.kind === 'log-equation') {
       const { base, value } = p;
       const bNum = base === 'e' ? Math.E : base;
+      if (![bNum, value].every(Number.isFinite))
+        return {
+          ok: false,
+          error: 'Every logarithmic-equation value must be finite.',
+        };
+      if (bNum <= 0 || bNum === 1)
+        return {
+          ok: false,
+          error: 'A logarithm base must be positive and cannot equal one.',
+        };
       // Math.pow(Math.E, n) compounds the rounding already in Math.E; Math.exp
       // is computed directly and is what the expression engine uses, so the
       // same question routed two ways gives the same number.
@@ -753,6 +912,7 @@ export const logarithmsSolver: Solver = {
           : value === 0
             ? '1'
             : `${b}^{${fmt(value)}}`;
+      const reliableDecimal = Number.isFinite(x) && (x !== 0 || value === 0);
 
       // Going straight from "ln x = 5" to "x = e^5" hides the move that
       // justifies it. Raising both sides as a power of the base is an
@@ -779,14 +939,22 @@ export const logarithmsSolver: Solver = {
           latex: `x = ${Array(value).fill(b).join(' \\times ')}`,
         });
       }
-      steps.push({
-        note:
-          base === 'e'
-            ? 'Work out that power of $e$ on a calculator.'
-            : 'Work out that power.',
-        latex: `x = ${fmt(x, 6)}`,
-        annotation: 'solved',
-      });
+      if (reliableDecimal) {
+        steps.push({
+          note:
+            base === 'e'
+              ? 'Work out that power of $e$ on a calculator.'
+              : 'Work out that power.',
+          latex: `x = ${fmt(x, 6)}`,
+          annotation: 'decimal check',
+        });
+      } else {
+        steps.push({
+          note: 'The exact value is outside the calculator’s reliable decimal range, so keep it in index form.',
+          latex: `x = ${exactPower}`,
+          annotation: 'exact form',
+        });
+      }
       steps.push({
         note: 'Keep the inverse operation in exact form before the decimal check.',
         latex: `x = ${exactPower}`,
@@ -807,6 +975,16 @@ export const logarithmsSolver: Solver = {
     // Evaluate a logarithm.
     const { base, value } = p;
     const bNum = base === 'e' ? Math.E : base;
+    if (![bNum, value].every(Number.isFinite))
+      return {
+        ok: false,
+        error: 'Every logarithm value must be finite.',
+      };
+    if (bNum <= 0 || bNum === 1)
+      return {
+        ok: false,
+        error: 'A logarithm base must be positive and cannot equal one.',
+      };
     if (value <= 0) {
       return {
         ok: false,
@@ -814,6 +992,11 @@ export const logarithmsSolver: Solver = {
       };
     }
     const result = Math.log(value) / lnOf(base);
+    if (!Number.isFinite(result))
+      return {
+        ok: false,
+        error: 'That logarithm is outside the calculator’s numeric range.',
+      };
     const workingLog = workingLogName(options.logarithmBase);
     const exact = base === 'e' ? null : exactPower(bNum, value);
     const steps: Step[] = [

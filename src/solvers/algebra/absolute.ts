@@ -61,7 +61,7 @@ interface Parsed {
   insideText: string;
   insideLatex: string;
   rhs:
-    | { kind: 'const'; value: number }
+    | { kind: 'const'; value: number; text: string; latex: string }
     | { kind: 'abs'; text: string; latex: string }
     // A right-hand side with x in it, but not itself wrapped in bars — e.g.
     // |x+1| = 2x-1. Splitting into two cases still works, but unlike the
@@ -115,7 +115,12 @@ function parse(raw: string): Parsed | null {
     return {
       insideText: lhsAbs.inner,
       insideLatex,
-      rhs: { kind: 'const', value },
+      rhs: {
+        kind: 'const',
+        value,
+        text: rhsRaw.trim(),
+        latex: toLatex(rhsExpr),
+      },
     };
   // Not a constant — a right-hand side with x in it but no bars of its own.
   return {
@@ -183,7 +188,7 @@ function solveImpl(input: string, methodId: string): SolveResult {
   const { insideText, insideLatex, rhs } = parsed;
   const headline =
     rhs.kind === 'const'
-      ? `Solve $\\left|${insideLatex}\\right| = ${fmt(rhs.value)}$`
+      ? `Solve $\\left|${insideLatex}\\right| = ${rhs.latex}$`
       : rhs.kind === 'abs'
         ? `Solve $\\left|${insideLatex}\\right| = \\left|${rhs.latex}\\right|$`
         : `Solve $\\left|${insideLatex}\\right| = ${rhs.latex}$`;
@@ -228,22 +233,19 @@ function solveImpl(input: string, methodId: string): SolveResult {
   // since dropping the sign is exactly what the bars did in the first place.
   const [posText, negText] =
     rhs.kind === 'const'
-      ? [
-          `${insideText} = ${fmt(rhs.value)}`,
-          `${insideText} = ${fmt(-rhs.value)}`,
-        ]
+      ? [`${insideText} = (${rhs.text})`, `${insideText} = -(${rhs.text})`]
       : [`${insideText} = ${rhs.text}`, `${insideText} = -(${rhs.text})`];
 
   steps.push({
     note:
       rhs.kind === 'const'
-        ? `What is inside the bars can be $${fmt(rhs.value)}$ or $${fmt(-rhs.value)}$ — both give the same absolute value once the sign is dropped. So split into two cases.`
+        ? `What is inside the bars can be $${rhs.latex}$ or $-${rhs.latex}$ — both give the same absolute value once the sign is dropped. So split into two cases.`
         : rhs.kind === 'abs'
           ? 'Two expressions have the same absolute value exactly when they are equal, or when one is the negative of the other. So split into two cases.'
           : 'What is inside the bars equals the other side, or its negative — both drop to the same absolute value. So split into two cases.',
     latex:
       rhs.kind === 'const'
-        ? `${insideLatex} = ${fmt(rhs.value)} \\quad\\text{or}\\quad ${insideLatex} = ${fmt(-rhs.value)}`
+        ? `${insideLatex} = ${rhs.latex} \\quad\\text{or}\\quad ${insideLatex} = -\\left(${rhs.latex}\\right)`
         : `${insideLatex} = ${rhs.latex} \\quad\\text{or}\\quad ${insideLatex} = -\\left(${rhs.latex}\\right)`,
     annotation: 'two cases',
   });
@@ -277,13 +279,13 @@ function solveImpl(input: string, methodId: string): SolveResult {
     if (rejected.length) {
       const kept = values.filter((x) => !rejected.includes(x));
       steps.push({
-        note: `An absolute value is never negative, so check each case against the right-hand side. $x = ${rejected.map((r) => fmt(r)).join(', ')}$ ${rejected.length > 1 ? 'make' : 'makes'} it negative, so ${rejected.length > 1 ? 'those are' : 'that is'} rejected.`,
+        note: `An absolute value is never negative, so check each case against the right-hand side. $x = ${rejected.map((r) => fmt(r, 6)).join(', ')}$ ${rejected.length > 1 ? 'make' : 'makes'} it negative, so ${rejected.length > 1 ? 'those are' : 'that is'} rejected.`,
         latex: kept.length
-          ? `x = ${kept.map((v) => fmt(v)).join(', \\quad x = ')}`
+          ? `x = ${kept.map((v) => fmt(v, 6)).join(', \\quad x = ')}`
           : '\\text{No solution}',
         annotation: 'domain check',
       });
-      answers = kept.map((v) => `x = ${fmt(v)}`);
+      answers = kept.map((v) => `x = ${fmt(v, 6)}`);
     }
   }
 

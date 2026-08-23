@@ -7,7 +7,11 @@ function parsePair(input: string): { a: number; b: number } {
   if (parts.length !== 2 || parts.some((p) => !/^-?\d+$/.test(p))) {
     throw new Error('Enter two whole numbers to multiply, e.g.  234 × 56');
   }
-  return { a: parseInt(parts[0], 10), b: parseInt(parts[1], 10) };
+  const a = parseInt(parts[0], 10);
+  const b = parseInt(parts[1], 10);
+  if (![a, b, a * b].every(Number.isSafeInteger))
+    throw new Error('Use whole numbers small enough to keep the result exact.');
+  return { a, b };
 }
 
 /** Place-value parts of |n|, largest first, skipping zero places: 234 → [200,30,4]. */

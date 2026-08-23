@@ -8,7 +8,14 @@ import type { Solver, Step, SolveResult } from '../../lib/engine/types';
  * "standard deviation of 2, 4, 4" and any wording around the list is ignored.
  */
 function readData(input: string): number[] {
-  const found = input.match(/-?\d+(?:\.\d+)?/g);
+  // Remove numbers that are part of a statistical label rather than the data.
+  // Without this, "5-number summary of 1, 2, 3" becomes the data set
+  // [5, 1, 2, 3], and "find Q1" contributes another stray 1.
+  const cleaned = input
+    .replace(/\b5\s*[- ]?\s*number\b/gi, 'five-number')
+    .replace(/\bq\s*[_-]?\s*[123]\b/gi, 'quartile')
+    .replace(/\b[123](?:st|nd|rd)\s+quartile\b/gi, 'quartile');
+  const found = cleaned.match(/-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?/gi);
   return found ? found.map(Number) : [];
 }
 
@@ -104,6 +111,11 @@ export const statisticsSolver: Solver = {
         ok: false,
         error: 'Give at least two data values, e.g.  4, 8, 15, 16, 23, 42.',
       };
+    if (xs.some((x) => !Number.isFinite(x)))
+      return {
+        ok: false,
+        error: 'Every data value must be a finite number.',
+      };
 
     const n = xs.length;
     const sorted = [...xs].sort((a, b) => a - b);
@@ -116,6 +128,11 @@ export const statisticsSolver: Solver = {
     const sumSq = sqDiffs.reduce((s, x) => s + x, 0);
     const popVar = sumSq / n;
     const sampVar = n > 1 ? sumSq / (n - 1) : 0;
+    if (![total, mean, range, sumSq, popVar, sampVar].every(Number.isFinite))
+      return {
+        ok: false,
+        error: 'Those values are too large to summarise accurately.',
+      };
 
     const wants = (k: string) => methodId === 'summary' || methodId === k;
     const steps: Step[] = [
@@ -195,11 +212,17 @@ export const statisticsSolver: Solver = {
     }
 
     const answer =
-      methodId === 'spread'
-        ? `s = ${fmt(Math.sqrt(sampVar), 4)}, \\quad \\text{range} = ${fmt(range)}`
-        : methodId === 'five-number'
-          ? `${fmt(sorted[0])},\\; ${fmt(q1, 4)},\\; ${fmt(median, 4)},\\; ${fmt(q3, 4)},\\; ${fmt(sorted[n - 1])}`
-          : `\\bar{x} = ${fmt(mean, 4)}, \\quad \\text{median} = ${fmt(median, 4)}, \\quad s = ${fmt(Math.sqrt(sampVar), 4)}`;
+      methodId === 'centre'
+        ? `\\bar{x} = ${fmt(mean, 4)}, \\quad \\text{median} = ${fmt(median, 4)}, \\quad ${
+            mo.length === 0
+              ? '\\text{no mode}'
+              : `\\text{mode} = ${mo.map((value) => fmt(value)).join(',\\; ')}`
+          }`
+        : methodId === 'spread'
+          ? `s = ${fmt(Math.sqrt(sampVar), 4)}, \\quad \\text{range} = ${fmt(range)}`
+          : methodId === 'five-number'
+            ? `${fmt(sorted[0])},\\; ${fmt(q1, 4)},\\; ${fmt(median, 4)},\\; ${fmt(q3, 4)},\\; ${fmt(sorted[n - 1])}`
+            : `\\bar{x} = ${fmt(mean, 4)}, \\quad \\text{median} = ${fmt(median, 4)}, \\quad s = ${fmt(Math.sqrt(sampVar), 4)}`;
 
     return {
       ok: true,

@@ -1,5 +1,7 @@
 import { detectSolver, solvers, getSolver } from './registry';
 import { examples } from '../../data/examples';
+import { runSolve } from './run';
+import type { Solver } from './types';
 
 /** Every registered solver must expose the full contract. */
 describe('registry integrity', () => {
@@ -138,6 +140,16 @@ describe('detectSolver', () => {
     }
   });
 
+  it('routes every published example to its owning solver', () => {
+    for (const example of examples) {
+      const found = detectSolver(example.input);
+      expect(
+        found?.solver.id,
+        `example "${example.label}" was routed to ${found?.solver.id ?? 'nothing'}`,
+      ).toBe(example.solverId);
+    }
+  });
+
   it('returns null for an empty or unrecognisable input', () => {
     expect(detectSolver('')).toBeNull();
     expect(detectSolver('   ')).toBeNull();
@@ -153,6 +165,30 @@ describe('detectSolver', () => {
         res.ok,
         `${input} detected as ${found!.solver.id} but failed to solve`,
       ).toBe(true);
+    }
+  });
+});
+
+describe('engine failure boundary', () => {
+  it('turns an unexpected solver exception into a recoverable result', () => {
+    const broken: Solver = {
+      id: 'broken-test',
+      title: 'Broken test solver',
+      subjects: ['General'],
+      blurb: '',
+      placeholder: '',
+      methods: [{ id: 'default', name: 'Default', blurb: '' }],
+      defaultMethodId: 'default',
+      detect: () => 1,
+      solve: () => {
+        throw new Error('internal detail');
+      },
+    };
+    const result = runSolve(broken, 'anything', 'default');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('could not be completed safely');
+      expect(result.error).not.toContain('internal detail');
     }
   });
 });

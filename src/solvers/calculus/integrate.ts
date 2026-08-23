@@ -51,6 +51,7 @@ interface ByPartsInput {
 
 interface BasicIntegral {
   coefficient: number;
+  inner?: { a: number; b: number };
   functionName:
     | 'sin'
     | 'cos'
@@ -93,6 +94,31 @@ function polynomialValueExact(poly: Poly, x: Rational): Rational {
 function areaUnder(poly: Poly, lower: number, upper: number): number {
   const anti = integrate(poly);
   return polynomialValue(anti, upper) - polynomialValue(anti, lower);
+}
+
+function areaUnderExact(
+  poly: Poly,
+  lower: number,
+  upper: number,
+): Rational | null {
+  try {
+    const anti = integrate(poly);
+    return polynomialValueExact(anti, Rational.parse(String(upper))).sub(
+      polynomialValueExact(anti, Rational.parse(String(lower))),
+    );
+  } catch {
+    return null;
+  }
+}
+
+function rationalPi(value: Rational): string {
+  if (value.n === 0) return '0';
+  if (value.d === 1) {
+    if (value.n === 1) return '\\pi';
+    if (value.n === -1) return '-\\pi';
+    return `${value.n}\\pi`;
+  }
+  return `${value.n < 0 ? '-' : ''}\\dfrac{${Math.abs(value.n)}\\pi}{${value.d}}`;
 }
 
 function parseApplicationPoly(raw: string): Poly {
@@ -175,6 +201,12 @@ function solveAreaApplication(q: IntegrationApplication): SolveResult {
     .slice(0, -1)
     .map((a, i) => Math.abs(areaUnder(difference, a, cuts[i + 1])));
   const area = pieces.reduce((sum, value) => sum + value, 0);
+  if (![...pieces, area].every(Number.isFinite))
+    return {
+      ok: false,
+      error:
+        'Those values produce an area outside the calculator’s numeric range.',
+    };
   const splitNote = roots.length
     ? `Split at the intersection points ${roots.map((x) => fmtNum(x)).join(', ')}.`
     : 'The curves do not cross inside the interval, so one integral is enough.';
@@ -212,7 +244,15 @@ function solveVolumeApplication(q: IntegrationApplication): SolveResult {
     };
   const square = q.first.mul(q.first);
   const integral = areaUnder(square, q.lower, q.upper);
+  const exactIntegral = areaUnderExact(square, q.lower, q.upper);
   const volume = Math.PI * integral;
+  if (![integral, volume].every(Number.isFinite))
+    return {
+      ok: false,
+      error:
+        'Those values produce a volume outside the calculator’s numeric range.',
+    };
+  const exactVolume = exactIntegral ? rationalPi(exactIntegral) : null;
   return {
     ok: true,
     solution: {
@@ -229,11 +269,13 @@ function solveVolumeApplication(q: IntegrationApplication): SolveResult {
         },
         {
           note: 'Integrate and multiply by π.',
-          latex: `V = \\pi \\times ${fmtNum(integral)} = ${fmtNum(volume)}`,
+          latex: exactVolume
+            ? `V = \\pi \\times ${frac(exactIntegral!)} = ${exactVolume} \\approx ${fmtNum(volume)}`
+            : `V = \\pi \\times ${fmtNum(integral)} = ${fmtNum(volume)}`,
           annotation: 'volume',
         },
       ],
-      answerLatex: `V = ${fmtNum(volume)}\\text{ cubic units}`,
+      answerLatex: `V = ${exactVolume ?? fmtNum(volume)}\\text{ cubic units}`,
     },
   };
 }
@@ -262,7 +304,7 @@ function readBasicIntegral(input: string): BasicIntegral | null {
     .replace(/\s+/g, '')
     .replace(/^\((.*)\)$/s, '$1');
   const match = expression.match(
-    /^([+-]?(?:\d*\.?\d+)?)?(sin|cos|tan|exp|sec\^2)(?:\(x\)|x)$/i,
+    /^([+-]?(?:\d*\.?\d+)?)?(sin|cos|tan|exp|sec\^2|e\^)(?:\(x\)|x)$/i,
   );
   if (match) {
     const raw = match[1];
@@ -278,7 +320,32 @@ function readBasicIntegral(input: string): BasicIntegral | null {
       functionName:
         match[2].toLowerCase() === 'sec^2'
           ? 'sec2'
-          : (match[2].toLowerCase() as BasicIntegral['functionName']),
+          : match[2].toLowerCase() === 'e^'
+            ? 'exp'
+            : (match[2].toLowerCase() as BasicIntegral['functionName']),
+    };
+  }
+  const affine = expression.match(
+    /^([+-]?(?:\d*\.?\d+)?)?(sin|cos|tan|exp|sec\^2)\(([+-]?(?:\d*\.?\d+)?)x([+-]\d*\.?\d+)?\)$/i,
+  );
+  if (affine) {
+    const readCoefficient = (raw: string | undefined): number =>
+      raw === undefined || raw === '' || raw === '+'
+        ? 1
+        : raw === '-'
+          ? -1
+          : Number(raw);
+    const coefficient = readCoefficient(affine[1]);
+    const a = readCoefficient(affine[3]);
+    const b = Number(affine[4] ?? 0);
+    if (![coefficient, a, b].every(Number.isFinite) || a === 0) return null;
+    return {
+      coefficient,
+      inner: { a, b },
+      functionName:
+        affine[2].toLowerCase() === 'sec^2'
+          ? 'sec2'
+          : (affine[2].toLowerCase() as BasicIntegral['functionName']),
     };
   }
   const identity = expression.match(
@@ -313,43 +380,67 @@ function readBasicIntegral(input: string): BasicIntegral | null {
 }
 
 function solveBasicIntegral(q: BasicIntegral): SolveResult {
-  const coefficient = fmtNum(q.coefficient);
-  const signed = q.coefficient === 1 ? '' : `${coefficient}`;
+  const scaled = (value: number): string =>
+    value === 1 ? '' : value === -1 ? '-' : fmtNum(value);
+  const scaledRatio = (numerator: number, denominator: number): string => {
+    try {
+      const value = Rational.fromDecimal(numerator).div(
+        Rational.fromDecimal(denominator),
+      );
+      if (value.eq(Rational.int(1))) return '';
+      if (value.eq(Rational.int(-1))) return '-';
+      return frac(value);
+    } catch {
+      return scaled(numerator / denominator);
+    }
+  };
+  const innerA = q.inner?.a ?? 1;
+  const innerB = q.inner?.b ?? 0;
+  const inner =
+    `${innerA === 1 ? '' : innerA === -1 ? '-' : fmtNum(innerA)}x` +
+    (innerB === 0
+      ? ''
+      : ` ${innerB < 0 ? '-' : '+'} ${fmtNum(Math.abs(innerB))}`);
+  const ordinaryX = innerA === 1 && innerB === 0;
+  const argument = ordinaryX ? ' x' : `\\left(${inner}\\right)`;
+  const signed = scaled(q.coefficient);
   const fn = q.functionName;
   let answer: string;
   let integrand: string;
   let rule: string;
   if (fn === 'sin') {
-    integrand = `${signed}\\sin x`;
-    answer = `${q.coefficient === -1 ? '' : coefficient === '1' ? '-' : `-${coefficient}`}\\cos x + C`;
+    integrand = `${signed}\\sin${argument}`;
+    answer = `${scaledRatio(-q.coefficient, innerA)}\\cos${argument} + C`;
     rule = '\\int \\sin x\\,dx = -\\cos x + C';
   } else if (fn === 'cos') {
-    integrand = `${signed}\\cos x`;
-    answer = `${q.coefficient === 1 ? '' : coefficient}\\sin x + C`;
+    integrand = `${signed}\\cos${argument}`;
+    answer = `${scaledRatio(q.coefficient, innerA)}\\sin${argument} + C`;
     rule = '\\int \\cos x\\,dx = \\sin x + C';
   } else if (fn === 'exp') {
-    integrand = `${signed}e^x`;
-    answer = `${q.coefficient === 1 ? '' : coefficient}e^x + C`;
+    integrand = ordinaryX ? `${signed}e^x` : `${signed}e^{${inner}}`;
+    answer = ordinaryX
+      ? `${scaled(q.coefficient)}e^x + C`
+      : `${scaledRatio(q.coefficient, innerA)}e^{${inner}} + C`;
     rule = '\\int e^x\\,dx = e^x + C';
   } else if (fn === 'sec2') {
-    integrand = `${signed}\\sec^2 x`;
-    answer = `${q.coefficient === 1 ? '' : coefficient}\\tan x + C`;
+    integrand = `${signed}\\sec^2${argument}`;
+    answer = `${scaledRatio(q.coefficient, innerA)}\\tan${argument} + C`;
     rule = '\\int \\sec^2 x\\,dx = \\tan x + C';
   } else if (fn === 'tan') {
-    integrand = `${signed}\\tan x`;
-    answer = `${q.coefficient === 1 ? '-' : `-${coefficient}`}\\ln|\\cos x| + C`;
+    integrand = `${signed}\\tan${argument}`;
+    answer = `${scaledRatio(-q.coefficient, innerA)}\\ln|\\cos${argument}| + C`;
     rule = '\\int \\tan x\\,dx = -\\ln|\\cos x| + C';
   } else if (fn === 'sin2') {
     integrand = `${signed}\\sin^2 x`;
-    answer = `${q.coefficient === 1 ? '' : `${coefficient}`}\\left(\\dfrac{x}{2} - \\dfrac{\\sin 2x}{4}\\right) + C`;
+    answer = `${scaled(q.coefficient)}\\left(\\dfrac{x}{2} - \\dfrac{\\sin 2x}{4}\\right) + C`;
     rule = '\\sin^2 x = \\dfrac{1 - \\cos 2x}{2}';
   } else if (fn === 'cos2') {
     integrand = `${signed}\\cos^2 x`;
-    answer = `${q.coefficient === 1 ? '' : `${coefficient}`}\\left(\\dfrac{x}{2} + \\dfrac{\\sin 2x}{4}\\right) + C`;
+    answer = `${scaled(q.coefficient)}\\left(\\dfrac{x}{2} + \\dfrac{\\sin 2x}{4}\\right) + C`;
     rule = '\\cos^2 x = \\dfrac{1 + \\cos 2x}{2}';
   } else if (fn === 'sincos') {
     integrand = `${signed}\\sin x\\cos x`;
-    answer = `${q.coefficient === 1 ? '' : `${coefficient}`}\\dfrac{\\sin^2 x}{2} + C`;
+    answer = `${scaled(q.coefficient)}\\dfrac{\\sin^2 x}{2} + C`;
     rule = '\\int \\sin x\\cos x\\,dx = \\dfrac{\\sin^2 x}{2} + C';
   } else if (fn === 'atan') {
     integrand = '\\dfrac{1}{1+x^2}';
@@ -371,6 +462,15 @@ function solveBasicIntegral(q: BasicIntegral): SolveResult {
       methodName: 'Basic function integrals',
       steps: [
         { note: 'Recognise the standard antiderivative.', latex: rule },
+        ...(ordinaryX
+          ? []
+          : [
+              {
+                note: `The derivative of the inner expression is ${fmtNum(innerA)}, so divide the outside multiplier by ${fmtNum(innerA)}.`,
+                latex: `u = ${inner},\\quad du = ${fmtNum(innerA)}\\,dx`,
+                annotation: 'reverse chain rule',
+              } as Step,
+            ]),
         {
           note: 'Keep the constant multiplier and add the constant of integration.',
           latex: `\\int ${integrand}\\,dx = ${answer}`,
@@ -534,6 +634,11 @@ export const integrationSolver: Solver = {
     // Definite integral: evaluate the antiderivative between the limits.
     if (limits) {
       const { lower, upper } = limits;
+      if (![lower, upper].every(Number.isFinite))
+        return {
+          ok: false,
+          error: 'Both integration limits must be finite numbers.',
+        };
       const at = (x: number): number => {
         let total = 0;
         for (const { power, coeff } of anti.terms())
@@ -543,6 +648,12 @@ export const integrationSolver: Solver = {
       const upperVal = at(upper);
       const lowerVal = at(lower);
       const area = upperVal - lowerVal;
+      if (![upperVal, lowerVal, area].every(Number.isFinite))
+        return {
+          ok: false,
+          error:
+            'Those limits produce a result outside the calculator’s numeric range.',
+        };
       let exactArea: Rational | null = null;
       try {
         const upperExact = polynomialValueExact(
@@ -734,11 +845,22 @@ function solveAffinePower(input: string, q: AffinePower): SolveResult {
   ];
 
   if (limits) {
+    if (![limits.lower, limits.upper].every(Number.isFinite))
+      return {
+        ok: false,
+        error: 'Both integration limits must be finite numbers.',
+      };
     const valueAt = (x: number) =>
       Math.pow(a * x + b, power + 1) / (a * (power + 1));
     const upper = valueAt(limits.upper);
     const lower = valueAt(limits.lower);
     const value = upper - lower;
+    if (![upper, lower, value].every(Number.isFinite))
+      return {
+        ok: false,
+        error:
+          'Those limits produce a result outside the calculator’s numeric range.',
+      };
     let exactValue: Rational | null = null;
     try {
       const ar = Rational.fromDecimal(a);

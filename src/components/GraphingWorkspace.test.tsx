@@ -15,6 +15,12 @@ describe('graphing expression table', () => {
   it('opens a compact viewing-window settings modal and shows table labels', () => {
     render(<GraphingWorkspace onClose={vi.fn()} />);
     expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Graphs and Equations',
+      }),
+    ).toBeTruthy();
+    expect(
       document.querySelectorAll('.graph-point-label').length,
     ).toBeGreaterThan(0);
     expect(document.querySelector('.graph-point-label.is-visible')).toBeNull();

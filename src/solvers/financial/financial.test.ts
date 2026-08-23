@@ -69,6 +69,30 @@ describe('financialSolver', () => {
       false,
     );
   });
+
+  it('rejects invalid financial domains before calculating', () => {
+    expect(
+      financialSolver.solve('P=1000, r=10, t=2, n=0 compound', 'compound').ok,
+    ).toBe(false);
+    expect(
+      financialSolver.solve('P=1000, r=120, t=2 depreciation', 'depreciation')
+        .ok,
+    ).toBe(false);
+    expect(
+      financialSolver.solve('loan P=1000, r=5, t=2.5, n=1', 'repayment').ok,
+    ).toBe(false);
+  });
+
+  it('describes an explicit compounding frequency accurately', () => {
+    const s = sol(
+      financialSolver,
+      'P=1000, r=10, t=2, n=12 compound',
+      'compound',
+    );
+    expect(
+      s.steps.some((step: { note?: string }) => step.note?.includes('monthly')),
+    ).toBe(true);
+  });
 });
 
 describe('sequencesSolver', () => {
@@ -104,5 +128,37 @@ describe('sequencesSolver', () => {
 
   it('rejects a list with no constant pattern', () => {
     expect(sequencesSolver.solve('1, 4, 9, 17', 'arithmetic').ok).toBe(false);
+  });
+
+  it('uses d as a difference even when the previous tab was geometric', () => {
+    const s = sol(sequencesSolver, 'a=3, d=4, n=5', 'geometric');
+    expect(s.methodName).toBe('Arithmetic sequence');
+    expect(s.answerLatex).toContain('t_{5} = 19');
+  });
+
+  it('rejects ambiguous parameters and invalid term counts', () => {
+    expect(sequencesSolver.solve('a=3, d=4, r=2, n=5', 'arithmetic').ok).toBe(
+      false,
+    );
+    expect(sequencesSolver.solve('a=3, d=4, n=2.5', 'arithmetic').ok).toBe(
+      false,
+    );
+    expect(sequencesSolver.solve('a=3, r=2, n=0', 'geometric').ok).toBe(false);
+  });
+
+  it('prints a constant sequence without a redundant zero-n term', () => {
+    const s = sol(sequencesSolver, 'a=3, d=0, n=5', 'arithmetic');
+    expect(s.answerLatex).toContain('t_n = 3');
+    expect(s.answerLatex).not.toContain('0n');
+  });
+
+  it('rejects geometric sums that overflow after valid finite inputs', () => {
+    expect(sequencesSolver.solve('a=1e308, r=1, n=2', 'geometric').ok).toBe(
+      false,
+    );
+    expect(
+      sequencesSolver.solve('a=1e308, r=0.9999999999999999, n=1', 'geometric')
+        .ok,
+    ).toBe(false);
   });
 });

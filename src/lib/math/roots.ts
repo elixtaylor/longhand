@@ -17,9 +17,17 @@ export function evaluatePoly(p: Poly, x: number): number {
 function divisors(n: number): number[] {
   n = Math.abs(Math.round(n));
   if (n === 0) return [1];
+  if (!Number.isSafeInteger(n)) return [1];
+  const limit = Math.floor(Math.sqrt(n));
+  if (limit > 100_000) return [1];
   const out: number[] = [];
-  for (let i = 1; i <= n; i++) if (n % i === 0) out.push(i);
-  return out;
+  for (let i = 1; i <= limit; i++) {
+    if (n % i !== 0) continue;
+    out.push(i);
+    const pair = n / i;
+    if (pair !== i) out.push(pair);
+  }
+  return out.sort((a, b) => a - b);
 }
 
 /** Clear denominators so the rational-root theorem applies to integers. */

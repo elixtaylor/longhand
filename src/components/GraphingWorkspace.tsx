@@ -462,7 +462,7 @@ export function GraphingWorkspace({ onClose }: { onClose: () => void }) {
           >
             ← Return
           </button>
-          <span className="graphing-kicker">Graphs and Equations</span>
+          <h1 className="graphing-kicker">Graphs and Equations</h1>
         </div>
       </header>
       <main className="graphing-layout">

@@ -12,6 +12,18 @@ interface Cx {
 
 const C = (re: number, im: number): Cx => ({ re, im });
 
+function finiteCx(z: Cx): boolean {
+  return Number.isFinite(z.re) && Number.isFinite(z.im);
+}
+
+function numericFailure(): SolveResult {
+  return {
+    ok: false,
+    error:
+      'Those values produce a result outside the calculator’s numeric range.',
+  };
+}
+
 /** Render a + bi, tidying signs and unit coefficients. */
 function cxTex(z: Cx, dp = 4): string {
   const re = fmt(z.re, dp);
@@ -109,7 +121,11 @@ export const complexSolver: Solver = {
   ],
   defaultMethodId: 'rectangular',
   detect(input) {
-    if (!/i/.test(input)) return 0;
+    if (
+      !/i/.test(input) &&
+      !/polar|arg(?:ument)?|modulus|conj(?:ugate)?/i.test(input)
+    )
+      return 0;
     try {
       parse(input);
       return 0.96;
@@ -132,8 +148,32 @@ export const complexSolver: Solver = {
     // Polar form of a single number — also the "polar" method on any input.
     if (p.op === 'polar' || (methodId === 'polar' && !b)) {
       const r = Math.hypot(a.re, a.im);
+      if (!Number.isFinite(r)) return numericFailure();
+      if (r === 0) {
+        return {
+          ok: true,
+          solution: {
+            headline: 'Write $0$ in polar form',
+            methodName: 'Polar form',
+            steps: [
+              {
+                note: 'The modulus of zero is zero.',
+                latex: '|0| = 0',
+              },
+              {
+                note: 'The zero complex number has no unique direction, so its argument is undefined.',
+                latex: '\\arg(0)\\text{ is undefined}',
+                annotation: 'no unique angle',
+              },
+            ],
+            answerLatex: 'z = 0',
+          },
+        };
+      }
       const argRad = Math.atan2(a.im, a.re);
       const argDeg = rad2deg(argRad);
+      const referenceDeg =
+        Math.abs(a.re) < 1e-12 ? 90 : rad2deg(Math.atan(Math.abs(a.im / a.re)));
       return {
         ok: true,
         solution: {
@@ -149,9 +189,17 @@ export const complexSolver: Solver = {
               latex: `r = |z| = \\sqrt{${fmt(a.re)}^{2} + ${fmt(a.im)}^{2}} = ${fmt(r, 4)}`,
             },
             {
-              note: 'The argument is the angle from the positive real axis.',
-              latex: `\\theta = \\tan^{-1}\\!\\left(\\dfrac{${fmt(a.im)}}{${fmt(a.re)}}\\right) = ${fmt(argDeg, 4)}^{\\circ} = ${fmt(argRad, 4)}\\text{ rad}`,
-              annotation: 'check the quadrant',
+              note: 'Find the acute reference angle from the component magnitudes.',
+              latex:
+                Math.abs(a.re) < 1e-12
+                  ? '\\alpha = 90^{\\circ}'
+                  : `\\alpha = \\tan^{-1}\\!\\left(\\left|\\dfrac{${fmt(a.im)}}{${fmt(a.re)}}\\right|\\right) = ${fmt(referenceDeg, 4)}^{\\circ}`,
+              annotation: 'reference angle',
+            },
+            {
+              note: 'Use the signs of the real and imaginary parts to place the argument in the correct quadrant.',
+              latex: `\\theta = ${fmt(argDeg, 4)}^{\\circ} = ${fmt(argRad, 4)}\\text{ rad}`,
+              annotation: 'argument from the positive real axis',
             },
             {
               note: 'Put it together in polar (mod–arg) form.',
@@ -166,6 +214,9 @@ export const complexSolver: Solver = {
 
     if (p.op === 'modulus') {
       const r = Math.hypot(a.re, a.im);
+      const squareSum = a.re * a.re + a.im * a.im;
+      if (!Number.isFinite(r) || !Number.isFinite(squareSum))
+        return numericFailure();
       return {
         ok: true,
         solution: {
@@ -178,7 +229,7 @@ export const complexSolver: Solver = {
             },
             {
               note: 'Substitute the real and imaginary parts.',
-              latex: `|z| = \\sqrt{${fmt(a.re)}^{2} + ${fmt(a.im)}^{2}} = \\sqrt{${fmt(a.re * a.re + a.im * a.im)}}`,
+              latex: `|z| = \\sqrt{${fmt(a.re)}^{2} + ${fmt(a.im)}^{2}} = \\sqrt{${fmt(squareSum)}}`,
             },
             {
               note: 'Work it out.',
@@ -220,6 +271,7 @@ export const complexSolver: Solver = {
     if (p.op === '+' || p.op === '-') {
       const sign = p.op === '+' ? 1 : -1;
       const out = C(a.re + sign * b.re, a.im + sign * b.im);
+      if (!finiteCx(out)) return numericFailure();
       return {
         ok: true,
         solution: {
@@ -247,6 +299,7 @@ export const complexSolver: Solver = {
 
     if (p.op === '*') {
       const out = C(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+      if (!finiteCx(out)) return numericFailure();
       return {
         ok: true,
         solution: {
@@ -279,11 +332,14 @@ export const complexSolver: Solver = {
 
     // Division by the conjugate.
     const denom = b.re * b.re + b.im * b.im;
+    if (!Number.isFinite(denom)) return numericFailure();
     if (denom === 0) return { ok: false, error: 'You can’t divide by zero.' };
     const conj = C(b.re, -b.im);
     const numRe = a.re * b.re + a.im * b.im;
     const numIm = a.im * b.re - a.re * b.im;
     const out = C(numRe / denom, numIm / denom);
+    if (!finiteCx(out) || ![numRe, numIm].every(Number.isFinite))
+      return numericFailure();
     return {
       ok: true,
       solution: {

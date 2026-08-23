@@ -65,6 +65,8 @@ export interface RootInfo {
   nature: RootNature;
   /** Real roots as decimals (empty when complex). For tests/plotting. */
   numericRoots: number[];
+  /** Exact root labels in the same order as numericRoots. */
+  exactRoots: string[];
   answerLatex: string;
   perfectRoot?: number; // √Δ when Δ is a perfect square
   surd?: { out: number; inside: number };
@@ -99,9 +101,152 @@ function pmFraction(
   return D === 1 ? numerator : `\\dfrac{${numerator}}{${D}}`;
 }
 
+/** One of the two real surd roots, reduced to a single exact fraction. */
+function singleSurdFraction(
+  bNeg: number,
+  out: number,
+  inside: number,
+  denIn: number,
+  plus: boolean,
+): string {
+  let bN = bNeg;
+  let den = denIn;
+  let usePlus = plus;
+  if (den < 0) {
+    bN = -bN;
+    den = -den;
+    usePlus = !usePlus;
+  }
+  const g = gcdMany([Math.abs(bN), Math.abs(out), Math.abs(den)]);
+  const A = bN / g;
+  const C = out / g;
+  const D = den / g;
+  const term =
+    inside === 1 ? String(C) : `${C === 1 ? '' : C}\\sqrt{${inside}}`;
+  const numerator =
+    A === 0
+      ? usePlus
+        ? term
+        : `-${term}`
+      : `${A} ${usePlus ? '+' : '-'} ${term}`;
+  return D === 1 ? numerator : `\\dfrac{${numerator}}{${D}}`;
+}
+
+/** Number of decimal places after accounting for scientific notation. */
+function decimalPlaces(value: number): number {
+  const [mantissa, exponentText] = Math.abs(value)
+    .toString()
+    .toLowerCase()
+    .split('e');
+  const fractionLength = mantissa.split('.')[1]?.length ?? 0;
+  const exponent = Number(exponentText ?? 0);
+  return Math.max(0, fractionLength - exponent);
+}
+
+/**
+ * Turn finite decimal coefficients into an equivalent primitive integer
+ * equation when that can be done without leaving JavaScript's safe-integer
+ * range. This lets every caller use the exact surd path, not only callers
+ * that remembered to clear decimals themselves.
+ */
+function integeriseDecimalABC(
+  a: number,
+  b: number,
+  c: number,
+): [number, number, number] | null {
+  const places = Math.max(decimalPlaces(a), decimalPlaces(b), decimalPlaces(c));
+  if (places > 15) return null;
+  const scale = Math.pow(10, places);
+  if (!Number.isSafeInteger(scale)) return null;
+  const scaled = [a, b, c].map((value) => Math.round(value * scale));
+  if (!scaled.every(Number.isSafeInteger)) return null;
+  if (
+    ![a, b, c].every(
+      (value, index) =>
+        Math.abs(scaled[index] / scale - value) <=
+        Number.EPSILON * Math.max(1, Math.abs(value)) * 8,
+    )
+  )
+    return null;
+  const common = gcdMany(scaled.map(Math.abs));
+  return scaled.map((value) => value / common) as [number, number, number];
+}
+
+function numericRootText(value: number): string {
+  if (!Number.isFinite(value)) return '\\text{outside numeric range}';
+  return String(Number(value.toPrecision(12)));
+}
+
+/** Safe decimal fallback when exact integerisation is not representable. */
+function numericQuadraticRoots(
+  a: number,
+  b: number,
+  c: number,
+  rawDiscriminant: number,
+): RootInfo {
+  const scale = Math.max(Math.abs(a), Math.abs(b), Math.abs(c));
+  const aa = a / scale;
+  const bb = b / scale;
+  const cc = c / scale;
+  const disc = bb * bb - 4 * aa * cc;
+  if (disc === 0) {
+    const root = -bb / (2 * aa);
+    const label = numericRootText(root);
+    return {
+      discriminant: rawDiscriminant,
+      nature: 'double',
+      numericRoots: [root],
+      exactRoots: [label],
+      answerLatex: `x = ${label}`,
+    };
+  }
+  if (disc > 0) {
+    const squareRoot = Math.sqrt(disc);
+    const q = -0.5 * (bb + (bb >= 0 ? squareRoot : -squareRoot));
+    const first = q === 0 ? (-bb + squareRoot) / (2 * aa) : q / aa;
+    const second = q === 0 ? (-bb - squareRoot) / (2 * aa) : cc / q;
+    const roots = [first, second].sort((x, y) => y - x);
+    const labels = roots.map(numericRootText);
+    return {
+      discriminant: rawDiscriminant,
+      nature: 'two-irrational',
+      numericRoots: roots,
+      exactRoots: labels,
+      answerLatex: `x = ${labels[0]} \\quad\\text{or}\\quad x = ${labels[1]}`,
+    };
+  }
+  const real = -bb / (2 * aa);
+  const imaginary = Math.sqrt(-disc) / Math.abs(2 * aa);
+  return {
+    discriminant: rawDiscriminant,
+    nature: 'complex',
+    numericRoots: [],
+    exactRoots: [],
+    answerLatex: `x = ${numericRootText(real)} \\pm ${numericRootText(imaginary)}i`,
+  };
+}
+
 export function quadraticRoots(a: number, b: number, c: number): RootInfo {
+  if (![a, b, c].every(Number.isFinite) || a === 0)
+    throw new Error(
+      'quadraticRoots: a, b and c must be finite, with a non-zero.',
+    );
+
+  if (![a, b, c].every(Number.isSafeInteger)) {
+    const integerised = integeriseDecimalABC(a, b, c);
+    if (integerised)
+      return quadraticRoots(integerised[0], integerised[1], integerised[2]);
+    const rawDiscriminant = b * b - 4 * a * c;
+    return numericQuadraticRoots(a, b, c, rawDiscriminant);
+  }
+
   const disc = b * b - 4 * a * c;
   const den = 2 * a;
+
+  // Exact simplification uses integer arithmetic. If the discriminant has
+  // exceeded the safe-integer range, retain stable numeric roots rather than
+  // treating rounded integer bits as an exact square or surd.
+  if (!Number.isSafeInteger(disc)) return numericQuadraticRoots(a, b, c, disc);
 
   if (disc === 0) {
     const r = new Rational(-b, den);
@@ -109,6 +254,7 @@ export function quadraticRoots(a: number, b: number, c: number): RootInfo {
       discriminant: 0,
       nature: 'double',
       numericRoots: [r.toNumber()],
+      exactRoots: [rl(r)],
       answerLatex: `x = ${rl(r)}`,
     };
   }
@@ -121,6 +267,7 @@ export function quadraticRoots(a: number, b: number, c: number): RootInfo {
       discriminant: disc,
       nature: 'two-rational',
       numericRoots: [hi.toNumber(), lo.toNumber()],
+      exactRoots: [rl(hi), rl(lo)],
       perfectRoot: s,
       answerLatex: `x = ${rl(hi)} \\quad\\text{or}\\quad x = ${rl(lo)}`,
     };
@@ -130,10 +277,17 @@ export function quadraticRoots(a: number, b: number, c: number): RootInfo {
     const surd = { out: s.outside, inside: s.inside };
     const root1 = (-b + surd.out * Math.sqrt(surd.inside)) / den;
     const root2 = (-b - surd.out * Math.sqrt(surd.inside)) / den;
+    const exact1 = singleSurdFraction(-b, surd.out, surd.inside, den, true);
+    const exact2 = singleSurdFraction(-b, surd.out, surd.inside, den, false);
+    const ordered =
+      root1 >= root2
+        ? { numeric: [root1, root2], exact: [exact1, exact2] }
+        : { numeric: [root2, root1], exact: [exact2, exact1] };
     return {
       discriminant: disc,
       nature: 'two-irrational',
-      numericRoots: [Math.max(root1, root2), Math.min(root1, root2)],
+      numericRoots: ordered.numeric,
+      exactRoots: ordered.exact,
       surd,
       answerLatex: `x = ${pmFraction(-b, surd.out, surd.inside, den, false)}`,
     };
@@ -144,6 +298,7 @@ export function quadraticRoots(a: number, b: number, c: number): RootInfo {
     discriminant: disc,
     nature: 'complex',
     numericRoots: [],
+    exactRoots: [],
     surd,
     answerLatex: `x = ${pmFraction(-b, surd.out, surd.inside, den, true)}`,
   };

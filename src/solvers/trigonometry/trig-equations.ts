@@ -10,6 +10,12 @@ interface TrigEq {
   constant: number;
   k: number;
   radians: boolean;
+  domain: {
+    lower: number;
+    upper: number;
+    lowerInclusive: boolean;
+    upperInclusive: boolean;
+  };
 }
 
 const DEG = '^{\\circ}';
@@ -23,20 +29,94 @@ function radLatex(value: number): string {
     if (Math.abs(ratio - numerator / denominator) < 1e-6) {
       if (numerator === 0) return '0';
       if (denominator === 1)
-        return numerator === 1 ? '\\pi' : `${numerator}\\pi`;
+        return numerator === 1
+          ? '\\pi'
+          : numerator === -1
+            ? '-\\pi'
+            : `${numerator}\\pi`;
       if (numerator === 1) return `\\dfrac{\\pi}{${denominator}}`;
+      if (numerator === -1) return `-\\dfrac{\\pi}{${denominator}}`;
+      if (numerator < 0)
+        return `-\\dfrac{${Math.abs(numerator)}\\pi}{${denominator}}`;
       return `\\dfrac{${numerator}\\pi}{${denominator}}`;
     }
   }
   return `${fmt(value, 6)}${RAD}`;
 }
 
+const ANGLE_TOKEN =
+  '[-+]?(?:(?:\\d+(?:\\.\\d+)?)?\\s*(?:π|pi)(?:\\s*\\/\\s*\\d+(?:\\.\\d+)?)?|\\d+(?:\\.\\d+)?)';
+
+function angleValue(raw: string): number | null {
+  const token = raw.replace(/\s+/g, '').toLowerCase();
+  if (!/π|pi/.test(token)) {
+    const value = Number(token);
+    return Number.isFinite(value) ? value : null;
+  }
+  const normal = token.replace(/π|pi/g, 'pi');
+  const match = normal.match(
+    /^([+-]?)(\d*(?:\.\d+)?)?pi(?:\/(\d+(?:\.\d+)?))?$/,
+  );
+  if (!match) return null;
+  const sign = match[1] === '-' ? -1 : 1;
+  const numerator =
+    match[2] === '' || match[2] === undefined ? 1 : Number(match[2]);
+  const denominator = match[3] === undefined ? 1 : Number(match[3]);
+  if (
+    !Number.isFinite(numerator) ||
+    !Number.isFinite(denominator) ||
+    denominator === 0
+  )
+    return null;
+  return (sign * numerator * Math.PI) / denominator;
+}
+
+function readDomain(input: string): {
+  raw: string;
+  lower: number;
+  upper: number;
+  lowerInclusive: boolean;
+  upperInclusive: boolean;
+} | null {
+  const match = input.match(
+    new RegExp(
+      '(' +
+        ANGLE_TOKEN +
+        ')\\s*(<=|≤|<)\\s*x\\s*(<=|≤|<)\\s*(' +
+        ANGLE_TOKEN +
+        ')',
+      'i',
+    ),
+  );
+  if (!match) return null;
+  const lower = angleValue(match[1]);
+  const upper = angleValue(match[4]);
+  if (
+    lower === null ||
+    upper === null ||
+    !Number.isFinite(lower) ||
+    !Number.isFinite(upper) ||
+    lower > upper
+  )
+    return null;
+  return {
+    raw: match[0],
+    lower,
+    upper,
+    lowerInclusive: match[2] !== '<',
+    upperInclusive: match[3] !== '<',
+  };
+}
+
 function parse(input: string): TrigEq {
+  const statedDomain = readDomain(input);
   const radians = /\b(?:rad|radian|radians)\b|π|\bpi\b/i.test(input);
-  const s = input
+  const source = statedDomain ? input.replace(statedDomain.raw, ' ') : input;
+  const s = source
     .replace(/\b(?:rad|radian|radians|deg|degree|degrees)\b/gi, '')
     .replace(/°/g, '')
     .replace(/\s+/g, '')
+    .replace(/^[,;]+|[,;]+$/g, '')
     .toLowerCase();
   // Read the common mixed form a·f(x) + b = c as well as the already
   // isolated f(x) = k. Solving the linear outside layer first is the small
@@ -55,12 +135,24 @@ function parse(input: string): TrigEq {
   const rhs = Number(m[5]);
   if (!Number.isFinite(coefficient) || coefficient === 0)
     throw new Error('The multiplier of the trig function cannot be zero.');
+  const k = (rhs - constant) / coefficient;
+  if (!Number.isFinite(k))
+    throw new Error(
+      'Those values produce a result outside the calculator’s numeric range.',
+    );
+  const revolution = radians ? 2 * Math.PI : 360;
   return {
     fn: m[2] as Fn,
     coefficient,
     constant,
-    k: (rhs - constant) / coefficient,
+    k,
     radians,
+    domain: statedDomain ?? {
+      lower: 0,
+      upper: revolution,
+      lowerInclusive: true,
+      upperInclusive: false,
+    },
   };
 }
 
@@ -83,6 +175,36 @@ function norm(xs: number[], radians: boolean): number[] {
   return [...new Set(out.map((x) => Math.round(x * 1e6) / 1e6))].sort(
     (a, b) => a - b,
   );
+}
+
+function solutionsInDomain(eq: TrigEq): number[] {
+  const base = solutions(eq.fn, eq.k, eq.radians);
+  const revolution = eq.radians ? 2 * Math.PI : 360;
+  const tolerance = 1e-8;
+  const inside = (value: number): boolean => {
+    const above = eq.domain.lowerInclusive
+      ? value >= eq.domain.lower - tolerance
+      : value > eq.domain.lower + tolerance;
+    const below = eq.domain.upperInclusive
+      ? value <= eq.domain.upper + tolerance
+      : value < eq.domain.upper - tolerance;
+    return above && below;
+  };
+  const found: number[] = [];
+  for (const value of base) {
+    const first = Math.floor((eq.domain.lower - value) / revolution) - 1;
+    const last = Math.ceil((eq.domain.upper - value) / revolution) + 1;
+    for (let turn = first; turn <= last; turn++) {
+      const candidate = value + turn * revolution;
+      if (inside(candidate)) found.push(candidate);
+    }
+  }
+  return found
+    .sort((a, b) => a - b)
+    .filter(
+      (value, index, all) =>
+        index === 0 || Math.abs(value - all[index - 1]) > tolerance,
+    );
 }
 
 export const trigEquationSolver: Solver = {
@@ -118,16 +240,16 @@ export const trigEquationSolver: Solver = {
         error: e instanceof Error ? e.message : 'Could not read that equation.',
       };
     }
-    const { fn, coefficient, constant, k, radians } = eq;
+    const { fn, coefficient, constant, k, radians, domain } = eq;
 
     if ((fn === 'sin' || fn === 'cos') && Math.abs(k) > 1) {
       return {
         ok: false,
-        error: `${fn} x can only be between −1 and 1, so ${fn} x = ${fmt(k)} has no solutions.`,
+        error: `${fn} x can only be between −1 and 1, so ${fn} x = ${fmt(k, 6)} has no solutions.`,
       };
     }
 
-    const sols = solutions(fn, k, radians);
+    const sols = solutionsInDomain(eq);
     const principalRadians =
       fn === 'sin' ? Math.asin(k) : fn === 'cos' ? Math.acos(k) : Math.atan(k);
     const principal = radians ? principalRadians : rad2deg(principalRadians);
@@ -135,52 +257,60 @@ export const trigEquationSolver: Solver = {
 
     const symmetry =
       fn === 'sin'
-        ? 'Sine is positive in the first and second quadrants, so the second solution is $180^{\\circ} - x$.'
+        ? `Sine is ${k >= 0 ? 'positive in quadrants I and II' : 'negative in quadrants III and IV'}.`
         : fn === 'cos'
-          ? 'Cosine repeats symmetrically about the horizontal axis, so the second solution is $360^{\\circ} - x$.'
-          : 'Tangent repeats every $180^{\\circ}$, so add $180^{\\circ}$ for the next solution.';
+          ? `Cosine is ${k >= 0 ? 'positive in quadrants I and IV' : 'negative in quadrants II and III'}.`
+          : `Tangent is ${k >= 0 ? 'positive in quadrants I and III' : 'negative in quadrants II and IV'} and repeats every 180°.`;
+    const solutionList = sols
+      .map((x) => `x = ${radians ? radLatex(x) : fmt(x, 6) + unit}`)
+      .join(',\\; ');
+    const domainSolutions =
+      sols.length > 0
+        ? sols
+            .map((x) => `${radians ? radLatex(x) : fmt(x, 6) + unit}`)
+            .join(', \\quad ')
+        : '\\text{No solutions in this domain}';
 
     const steps: Step[] = [
       {
         note: 'Write down the equation.',
         latex:
           coefficient === 1 && constant === 0
-            ? `\\${fn} x = ${fmt(k)}`
-            : `${fmt(coefficient)}\\${fn}x ${constant < 0 ? '-' : '+'} ${fmt(Math.abs(constant))} = ${fmt(coefficient * k + constant)}`,
+            ? `\\${fn} x = ${fmt(k, 6)}`
+            : `${fmt(coefficient, 6)}\\${fn}x ${constant < 0 ? '-' : '+'} ${fmt(Math.abs(constant), 6)} = ${fmt(coefficient * k + constant, 6)}`,
       },
     ];
     if (coefficient !== 1 || constant !== 0) {
       steps.push({
         note: 'Undo the outside linear operation before using the unit circle.',
-        latex: `\\${fn}x = \\dfrac{${fmt(coefficient * k + constant)} ${constant < 0 ? '+' : '-'} ${fmt(Math.abs(constant))}}{${fmt(coefficient)}} = ${fmt(k)}`,
+        latex: `\\${fn}x = \\dfrac{${fmt(coefficient * k + constant, 6)} ${constant < 0 ? '+' : '-'} ${fmt(Math.abs(constant), 6)}}{${fmt(coefficient, 6)}} = ${fmt(k, 6)}`,
         annotation: 'algebra first',
       });
     }
     steps.push(
       {
         note: 'Take the inverse to find the principal value.',
-        latex: `x = \\${fn}^{-1}(${fmt(k)}) = ${radians ? radLatex(principal) : fmt(principal) + unit}`,
+        latex: `x = \\${fn}^{-1}(${fmt(k, 6)}) = ${radians ? radLatex(principal) : fmt(principal, 6) + unit}`,
         annotation: 'principal value',
       },
       {
         note: radians
-          ? fn === 'sin'
-            ? 'Sine is positive in the first and second quadrants, so the second solution is $\\pi - x$.'
-            : fn === 'cos'
-              ? 'Cosine is symmetric about the horizontal axis, so the second solution is $2\\pi - x$.'
-              : 'Tangent repeats every $\\pi$, so add $\\pi$ for the next solution.'
+          ? fn === 'tan'
+            ? `${symmetry.replace('180°', '$\\pi$')}`
+            : symmetry
           : symmetry,
-        latex: sols
-          .map((x) => `x = ${radians ? radLatex(x) : fmt(x) + unit}`)
-          .join(', \\quad '),
+        latex:
+          sols.length > 0
+            ? sols
+                .map((x) => `x = ${radians ? radLatex(x) : fmt(x, 6) + unit}`)
+                .join(', \\quad ')
+            : '\\text{No solutions fall in the stated domain}',
       },
       {
         note: radians
-          ? 'Solutions over one full revolution $0 \\le x < 2\\pi$.'
-          : 'Solutions over one full revolution $0^{\\circ} \\le x < 360^{\\circ}$.',
-        latex: sols
-          .map((x) => `${radians ? radLatex(x) : fmt(x) + unit}`)
-          .join(', \\quad '),
+          ? `Solutions in the stated domain $${radLatex(domain.lower)} ${domain.lowerInclusive ? '\\le' : '<'} x ${domain.upperInclusive ? '\\le' : '<'} ${radLatex(domain.upper)}$.`
+          : `Solutions in the stated domain $${fmt(domain.lower, 6)}^{\\circ} ${domain.lowerInclusive ? '\\le' : '<'} x ${domain.upperInclusive ? '\\le' : '<'} ${fmt(domain.upper, 6)}^{\\circ}$.`,
+        latex: domainSolutions,
         annotation: radians
           ? 'add $2\\pi n$ for the general solution'
           : 'add 360°n for the general solution',
@@ -190,12 +320,11 @@ export const trigEquationSolver: Solver = {
     return {
       ok: true,
       solution: {
-        headline: `Solve $\\${fn} x = ${fmt(k)}$`,
+        headline: `Solve $\\${fn} x = ${fmt(k, 6)}$`,
         methodName: 'Unit circle',
         steps,
-        answerLatex: sols
-          .map((x) => `x = ${radians ? radLatex(x) : fmt(x) + unit}`)
-          .join(',\\; '),
+        answerLatex:
+          solutionList || '\\text{No solutions in the stated domain}',
       },
     };
   },

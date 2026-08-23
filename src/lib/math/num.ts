@@ -91,7 +91,7 @@ export function parseParams(input: string): Record<string, number> {
   // two knowns — enough for the right-triangle solver to claim the question
   // and apply Pythagoras to a triangle that has no right angle.
   const re =
-    /([A-Za-z][A-Za-z0-9_]*)\s*=\s*(-?\d*\.?\d+)(?!\d|\.\d|\s*[+\-*/^×÷]\s*\d)/g;
+    /([A-Za-z][A-Za-z0-9_]*)\s*=\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?)(?!\d|\.\d|\s*[+\-*/^×÷]\s*\d)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(input))) out[m[1]] = Number(m[2]);
   return out;

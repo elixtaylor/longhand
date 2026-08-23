@@ -137,10 +137,28 @@ function stripStems(s: string): string {
 function operators(s: string): string {
   return (
     s
+      .replace(
+        /\bsubtract\s+(-?(?:\d*\.?\d+|[A-Za-z]))\s+from\s+(-?(?:\d*\.?\d+|[A-Za-z]))\b/gi,
+        '$2 - $1',
+      )
+      .replace(
+        /\b(-?\d*\.?\d+)\s+less\s+than\s+(-?(?:\d*\.?\d+|[A-Za-z]))\b/gi,
+        '$2 - $1',
+      )
+      .replace(
+        /\b(?:is\s+)?(?:less\s+than\s+or\s+equal\s+to|no\s+more\s+than|at\s+most)\b/gi,
+        ' <= ',
+      )
+      .replace(
+        /\b(?:is\s+)?(?:greater\s+than\s+or\s+equal\s+to|no\s+less\s+than|at\s+least)\b/gi,
+        ' >= ',
+      )
+      .replace(/\b(?:is\s+)?less\s+than\b/gi, ' < ')
+      .replace(/\b(?:is\s+)?greater\s+than\b/gi, ' > ')
       .replace(/\bmultiplied\s+by\b|\btimes\b/gi, ' × ')
       .replace(/\bdivided\s+by\b/gi, ' ÷ ')
       .replace(/\b(?:added\s+to|plus)\b/gi, ' + ')
-      .replace(/\b(?:subtract(?:ed)?\s+by|take\s+away|minus|less)\b/gi, ' - ')
+      .replace(/\b(?:subtract(?:ed)?\s+by|take\s+away|minus)\b/gi, ' - ')
       .replace(/\b(?:is\s+equal\s+to|equals?)\b/gi, ' = ')
       .replace(/\bsquare\s+root\s+of\s+/gi, 'sqrt ')
       // Powers bind to the term before them, so swallow the preceding space.
@@ -241,7 +259,7 @@ function statistics(s: string): string {
   s = labelled(s, 'standard\\s+deviation|std\\s*dev|sigma', 'sd');
   s = labelled(s, 'sample\\s+size', 'n');
   s = s.replace(/\bmean\b\s*(?:of|is|=|:)?\s*(-?\d*\.?\d+)/gi, 'mean=$1');
-  s = s.replace(/\b(\d+(?:\.\d+)?)\s*%\s*confidence\b/gi, 'confidence conf=$1');
+  s = s.replace(/\b(\d+(?:\.\d+)?)\s*%\s*confidence\b/gi, 'confidence=$1');
   // "exactly 3 heads in 10 flips" → a binomial with x=3, n=10
   s = s.replace(/\bexactly\s+(-?\d+)\b/gi, 'x=$1');
   // Allow a describing word between the count and the noun: "10 coin flips".

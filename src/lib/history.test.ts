@@ -107,4 +107,25 @@ describe('history', () => {
     );
     expect(loadHistory()).toEqual([]);
   });
+
+  it('drops oversized problems and non-finite timestamps', () => {
+    localStorage.setItem(
+      'longhand.history',
+      JSON.stringify([
+        {
+          input: 'x'.repeat(2_001),
+          solverId: 'linear',
+          methodId: 'balance',
+          at: 1,
+        },
+        {
+          input: 'x = 1',
+          solverId: 'linear',
+          methodId: 'balance',
+          at: null,
+        },
+      ]),
+    );
+    expect(loadHistory()).toEqual([]);
+  });
 });

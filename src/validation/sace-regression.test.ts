@@ -548,19 +548,19 @@ for (let i = 0; i < N; i++) {
   add(
     'probability',
     'union',
-    `P(A)=${pa}, P(B)=${pb} union`,
+    `P(A)=${pa}, P(B)=${pb} independent union`,
     'SACE probability',
   );
   add(
     'probability',
     'intersection',
-    `P(A)=${pa}, P(B)=${pb} intersection`,
+    `P(A)=${pa}, P(B)=${pb} independent intersection`,
     'SACE probability',
   );
   add(
     'probability',
     'conditional',
-    `P(A)=${pa}, P(B)=${pb} given`,
+    `P(A)=${pa}, P(B)=${pb} independent given`,
     'SACE probability',
   );
 
@@ -876,4 +876,49 @@ describe('SACE-aligned generated regression corpus', () => {
       `first exactness failures of ${failures.length}`,
     ).toEqual([]);
   });
+
+  it('never exposes non-finite values, broken braces or runaway working', () => {
+    const failures: string[] = [];
+    for (const problem of cases) {
+      const solver = getSolver(problem.solverId);
+      if (!solver) continue;
+      const result = solver.solve(problem.input, problem.methodId);
+      if (!result.ok) continue;
+      const rendered = [
+        result.solution.headline,
+        result.solution.answerLatex ?? '',
+        ...result.solution.steps.flatMap((step) => [
+          step.note ?? '',
+          step.latex ?? '',
+          step.annotation ?? '',
+        ]),
+      ].join(' ');
+      if (/NaN|Infinity|\\text\{undefined\}/.test(rendered)) {
+        failures.push(
+          `${problem.solverId}.${problem.methodId} exposed a non-finite value for ${problem.input}`,
+        );
+      }
+      let depth = 0;
+      let bracesValid = true;
+      for (const character of rendered) {
+        if (character === '{') depth++;
+        if (character === '}') depth--;
+        if (depth < 0) bracesValid = false;
+      }
+      if (depth !== 0 || !bracesValid) {
+        failures.push(
+          `${problem.solverId}.${problem.methodId} emitted unbalanced braces for ${problem.input}`,
+        );
+      }
+      if (result.solution.steps.length > 80) {
+        failures.push(
+          `${problem.solverId}.${problem.methodId} emitted ${result.solution.steps.length} steps for ${problem.input}`,
+        );
+      }
+    }
+    expect(
+      failures.slice(0, 40),
+      `first rendering failures of ${failures.length}`,
+    ).toEqual([]);
+  }, 15000);
 });

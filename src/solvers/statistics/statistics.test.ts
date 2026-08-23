@@ -12,6 +12,14 @@ const sol = (
 };
 
 describe('statisticsSolver', () => {
+  it('keeps the centre-only answer to measures actually worked out', () => {
+    const result = statisticsSolver.solve('1, 2, 2, 4', 'centre');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.answerLatex).toContain('\\text{mode} = 2');
+      expect(result.solution.answerLatex).not.toContain('s =');
+    }
+  });
   it('finds the mean and median', () => {
     // 4,8,15,16,23,42 → mean 18, median (15+16)/2 = 15.5
     const s = sol(statisticsSolver, '4, 8, 15, 16, 23, 42', 'centre');
@@ -32,6 +40,22 @@ describe('statisticsSolver', () => {
     // 1..9 → min 1, Q1 3 (median of 1,2,3,4), median 5, Q3 7, max 9
     const s = sol(statisticsSolver, '1, 2, 3, 4, 5, 6, 7, 8, 9', 'five-number');
     expect(s.answerLatex).toBe('1,\\; 2.5,\\; 5,\\; 7.5,\\; 9');
+  });
+
+  it('does not mistake statistical labels for data values', () => {
+    const five = sol(
+      statisticsSolver,
+      '5-number summary of 1, 2, 3, 4, 5',
+      'five-number',
+    );
+    expect(five.answerLatex).toBe('1,\\; 1.5,\\; 3,\\; 4.5,\\; 5');
+
+    const q1 = sol(statisticsSolver, 'find Q1 for 2, 4, 6, 8', 'five-number');
+    expect(q1.answerLatex).toBe('2,\\; 3,\\; 5,\\; 7,\\; 8');
+  });
+
+  it('rejects non-finite data instead of printing invalid working', () => {
+    expect(statisticsSolver.solve('1e309, 2, 3, 4', 'summary').ok).toBe(false);
   });
 
   it('reports no mode when every value is unique', () => {
@@ -88,6 +112,17 @@ describe('distributionsSolver', () => {
     expect(s.answerLatex).toContain('51.568');
   });
 
+  it('supports valid non-standard confidence levels', () => {
+    const s = sol(
+      distributionsSolver,
+      'confidence mean=50, sd=8, n=100, confidence=92',
+      'confidence',
+    );
+    expect(s.derivedValues?.confidence).toBe(92);
+    expect(s.answerLatex).toContain('48.5995');
+    expect(s.answerLatex).toContain('51.4005');
+  });
+
   it('finds a sampling distribution and standard error', () => {
     const s = sol(
       distributionsSolver,
@@ -106,9 +141,86 @@ describe('distributionsSolver', () => {
     expect(s.answerLatex).toContain('0.817');
   });
 
+  it('labels one-sided normal intervals in the correct direction', () => {
+    const below = sol(
+      distributionsSolver,
+      'normal below 120, mean=100, sd=15',
+      'normal-interval',
+    );
+    expect(below.answerLatex).toContain('X \\le 120');
+    const above = sol(
+      distributionsSolver,
+      'normal above 80, mean=100, sd=15',
+      'normal-interval',
+    );
+    expect(above.answerLatex).toContain('X \\ge 80');
+  });
+
   it('rejects an impossible probability', () => {
     expect(
       distributionsSolver.solve('binomial n=10, p=1.5, x=3', 'binomial').ok,
     ).toBe(false);
+  });
+
+  it('rejects sample sizes that are not positive whole numbers', () => {
+    expect(
+      distributionsSolver.solve('sampling mean=50, sd=8, n=2.5', 'sampling').ok,
+    ).toBe(false);
+    expect(
+      distributionsSolver.solve('confidence mean=50, sd=8, n=2.5', 'confidence')
+        .ok,
+    ).toBe(false);
+  });
+
+  it('rejects non-finite distribution inputs instead of printing undefined', () => {
+    expect(
+      distributionsSolver.solve('normal mean=1e309, sd=1, x=2', 'normal').ok,
+    ).toBe(false);
+    expect(
+      distributionsSolver.solve('sampling mean=0, sd=1e309, n=10', 'sampling')
+        .ok,
+    ).toBe(false);
+    expect(
+      distributionsSolver.solve(
+        'confidence mean=0, sd=1e309, n=10',
+        'confidence',
+      ).ok,
+    ).toBe(false);
+  });
+
+  it('rejects finite inputs whose derived distribution values overflow', () => {
+    expect(
+      distributionsSolver.solve(
+        'confidence mean=1e308, sd=1e308, n=1, confidence=95',
+        'confidence',
+      ).ok,
+    ).toBe(false);
+    expect(
+      distributionsSolver.solve('normal mean=-1e308, sd=1, x=1e308', 'normal')
+        .ok,
+    ).toBe(false);
+    expect(
+      distributionsSolver.solve(
+        'sampling mean=-1e308, sd=1, n=10, xbar=1e308',
+        'sampling',
+      ).ok,
+    ).toBe(false);
+  });
+
+  it('requires a safely representable binomial trial count', () => {
+    expect(
+      distributionsSolver.solve(
+        'binomial n=999999999999999999, p=0.5',
+        'binomial',
+      ).ok,
+    ).toBe(false);
+  });
+
+  it('refuses binomial sizes that would overflow the coefficient', () => {
+    const result = distributionsSolver.solve(
+      'binomial n=5000, p=0.5, x=2500',
+      'binomial',
+    );
+    expect(result.ok).toBe(false);
   });
 });

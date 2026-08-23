@@ -12,4 +12,13 @@ describe('binomial expansion', () => {
     expect(binomialSolver.detect('expand (x - 1)^4')).toBeGreaterThan(0.9);
     expect(binomialSolver.detect('(x - 1)^4 = 0')).toBe(0);
   });
+
+  it('rejects exact coefficient overflow without throwing', () => {
+    expect(() =>
+      binomialSolver.solve('expand (1000000000000000x + 1)^20', 'theorem'),
+    ).not.toThrow();
+    expect(
+      binomialSolver.solve('expand (1000000000000000x + 1)^20', 'theorem').ok,
+    ).toBe(false);
+  });
 });

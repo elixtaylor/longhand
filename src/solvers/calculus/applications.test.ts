@@ -27,6 +27,16 @@ describe('gradient at a point', () => {
     const r = app.solve('gradient of y = x^2', 'gradient');
     expect(r.ok).toBe(false);
   });
+
+  it('rejects coordinates whose evaluation would overflow', () => {
+    const huge = `1${'0'.repeat(200)}`;
+    expect(app.solve(`gradient of y = x^2 at x = ${huge}`, 'gradient').ok).toBe(
+      false,
+    );
+    expect(app.solve(`tangent to y = x^2 at x = ${huge}`, 'tangent').ok).toBe(
+      false,
+    );
+  });
 });
 
 describe('stationary points', () => {
@@ -56,6 +66,13 @@ describe('stationary points', () => {
     // f'(x) = 3x² + 1 > 0 for every x.
     expect(ans('stationary points of x^3 + x')).toBe(
       '\\text{no stationary points}',
+    );
+  });
+
+  it('rejects stationary-point calculations outside the numeric range', () => {
+    const huge = `1${'0'.repeat(400)}`;
+    expect(app.solve(`stationary points of ${huge}x^2`, 'stationary').ok).toBe(
+      false,
     );
   });
 

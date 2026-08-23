@@ -51,9 +51,11 @@ function serialize(
  * no dimension toggle here.
  */
 export function ComplexOperationForm({
+  methodId,
   onSubmit,
   onOperationChange,
 }: {
+  methodId?: 'rectangular' | 'polar';
   onSubmit: (serialized: string) => void;
   /** The solver's two methods (rectangular/polar) both render this same
    * form, but the tab highlighted (and its blurb) should still track which
@@ -61,7 +63,15 @@ export function ComplexOperationForm({
    * this form was opened. */
   onOperationChange?: (methodId: 'rectangular' | 'polar') => void;
 }) {
-  const [op, setOp] = useState<CxOp>('+');
+  const [selectedOp, setSelectedOp] = useState<CxOp>(
+    methodId === 'polar' ? 'polar' : '+',
+  );
+  const op =
+    methodId === 'polar'
+      ? 'polar'
+      : methodId === 'rectangular' && selectedOp === 'polar'
+        ? '+'
+        : selectedOp;
   const [a, setA] = useState(['', '']);
   const [b, setB] = useState(['', '']);
 
@@ -102,10 +112,15 @@ export function ComplexOperationForm({
     });
   }
 
+  function clearValues() {
+    setA(['', '']);
+    setB(['', '']);
+  }
+
   function complexField(label: string, values: string[], which: 'a' | 'b') {
     return (
       <div className="structured-field" key={which}>
-        <label className="field-label">{label}</label>
+        <span className="field-label">{label}</span>
         <div className="ratio-inputs">
           <input
             className="expr-input num-input"
@@ -114,6 +129,11 @@ export function ComplexOperationForm({
             autoComplete="off"
             placeholder="re"
             aria-label={`${label} — real part`}
+            aria-invalid={
+              (values[0].trim() !== '' &&
+                !Number.isFinite(Number(values[0].trim()))) ||
+              undefined
+            }
             value={values[0]}
             onChange={(e) => setComponent(which, 0, e.target.value)}
           />
@@ -127,6 +147,11 @@ export function ComplexOperationForm({
             autoComplete="off"
             placeholder="im"
             aria-label={`${label} — imaginary part`}
+            aria-invalid={
+              (values[1].trim() !== '' &&
+                !Number.isFinite(Number(values[1].trim()))) ||
+              undefined
+            }
             value={values[1]}
             onChange={(e) => setComponent(which, 1, e.target.value)}
           />
@@ -140,30 +165,42 @@ export function ComplexOperationForm({
 
   return (
     <form className="structured-form" onSubmit={submit}>
-      <div className="op-picker" role="radiogroup" aria-label="Operation">
-        {OPS.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            aria-pressed={op === o.id}
-            onClick={() => {
-              setOp(o.id);
-              onOperationChange?.(o.id === 'polar' ? 'polar' : 'rectangular');
-            }}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <fieldset className="calculator-choice">
+        <legend className="calculator-section-label">Operation</legend>
+        <div className="op-picker" role="radiogroup" aria-label="Operation">
+          {OPS.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              aria-pressed={op === o.id}
+              onClick={() => {
+                setSelectedOp(o.id);
+                onOperationChange?.(o.id === 'polar' ? 'polar' : 'rectangular');
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
-      {complexField(current.needsB ? 'z₁' : 'z', a, 'a')}
-      {current.needsB && complexField('z₂', b, 'b')}
+      <div className="calculator-input-region">
+        <div className="calculator-field-stack">
+          {complexField(current.needsB ? 'z₁' : 'z', a, 'a')}
+          {current.needsB && complexField('z₂', b, 'b')}
+        </div>
+      </div>
 
       <CalculatorPreview result={liveResult} />
 
-      <button type="submit" className="btn-primary" disabled={!complete}>
-        Solve
-      </button>
+      <div className="calculator-actions">
+        <button type="submit" className="btn-primary" disabled={!complete}>
+          Solve
+        </button>
+        <button type="button" className="btn-secondary" onClick={clearValues}>
+          Clear
+        </button>
+      </div>
     </form>
   );
 }

@@ -1,9 +1,11 @@
 import { Component, cloneElement, isValidElement, type ReactNode } from 'react';
+import { RECOVERABLE_ERROR_EVENT } from '../lib/recovery';
 
 interface State {
   failed: boolean;
   recoveryKey: number;
   showRecoveryNotice: boolean;
+  recoveryNoticeKey: number;
 }
 
 /** Recover malformed links or saved drafts without replacing the workspace. */
@@ -12,6 +14,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
     failed: false,
     recoveryKey: 0,
     showRecoveryNotice: false,
+    recoveryNoticeKey: 0,
   };
   private recoveryNoticeTimer: ReturnType<typeof window.setTimeout> | null =
     null;
@@ -19,6 +22,31 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   static getDerivedStateFromError(): Partial<State> {
     return { failed: true };
   }
+
+  componentDidMount(): void {
+    window.addEventListener(
+      RECOVERABLE_ERROR_EVENT,
+      this.handleRecoverableError,
+    );
+  }
+
+  private showRecoveryNotice = (): void => {
+    if (this.recoveryNoticeTimer !== null) {
+      window.clearTimeout(this.recoveryNoticeTimer);
+    }
+    this.setState((state) => ({
+      showRecoveryNotice: true,
+      recoveryNoticeKey: state.recoveryNoticeKey + 1,
+    }));
+    this.recoveryNoticeTimer = window.setTimeout(() => {
+      this.setState({ showRecoveryNotice: false });
+      this.recoveryNoticeTimer = null;
+    }, 25_000);
+  };
+
+  private handleRecoverableError = (): void => {
+    this.showRecoveryNotice();
+  };
 
   componentDidCatch(): void {
     // Clear only transient problem state. Preferences and recent history are
@@ -38,21 +66,18 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
       /* history unavailable — the fresh workspace can still render locally */
     }
 
-    if (this.recoveryNoticeTimer !== null) {
-      window.clearTimeout(this.recoveryNoticeTimer);
-    }
     this.setState((state) => ({
       failed: false,
       recoveryKey: state.recoveryKey + 1,
-      showRecoveryNotice: true,
     }));
-    this.recoveryNoticeTimer = window.setTimeout(() => {
-      this.setState({ showRecoveryNotice: false });
-      this.recoveryNoticeTimer = null;
-    }, 25_000);
+    this.showRecoveryNotice();
   }
 
   componentWillUnmount(): void {
+    window.removeEventListener(
+      RECOVERABLE_ERROR_EVENT,
+      this.handleRecoverableError,
+    );
     if (this.recoveryNoticeTimer !== null) {
       window.clearTimeout(this.recoveryNoticeTimer);
     }
@@ -68,7 +93,12 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
         <>
           {children}
           {this.state.showRecoveryNotice && (
-            <div className="error-toast" role="status" aria-live="polite">
+            <div
+              key={this.state.recoveryNoticeKey}
+              className="error-toast"
+              role="status"
+              aria-live="polite"
+            >
               An error occurred.
             </div>
           )}

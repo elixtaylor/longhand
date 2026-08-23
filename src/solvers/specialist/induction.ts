@@ -1,15 +1,15 @@
 import { Rational } from '../../lib/math/rational';
 import { parsePoly, Poly, ParseError } from '../../lib/math/parse';
+import { parsePolyFrac } from '../../lib/math/expand';
 import { polyLatex } from '../../lib/math/format';
 import type { Solver, Step, SolveResult } from '../../lib/engine/types';
 
 /**
  * Proof by mathematical induction (SACE Stage 2 Specialist, Topic 1).
  *
- * The student types the summand and chooses the starting value/domain; we
- * derive the closed form ourselves and then set out the standard three-part
- * proof. Deriving it (rather than asking for it) means the proof is always of
- * a true statement.
+ * The student may type either a summand or a complete claimed identity. We
+ * derive the closed form exactly, validate any supplied right-hand side, then
+ * either set out the standard proof or identify a counterexample.
  */
 
 /** Interpolate the unique polynomial through the given points. */
@@ -135,9 +135,20 @@ function smallRationalRoot(p: Poly): Rational | null {
 }
 function divisorsOf(n: number): number[] {
   const a = Math.abs(Math.round(n));
+  if (a === 0) return [0];
+  const limit = Math.floor(Math.sqrt(a));
+  // Factoring is only a presentation aid. Very large constants should leave
+  // the exact polynomial expanded rather than locking the interface while
+  // trialling millions of possible factors.
+  if (limit > 100_000) return [];
   const out: number[] = [];
-  for (let i = 1; i <= a; i++) if (a % i === 0) out.push(i, -i);
-  return out;
+  for (let i = 1; i <= limit; i++) {
+    if (a % i !== 0) continue;
+    const paired = a / i;
+    out.push(i, -i);
+    if (paired !== i) out.push(paired, -paired);
+  }
+  return [...new Set(out)].sort((x, y) => Math.abs(x) - Math.abs(y));
 }
 function linearFactor(root: Rational, v: string): string {
   if (root.isZero()) return v;
@@ -185,6 +196,49 @@ function stripOuterParentheses(input: string): string {
   return text;
 }
 
+interface ClaimedStatement {
+  body: string;
+  claimedText?: string;
+}
+
+/**
+ * Separate a claimed right-hand side from the summation request. Equal signs
+ * belonging to a lower limit such as "from r=1 to n" are not statement
+ * separators.
+ */
+function separateClaim(input: string): ClaimedStatement {
+  const withoutDomain = input
+    .replace(/\bdomain\s*=\s*(?:natural|integer)\b/gi, ' ')
+    .trim();
+  let equality = -1;
+  for (let i = 0; i < withoutDomain.length; i++) {
+    if (withoutDomain[i] !== '=') continue;
+    const before = withoutDomain.slice(0, i);
+    const after = withoutDomain.slice(i + 1);
+    const lowerLimit =
+      /(?:from\s+|_?\{?)r\s*$/i.test(before) &&
+      /^\s*-?\d+\s*(?:to\b|\})/i.test(after);
+    if (!lowerLimit) equality = i;
+  }
+  if (equality === -1) return { body: withoutDomain };
+
+  const claimedText = withoutDomain
+    .slice(equality + 1)
+    .replace(
+      /(?:,|\s)\s*(?:for\s+)?n\s*(?:∈|\\in|\bin\b)\s*(?:ℕ|N|Z|integers?|natural(?:\s+numbers?)?)[\s\S]*$/i,
+      '',
+    )
+    .replace(/\s+for\s+all\s+(?:natural\s+numbers?|integers?)[\s\S]*$/i, '')
+    .replace(/[.;,\s]+$/, '')
+    .trim();
+  if (claimedText === '')
+    throw new ParseError('Type the formula on the right-hand side of =.');
+  return {
+    body: withoutDomain.slice(0, equality).trim(),
+    claimedText,
+  };
+}
+
 /**
  * Read textbook notation such as
  * `1 + 3 + 5 + ... + (2n - 1) = n²`.
@@ -197,12 +251,8 @@ function ellipsisSummand(input: string): string | null {
   const marker = /\.\.\.|…|⋯/.exec(input);
   if (!marker) return null;
 
-  // Only use the part before the equality that follows the ellipsis. This
-  // leaves `from r=...` options before the series untouched.
   const afterMarker = marker.index + marker[0].length;
-  const equality = input.indexOf('=', afterMarker);
-  const left = input.slice(0, equality === -1 ? input.length : equality);
-  let finalTerm = left.slice(afterMarker).trim();
+  let finalTerm = input.slice(afterMarker).trim();
   finalTerm = finalTerm.replace(/^\+\s*/, '');
   finalTerm = stripOuterParentheses(finalTerm);
   if (!/[nN]/.test(finalTerm)) return null;
@@ -225,6 +275,17 @@ interface InductionRequest {
   summand: Poly;
   start: number;
   domain: InductionDomain;
+  claimed?: Poly;
+}
+
+function parseClaimedPolynomial(input: string): Poly {
+  const fraction = parsePolyFrac(input, 'n');
+  if (!fraction.isPolynomial()) {
+    throw new ParseError(
+      'The claimed formula must simplify to a polynomial in n.',
+    );
+  }
+  return fraction.num.scale(Rational.int(1).div(fraction.den.get(0)));
 }
 
 function parseRequest(input: string): InductionRequest {
@@ -240,11 +301,28 @@ function parseRequest(input: string): InductionRequest {
       'A natural-number induction domain cannot start below 0.',
     );
 
-  const notationSummand = ellipsisSummand(input);
-  if (notationSummand !== null)
-    return { summand: parsePoly(notationSummand, 'r'), start, domain };
+  const statement = separateClaim(input);
+  let claimed: Poly | undefined;
+  if (statement.claimedText !== undefined) {
+    try {
+      claimed = parseClaimedPolynomial(statement.claimedText);
+    } catch {
+      throw new ParseError(
+        'Could not read the formula on the right-hand side of =.',
+      );
+    }
+  }
 
-  const cleaned = input
+  const notationSummand = ellipsisSummand(statement.body);
+  if (notationSummand !== null)
+    return {
+      summand: parsePoly(notationSummand, 'r'),
+      start,
+      domain,
+      claimed,
+    };
+
+  const cleaned = statement.body
     .replace(/\bdomain\s*=\s*(?:natural|integer)\b/gi, ' ')
     .replace(/\bfrom\s*r\s*=\s*-?\d+\s*to\s*n\b/gi, ' ')
     .replace(/prove|by induction|induction|the sum of|sum of|sum|series/gi, ' ')
@@ -253,7 +331,7 @@ function parseRequest(input: string): InductionRequest {
     .trim();
   if (cleaned === '')
     throw new ParseError('Type the terms you are adding up, e.g.  sum r^2.');
-  return { summand: parsePoly(cleaned, 'r'), start, domain };
+  return { summand: parsePoly(cleaned, 'r'), start, domain, claimed };
 }
 
 function parseSummand(input: string): Poly {
@@ -295,7 +373,7 @@ export const inductionSolver: Solver = {
         error: e instanceof Error ? e.message : 'Could not read that sum.',
       };
     }
-    const { summand: f, start, domain } = request;
+    const { summand: f, start, domain, claimed } = request;
     if (f.isZeroPoly())
       return {
         ok: false,
@@ -313,6 +391,65 @@ export const inductionSolver: Solver = {
     const domainSymbol = domain === 'integer' ? '\\mathbb{Z}' : '\\mathbb{N}';
     const domainText = `n \\in ${domainSymbol},\\; n \\ge ${start}`;
     const summation = (upper: string) => `\\sum_{r=${start}}^{${upper}}`;
+
+    if (claimed !== undefined && !claimed.equals(F)) {
+      let counterexample = start;
+      const lastCheck =
+        start + Math.min(20, Math.max(F.degree(), claimed.degree()) + 1);
+      while (
+        counterexample <= lastCheck &&
+        F.at(Rational.int(counterexample)).eq(
+          claimed.at(Rational.int(counterexample)),
+        )
+      ) {
+        counterexample++;
+      }
+      const hasCounterexample = counterexample <= lastCheck;
+      const actual = hasCounterexample
+        ? F.at(Rational.int(counterexample))
+        : null;
+      const stated = hasCounterexample
+        ? claimed.at(Rational.int(counterexample))
+        : null;
+      const claimedLatex = polyLatex(claimed);
+      const steps: Step[] = [
+        {
+          note: 'State the proposed identity before attempting induction.',
+          latex: `P(n): \\quad ${summation('n')} \\left(${summand}\\right) = ${claimedLatex}`,
+        },
+        {
+          note: 'Derive the exact polynomial represented by the sum.',
+          latex: `${summation('n')} \\left(${summand}\\right) = ${closed}`,
+        },
+      ];
+      if (hasCounterexample && actual !== null && stated !== null) {
+        steps.push({
+          note: 'Test the first value in the domain that exposes the mismatch.',
+          latex: `n=${counterexample}: \\quad \\text{LHS}=${rat(actual)}, \\qquad \\text{RHS}=${rat(stated)}`,
+          annotation: 'counterexample',
+        });
+      } else {
+        steps.push({
+          note: 'The two exact polynomials have different coefficients.',
+          latex: `${closed} \\ne ${claimedLatex}`,
+          annotation: 'mismatch',
+        });
+      }
+      steps.push({
+        note: 'The proposed statement is false, so it cannot be proved by induction. Correct the right-hand side first.',
+        latex: `\\boxed{${summation('n')} \\left(${summand}\\right) = ${closed}}`,
+        annotation: 'correct identity',
+      });
+      return {
+        ok: true,
+        solution: {
+          headline: 'Check the proposed induction statement',
+          methodName: 'Proof by induction',
+          steps,
+          answerLatex: '\\text{The proposed statement is false.}',
+        },
+      };
+    }
 
     // The inductive step, done honestly as polynomials in k.
     const Fk = new Poly(F.coeffs, 'k');
@@ -335,26 +472,26 @@ export const inductionSolver: Solver = {
 
     const steps: Step[] = [
       {
-        note: 'State clearly what you are proving.',
+        note: 'State — write the proposition and its domain clearly.',
         latex: `P(n): \\quad ${summation('n')} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${closed}, \\qquad ${domainText}`,
         annotation: 'the statement',
       },
       {
-        note: `Step 1 — the base case. Check the statement holds for $n = ${start}$.`,
+        note: `T (Test) — check the base case $n = ${start}$.`,
         latex: `\\text{LHS} = ${summation(String(start))} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${rat(f.at(Rational.int(start)))}, \\qquad \\text{RHS} = ${rat(F.at(Rational.int(start)))}`,
       },
       {
-        note: `The two sides agree, so $P(${start})$ is true.`,
+        note: `The two sides agree, so the Test confirms $P(${start})$ is true.`,
         latex: `\\text{LHS} = \\text{RHS} \\;\\Rightarrow\\; P(${start}) \\text{ is true}`,
         annotation: 'base case ✓',
       },
       {
-        note: 'Step 2 — the inductive assumption. Assume the statement is true for some $n = k$.',
+        note: 'A (Assume) — make the inductive assumption that the proposition is true for some $n = k$.',
         latex: `${summation('k')} \\left(${polyLatex(new Poly(f.coeffs, 'r'))}\\right) = ${displayClosed(Fk, 'k')}`,
         annotation: 'assume for n = k',
       },
       {
-        note: 'Step 3 — the inductive step. Show it follows for $n = k+1$. Split the last term off the sum.',
+        note: 'P (Prove) — complete the inductive step by proving the proposition for $n = k+1$. Split off the final term.',
         latex: `${summation('k+1')} = ${summation('k')} + \\left(${polyLatex(fk1InK).replace(/k/g, 'k')}\\right)`,
       },
       {
@@ -377,7 +514,7 @@ export const inductionSolver: Solver = {
         annotation: 'inductive step ✓',
       },
       {
-        note: 'Conclusion.',
+        note: 'E (End) — state the induction conclusion with the full domain.',
         latex: `P(${start}) \\text{ is true, and } P(k) \\Rightarrow P(k+1), \\text{ so by induction } P(n) \\text{ is true for all } ${domainText}.`,
         annotation: 'QED',
       },

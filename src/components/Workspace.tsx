@@ -35,10 +35,12 @@ import { VectorOperationForm } from './VectorOperationForm';
 import { ComplexOperationForm } from './ComplexOperationForm';
 import { ProbabilityOperationForm } from './ProbabilityOperationForm';
 import { InductionOperationForm } from './InductionOperationForm';
+import { MatrixOperationForm } from './MatrixOperationForm';
 import { StepList } from './StepList';
 import { PartedSolution } from './PartedSolution';
 import { TeX, RichText } from './TeX';
 import { MAX_INPUT_LENGTH } from '../lib/safety';
+import { notifyRecoverableError } from '../lib/recovery';
 import { useLocalStorage } from '../lib/useLocalStorage';
 import type { CalculatorRef } from '../data/calculators';
 
@@ -127,6 +129,10 @@ export function Workspace({
 }) {
   const shared =
     typeof window !== 'undefined' ? decodeShare(window.location.hash) : null;
+  const malformedSharedLink =
+    typeof window !== 'undefined' &&
+    window.location.hash.length > 1 &&
+    shared === null;
   const sharedPin = pinFromShare(shared);
   const sharedSolver = sharedPin ? getSolver(sharedPin.solverId) : undefined;
 
@@ -141,8 +147,8 @@ export function Workspace({
   );
   const [input, setInput] = useLocalStorage<string>(
     'longhand.draft',
-    shared?.input ?? '',
-    { preferInitial: Boolean(shared?.input) },
+    malformedSharedLink ? '' : (shared?.input ?? ''),
+    { preferInitial: Boolean(shared?.input) || malformedSharedLink },
   );
   const [worked, setWorked] = useState<Worked | null>(null);
   const [partMethodOverrides, setPartMethodOverrides] = useState<
@@ -275,6 +281,16 @@ export function Workspace({
 
   // Restore a shared link on first load.
   useEffect(() => {
+    if (malformedSharedLink) {
+      setInput('');
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}`,
+      );
+      notifyRecoverableError();
+      return;
+    }
     if (shared?.input) {
       const sharedPin = pinFromShare(shared);
       setPin(sharedPin);
@@ -296,7 +312,27 @@ export function Workspace({
   useEffect(() => {
     function onHashChange() {
       const next = decodeShare(window.location.hash);
-      if (!next?.input) return;
+      if (!next?.input) {
+        if (window.location.hash.length <= 1) return;
+        setPin(null);
+        setSolverId(solvers[0].id);
+        setMethodId(solvers[0].defaultMethodId);
+        setInput('');
+        setWorked(null);
+        setPartMethodOverrides({});
+        setChangedPart(null);
+        setDetected(null);
+        setReading(null);
+        setComparing(false);
+        hasSolved.current = false;
+        window.history.replaceState(
+          null,
+          '',
+          `${window.location.pathname}${window.location.search}`,
+        );
+        notifyRecoverableError();
+        return;
+      }
       const pinned = pinFromShare(next);
       if (pinned) {
         setSolverId(pinned.solverId);
@@ -315,9 +351,12 @@ export function Workspace({
   }, [methodId, setInput, solveWith]);
 
   /**
-   * The topic always follows what the student types. Detection only changes
-   * the method when it lands on a different topic, so a method chosen for the
-   * current question survives further edits to it.
+   * Free-text questions follow live topic detection. A calculator selection
+   * is pinned, however, because its serialised input can also resemble a
+   * neighbouring topic. For example, a completed right triangle is valid
+   * input for the general cosine rule. Letting detection replace that pin
+   * swapped the calculator form and cleared its visible values immediately
+   * after Solve.
    */
   useEffect(() => {
     const { detection, text, rewritten } = interpret(input);
@@ -325,12 +364,12 @@ export function Workspace({
     // student can see exactly what was understood — and correct it if wrong.
     setReading(rewritten && input.trim() !== '' ? text : null);
     setDetected(detection?.solver ?? null);
-    if (detection && detection.solver.id !== solverId) {
+    if (!pin && detection && detection.solver.id !== solverId) {
       setSolverId(detection.solver.id);
       setMethodId(detection.solver.defaultMethodId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input]);
+  }, [input, pin]);
 
   // Once there's working on screen, keep it in step with further edits.
   useEffect(() => {
@@ -368,11 +407,24 @@ export function Workspace({
   }
 
   function loadImported(solverIdIn: string, methodIdIn: string, value: string) {
+    const importedSolver = getSolver(solverIdIn);
+    if (!importedSolver) {
+      notifyRecoverableError();
+      return;
+    }
+    const importedMethod = importedSolver.methods.some(
+      (method) => method.id === methodIdIn,
+    )
+      ? methodIdIn
+      : importedSolver.defaultMethodId;
     setPartMethodOverrides({});
     setChangedPart(null);
-    const pinned: Pin = { solverId: solverIdIn, methodId: methodIdIn };
-    setSolverId(solverIdIn);
-    setMethodId(methodIdIn);
+    const pinned: Pin = {
+      solverId: importedSolver.id,
+      methodId: importedMethod,
+    };
+    setSolverId(importedSolver.id);
+    setMethodId(importedMethod);
     setPin(pinned);
     setInput(value);
     commit(value, pinned);
@@ -488,6 +540,7 @@ export function Workspace({
         </Suspense>
       )}
       <main className="worksheet">
+        <h1 className="sr-only">Longhand maths workspace</h1>
         <p className="sr-only" role="status">
           {copyMessage}
         </p>
@@ -529,6 +582,7 @@ export function Workspace({
               />
             ) : pin && activeMethod?.opForm === 'complex' ? (
               <ComplexOperationForm
+                methodId={methodId as 'rectangular' | 'polar'}
                 onSubmit={(serialized) => {
                   setInput(serialized);
                   commit(serialized, pin);
@@ -539,6 +593,10 @@ export function Workspace({
               />
             ) : pin && activeMethod?.opForm === 'probability' ? (
               <ProbabilityOperationForm
+                methodId={
+                  methodId as
+                    'single' | 'union' | 'intersection' | 'conditional'
+                }
                 onOperationChange={(id) => {
                   if (id !== methodId) chooseMethod(id);
                 }}
@@ -549,6 +607,21 @@ export function Workspace({
               />
             ) : pin && activeMethod?.opForm === 'induction' ? (
               <InductionOperationForm
+                onSubmit={(serialized) => {
+                  setInput(serialized);
+                  commit(serialized, pin);
+                }}
+              />
+            ) : pin && activeMethod?.opForm === 'matrix' ? (
+              <MatrixOperationForm
+                methodId={
+                  methodId as
+                    | 'standard'
+                    | 'determinant'
+                    | 'inverse'
+                    | 'transpose'
+                    | 'system'
+                }
                 onSubmit={(serialized) => {
                   setInput(serialized);
                   commit(serialized, pin);
@@ -764,10 +837,12 @@ function SolutionView({
   const currentMethod = solver.methods.find((m) => m.id === methodId);
   const structured =
     pinned && !!(currentMethod?.fields || currentMethod?.opForm);
+  const methodPickerLivesInForm =
+    hasStructuredMethod &&
+    ['circle-geometry', 'complex', 'probability'].includes(solverId);
 
   const methodPicker =
-    solver.methods.length > 1 &&
-    !(solverId === 'circle-geometry' && hasStructuredMethod) ? (
+    solver.methods.length > 1 && !methodPickerLivesInForm ? (
       <div className="solution-methods">
         <TopicMethodPicker
           solverId={solverId}

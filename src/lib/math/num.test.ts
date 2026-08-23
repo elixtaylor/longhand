@@ -52,6 +52,9 @@ describe('parseParams', () => {
   it('handles negatives and decimals', () => {
     expect(parseParams('r=-0.5, n=10')).toEqual({ r: -0.5, n: 10 });
   });
+  it('reads scientific notation as one value instead of truncating it', () => {
+    expect(parseParams('x=1e3, y=-2.5E-2')).toEqual({ x: 1000, y: -0.025 });
+  });
 });
 
 describe('formatParams', () => {

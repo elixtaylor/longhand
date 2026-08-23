@@ -22,6 +22,22 @@ describe('rightTriangleSolver', () => {
   it('rejects a hypotenuse that is not the longest side', () => {
     expect(rightTriangleSolver.solve('a=13, c=5', 'pythagoras').ok).toBe(false);
   });
+  it('rejects inconsistent redundant right-triangle values', () => {
+    expect(rightTriangleSolver.solve('a=3, b=4, c=6', 'pythagoras').ok).toBe(
+      false,
+    );
+    expect(rightTriangleSolver.solve('a=3, b=4, A=70', 'trig-ratio').ok).toBe(
+      false,
+    );
+    expect(rightTriangleSolver.solve('A=30, B=50, c=10', 'trig-ratio').ok).toBe(
+      false,
+    );
+  });
+  it('requires at least one side', () => {
+    expect(rightTriangleSolver.solve('A=30, B=60', 'trig-ratio').ok).toBe(
+      false,
+    );
+  });
   it('finds a side from an angle and the hypotenuse', () => {
     // a = 10 sin 30° = 5
     expect(ans(rightTriangleSolver, 'A=30, c=10', 'trig-ratio')).toBe('a = 5');
@@ -99,6 +115,19 @@ describe('triangleRulesSolver', () => {
       'b = 5',
     );
   });
+  it('returns both valid angles in the ambiguous sine-rule case', () => {
+    expect(ans(triangleRulesSolver, 'a=10, A=30, b=15', 'sine-rule')).toContain(
+      '\\text{or}',
+    );
+  });
+  it('rejects inconsistent redundant general-triangle values', () => {
+    expect(
+      triangleRulesSolver.solve('a=3, b=4, c=5, C=40', 'cosine-rule').ok,
+    ).toBe(false);
+    expect(
+      triangleRulesSolver.solve('a=10, A=30, b=10, B=80', 'sine-rule').ok,
+    ).toBe(false);
+  });
   it('returns every derived general-triangle value for calculators', () => {
     const result = triangleRulesSolver.solve('a=7, b=9, C=40', 'cosine-rule');
     expect(result.ok).toBe(true);
@@ -168,9 +197,84 @@ describe('trigEquationSolver', () => {
       'x = \\dfrac{\\pi}{6},\\; x = \\dfrac{5\\pi}{6}',
     );
   });
+
+  it('respects a stated degree interval wider than one revolution', () => {
+    expect(
+      ans(
+        trigEquationSolver,
+        'sin x = 0.5, 0 <= x <= 720 degrees',
+        'unit-circle',
+      ),
+    ).toBe(
+      'x = 30^{\\circ},\\; x = 150^{\\circ},\\; x = 390^{\\circ},\\; x = 510^{\\circ}',
+    );
+  });
+
+  it('respects inclusive radian endpoints and negative domains', () => {
+    expect(
+      ans(
+        trigEquationSolver,
+        'sin x = 0 radians, 0 <= x <= 2pi',
+        'unit-circle',
+      ),
+    ).toBe('x = 0,\\; x = \\pi,\\; x = 2\\pi');
+    expect(
+      ans(
+        trigEquationSolver,
+        'tan x = 1 radians, -pi <= x <= pi',
+        'unit-circle',
+      ),
+    ).toBe('x = -\\dfrac{3\\pi}{4},\\; x = \\dfrac{\\pi}{4}');
+  });
+
+  it('does not round the isolated trig ratio in its working', () => {
+    const result = trigEquationSolver.solve('sin x = 0.1234', 'unit-circle');
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(JSON.stringify(result.solution.steps)).toContain('0.1234');
+  });
+
+  it('states when a valid trig equation has no solutions in the given domain', () => {
+    expect(
+      ans(
+        trigEquationSolver,
+        'sin x = 0.5, 200 < x < 300 degrees',
+        'unit-circle',
+      ),
+    ).toBe('\\text{No solutions in the stated domain}');
+  });
+
+  it('uses the correct quadrant signs for negative trig ratios', () => {
+    const result = trigEquationSolver.solve('sin x = -0.5', 'unit-circle');
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(
+        result.solution.steps.map((step) => step.note).join(' '),
+      ).toContain('negative in quadrants III and IV');
+  });
 });
 
 describe('measurementSolver', () => {
+  it('rejects finite dimensions whose derived measurements overflow', () => {
+    expect(measurementSolver.solve('sphere r=1e200 volume', 'volume').ok).toBe(
+      false,
+    );
+  });
+  it('rejects non-positive dimensions', () => {
+    expect(measurementSolver.solve('circle r=-5', 'auto').ok).toBe(false);
+    expect(measurementSolver.solve('rectangle l=0, w=4 area', 'area').ok).toBe(
+      false,
+    );
+  });
+
+  it('does not answer a different quantity when one is unavailable', () => {
+    const result = measurementSolver.solve(
+      'triangle b=6, h=4 perimeter',
+      'perimeter',
+    );
+    expect(result.ok).toBe(false);
+  });
+
   it('finds the area and circumference of a circle', () => {
     const r = measurementSolver.solve('circle r=5', 'auto');
     expect(r.ok).toBe(true);

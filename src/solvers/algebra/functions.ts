@@ -183,6 +183,14 @@ export const functionsSolver: Solver = {
         error: 'Sketching handles polynomials up to degree 6.',
       };
 
+    const numericCoefficients = p.terms().map(({ coeff }) => coeff.toNumber());
+    if (!numericCoefficients.every(Number.isFinite))
+      return {
+        ok: false,
+        error:
+          'That function has coefficients outside the calculator’s numeric range.',
+      };
+
     const fx = polyLatex(p);
     const steps: Step[] = [
       { note: 'Write the function.', latex: `f(x) = ${fx}` },
@@ -198,6 +206,11 @@ export const functionsSolver: Solver = {
 
     // x-intercepts
     const roots = realRoots(p);
+    if (roots.some((root) => !Number.isFinite(root)))
+      return {
+        ok: false,
+        error: 'The intercepts are outside the calculator’s numeric range.',
+      };
     if (roots.length === 0) {
       steps.push({
         note: 'Solving $f(x) = 0$ gives no real solutions, so the curve never crosses the $x$-axis.',
@@ -214,12 +227,23 @@ export const functionsSolver: Solver = {
 
     // Turning points from the derivative
     const d1 = differentiate(p);
+    if (d1.terms().some(({ coeff }) => !Number.isFinite(coeff.toNumber())))
+      return {
+        ok: false,
+        error: 'The derivative is outside the calculator’s numeric range.',
+      };
     steps.push({
       note: 'Differentiate to locate the turning points.',
       latex: `f'(x) = ${polyLatex(d1)}`,
     });
 
     const stationary = realRoots(d1);
+    if (stationary.some((root) => !Number.isFinite(root)))
+      return {
+        ok: false,
+        error:
+          'The stationary points are outside the calculator’s numeric range.',
+      };
     if (stationary.length === 0) {
       steps.push({
         note: '$f’(x) = 0$ has no real solutions, so the curve has no turning points — it is always increasing or always decreasing.',
@@ -233,7 +257,6 @@ export const functionsSolver: Solver = {
       });
 
       const d2 = differentiate(d1);
-      const d3 = deg >= 3 ? differentiate(d2) : null;
       steps.push({
         note: 'Differentiate again to classify each one.',
         latex: `f''(x) = ${polyLatex(d2)}`,
@@ -242,17 +265,38 @@ export const functionsSolver: Solver = {
       for (const x of stationary) {
         const y = evaluatePoly(p, x);
         const curvature = evaluatePoly(d2, x);
-        const isInflection =
-          Math.abs(curvature) < 1e-9 &&
-          d3 !== null &&
-          Math.abs(evaluatePoly(d3, x)) > 1e-8;
-        const kind = isInflection
-          ? 'a point of inflection'
-          : Math.abs(curvature) < 1e-9
-            ? 'a possible stationary inflection'
-            : curvature > 0
-              ? 'a minimum'
-              : 'a maximum';
+        if (![x, y, curvature].every(Number.isFinite))
+          return {
+            ok: false,
+            error:
+              'A turning-point value is outside the calculator’s numeric range.',
+          };
+
+        const nearest = stationary
+          .filter((other) => other !== x)
+          .reduce(
+            (distance, other) => Math.min(distance, Math.abs(other - x)),
+            Infinity,
+          );
+        const h = Math.min(1e-4, nearest / 4);
+        const leftGradient = evaluatePoly(d1, x - h);
+        const rightGradient = evaluatePoly(d1, x + h);
+        if (![h, leftGradient, rightGradient].every(Number.isFinite))
+          return {
+            ok: false,
+            error:
+              'That turning point cannot be classified within the calculator’s numeric range.',
+          };
+        const flatCurvature = Math.abs(curvature) < 1e-9;
+        const kind = !flatCurvature
+          ? curvature > 0
+            ? 'a minimum'
+            : 'a maximum'
+          : leftGradient < 0 && rightGradient > 0
+            ? 'a minimum'
+            : leftGradient > 0 && rightGradient < 0
+              ? 'a maximum'
+              : 'a stationary point of inflection';
         steps.push({
           note: `At $x = ${fmt(x, 4)}$, $f''(x) = ${fmt(curvature, 4)}$, which is ${
             Math.abs(curvature) < 1e-9
@@ -264,6 +308,13 @@ export const functionsSolver: Solver = {
           latex: `\\left(${fmt(x, 4)},\\; ${fmt(y, 4)}\\right) \\text{ is ${kind}}`,
           annotation: kind,
         });
+        if (flatCurvature) {
+          steps.push({
+            note: 'The second derivative is zero, so check the sign of the gradient on each side.',
+            latex: `f'(${fmt(x - h, 6)}) = ${fmt(leftGradient, 6)}, \qquad f'(${fmt(x + h, 6)}) = ${fmt(rightGradient, 6)}`,
+            annotation: kind,
+          });
+        }
       }
     }
 

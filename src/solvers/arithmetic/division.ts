@@ -9,6 +9,8 @@ function parseDivision(input: string): { n: number; d: number } {
   }
   const n = parseInt(parts[0], 10);
   const d = parseInt(parts[1], 10);
+  if (![n, d].every(Number.isSafeInteger))
+    throw new Error('Use whole numbers small enough to keep the result exact.');
   if (d === 0) throw new Error('You can’t divide by zero.');
   return { n, d };
 }

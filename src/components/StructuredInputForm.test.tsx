@@ -59,6 +59,35 @@ describe('StructuredInputForm calculators', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('recalculates auto-filled values when a given value changes', async () => {
+    const method = rightTriangleSolver.methods.find(
+      (candidate) => candidate.id === 'pythagoras',
+    )!;
+    render(
+      <StructuredInputForm
+        method={method}
+        solver={rightTriangleSolver}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('a'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('b'), { target: { value: '4' } });
+    await waitFor(() =>
+      expect((screen.getByLabelText('c') as HTMLInputElement).value).toBe('5'),
+    );
+
+    fireEvent.change(screen.getByLabelText('a'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('b'), { target: { value: '12' } });
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('c') as HTMLInputElement).value).toBe('13');
+      expect(screen.getByLabelText('c').className).toContain(
+        'num-input--derived',
+      );
+    });
+  });
+
   it('clears calculator values without submitting working', async () => {
     const method = rightTriangleSolver.methods.find(
       (candidate) => candidate.id === 'pythagoras',
@@ -114,7 +143,7 @@ describe('StructuredInputForm calculators', () => {
       );
     });
     fireEvent.click(screen.getByRole('button', { name: 'Solve' }));
-    expect(onSubmit).toHaveBeenCalledWith(expect.stringContaining('A='));
+    expect(onSubmit).toHaveBeenCalledWith('a=7, b=9, C=40');
   });
 
   it('fills a default confidence level while the interval is being prepared', async () => {
@@ -144,6 +173,25 @@ describe('StructuredInputForm calculators', () => {
         (screen.getByLabelText('Confidence %') as HTMLInputElement).value,
       ).toBe('95');
     });
+  });
+
+  it('does not preview required blank fields as zero values', () => {
+    const method = distributionsSolver.methods.find(
+      (candidate) => candidate.id === 'binomial',
+    )!;
+    render(
+      <StructuredInputForm
+        method={method}
+        solver={distributionsSolver}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Answer')).toBeNull();
+    expect(
+      (screen.getByRole('button', { name: 'Solve' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
   });
 
   it('fills the missing circle diameter from a radius', async () => {

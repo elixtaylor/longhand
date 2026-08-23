@@ -94,7 +94,7 @@ export interface Method {
    * per method. See VectorOperationForm/ComplexOperationForm/
    * ProbabilityOperationForm.
    */
-  opForm?: 'vector' | 'complex' | 'probability' | 'induction';
+  opForm?: 'vector' | 'complex' | 'probability' | 'induction' | 'matrix';
 }
 
 export type SolveResult =

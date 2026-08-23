@@ -90,6 +90,12 @@ interface NumericalRoots {
   minimumTraces: MinimumTrace[];
 }
 
+const SEARCH_MIN = -1000;
+const SEARCH_MAX = 1000;
+const SEARCH_STEP = 0.5;
+const MAX_WORKED_ROOTS = 4;
+const MAX_REPORTED_ROOTS = 20;
+
 function refineMinimum(
   f: Expr,
   left: number,
@@ -169,9 +175,9 @@ function numericalRoots(f: Expr): NumericalRoots {
   const traces: BisectionTrace[] = [];
   const sampleTraces: SampleTrace[] = [];
   const minimumTraces: MinimumTrace[] = [];
-  const min = -1000;
-  const max = 1000;
-  const step = 0.5;
+  const min = SEARCH_MIN;
+  const max = SEARCH_MAX;
+  const step = SEARCH_STEP;
   let previousX = min;
   let previous = value(f, previousX);
   for (let x = min + step; x <= max; x += step) {
@@ -230,6 +236,42 @@ function numericalRoots(f: Expr): NumericalRoots {
   };
 }
 
+/**
+ * A sign change is only evidence of a root when the equation is continuous
+ * across the bracket. Poles such as tan(pi/2) also change sign, so every
+ * numerical candidate must be checked against the original two sides before
+ * it is presented as a solution.
+ */
+function satisfiesEquation(left: Expr, right: Expr, x: number): boolean {
+  const leftValue = value(left, x);
+  const rightValue = value(right, x);
+  if (!Number.isFinite(leftValue) || !Number.isFinite(rightValue)) return false;
+  const scale = Math.max(1, Math.abs(leftValue), Math.abs(rightValue));
+  return Math.abs(leftValue - rightValue) <= 1e-8 * scale;
+}
+
+function validatedRoots(
+  numerical: NumericalRoots,
+  left: Expr,
+  right: Expr,
+): NumericalRoots {
+  const valid = (x: number) => satisfiesEquation(left, right, x);
+  return {
+    roots: numerical.roots.filter(valid),
+    traces: numerical.traces.filter((trace) => valid(trace.root)),
+    sampleTraces: numerical.sampleTraces.filter((trace) => valid(trace.x)),
+    minimumTraces: numerical.minimumTraces.filter((trace) => valid(trace.root)),
+  };
+}
+
+function nearestRoots(roots: number[], maximum: number): number[] {
+  if (roots.length <= maximum) return roots;
+  return [...roots]
+    .sort((a, b) => Math.abs(a) - Math.abs(b) || a - b)
+    .slice(0, maximum)
+    .sort((a, b) => a - b);
+}
+
 function solveEquation(leftText: string, rightText: string): SolveResult {
   let left: Expr;
   let right: Expr;
@@ -285,7 +327,7 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
     };
   }
 
-  const numerical = numericalRoots(f);
+  const numerical = validatedRoots(numericalRoots(f), left, right);
   const roots = numerical.roots;
   const steps: Step[] = [
     {
@@ -314,7 +356,11 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
             : '\\text{No sign-changing interval or near-zero touch was found in the search window.}',
     },
   ];
-  numerical.traces.forEach((trace, rootIndex) => {
+  const workedTraces = [...numerical.traces]
+    .sort((a, b) => Math.abs(a.root) - Math.abs(b.root))
+    .slice(0, MAX_WORKED_ROOTS)
+    .sort((a, b) => a.root - b.root);
+  workedTraces.forEach((trace, rootIndex) => {
     const shown = trace.rows.slice(0, 6);
     shown.forEach((row, iteration) => {
       steps.push({
@@ -329,7 +375,15 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
       });
     }
   });
-  numerical.minimumTraces.forEach((trace, rootIndex) => {
+  const remainingWorkedRoots = Math.max(
+    0,
+    MAX_WORKED_ROOTS - workedTraces.length,
+  );
+  const workedMinimumTraces = [...numerical.minimumTraces]
+    .sort((a, b) => Math.abs(a.root) - Math.abs(b.root))
+    .slice(0, remainingWorkedRoots)
+    .sort((a, b) => a.root - b.root);
+  workedMinimumTraces.forEach((trace, rootIndex) => {
     trace.rows.slice(0, 6).forEach((row, iteration) => {
       steps.push({
         note: `Refine the touching root ${rootIndex + 1} around the smallest |f(x)| value.`,
@@ -343,9 +397,30 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
       });
     }
   });
+  const hiddenWorkedRoots =
+    numerical.traces.length +
+    numerical.minimumTraces.length -
+    workedTraces.length -
+    workedMinimumTraces.length;
+  if (hiddenWorkedRoots > 0) {
+    steps.push({
+      note:
+        'The same refinement and residual check was applied to ' +
+        hiddenWorkedRoots +
+        ' further root' +
+        (hiddenWorkedRoots === 1 ? '.' : 's.'),
+      latex:
+        '\\text{Each retained value satisfies }\\left|\\text{LHS}-\\text{RHS}\\right| \\le 10^{-8}\\max\\left(1,|\\text{LHS}|,|\\text{RHS}|\\right).',
+    });
+  }
   if (roots.length === 0) {
     steps.push({
-      note: 'No real root was located in the searched domain −1000 ≤ x ≤ 1000 after checking sign changes and near-zero touches. This finite search cannot prove that no root exists elsewhere.',
+      note:
+        'No real root was located in the searched domain ' +
+        SEARCH_MIN +
+        ' ≤ x ≤ ' +
+        SEARCH_MAX +
+        ' after checking sign changes, near-zero touches and every candidate residual. This finite search cannot prove that no root exists elsewhere.',
       latex: '\\text{No real root found in the searched window.}',
     });
     return {
@@ -358,9 +433,31 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
       },
     };
   }
+  const reportedRoots = nearestRoots(roots, MAX_REPORTED_ROOTS);
+  const rootList = reportedRoots
+    .map((root) => 'x \\approx ' + fmt(root, 8))
+    .join(', \\quad ');
+  const omitted = roots.length - reportedRoots.length;
   steps.push({
-    note: 'The real solutions are:',
-    latex: roots.map((root) => `x \\approx ${fmt(root, 8)}`).join(', \\quad '),
+    note:
+      omitted > 0
+        ? 'The search found ' +
+          roots.length +
+          ' validated roots. The ' +
+          reportedRoots.length +
+          ' nearest zero are shown to keep the result readable.'
+        : 'These are the validated solutions found for ' +
+          SEARCH_MIN +
+          ' ≤ x ≤ ' +
+          SEARCH_MAX +
+          '.',
+    latex:
+      omitted > 0
+        ? rootList +
+          ', \\quad \\ldots \\quad (' +
+          roots.length +
+          '\\text{ roots found})'
+        : rootList,
     annotation: 'numerical answer',
   });
   return {
@@ -369,9 +466,13 @@ function solveEquation(leftText: string, rightText: string): SolveResult {
       headline: `Solve ${toLatex(left)} = ${toLatex(right)}`,
       methodName: 'Numerical equation solver',
       steps,
-      answerLatex: roots
-        .map((root) => `x \\approx ${fmt(root, 8)}`)
-        .join(', \\quad '),
+      answerLatex:
+        omitted > 0
+          ? rootList +
+            ', \\quad \\ldots \\quad (' +
+            roots.length +
+            '\\text{ roots found})'
+          : rootList,
     },
   };
 }

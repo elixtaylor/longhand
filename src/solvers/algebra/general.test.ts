@@ -89,4 +89,26 @@ describe('general equation fallback', () => {
       expect(last?.latex).toContain('=');
     }
   });
+
+  it('rejects tangent discontinuities instead of reporting them as roots', () => {
+    const result = generalSolver.solve('tan(x) = x', 'numerical');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const answer = result.solution.answerLatex ?? '';
+      expect(answer).toContain('x \\approx 0');
+      expect(answer).not.toMatch(/1\.5707|4\.7123|7\.8539/);
+      expect(result.solution.steps.length).toBeLessThan(40);
+    }
+  });
+
+  it('bounds the displayed working when an equation has many roots', () => {
+    const result = generalSolver.solve('tan(x) + x = 0', 'numerical');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.steps.length).toBeLessThan(40);
+      expect(
+        result.solution.steps[result.solution.steps.length - 1]?.note,
+      ).toMatch(/validated|search found/i);
+    }
+  });
 });

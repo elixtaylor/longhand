@@ -104,16 +104,64 @@ const PAIRS: Array<['a' | 'b' | 'c', 'A' | 'B' | 'C']> = [
 function whyImpossible(t: Tri): string | null {
   for (const k of ['a', 'b', 'c'] as const) {
     const v = t[k];
-    if (v !== undefined && v <= 0) {
+    if (v !== undefined && (!Number.isFinite(v) || v <= 0)) {
       return `A side length has to be positive, and ${k} = ${fmt(v)}.`;
     }
   }
   for (const k of ['A', 'B', 'C'] as const) {
     const v = t[k];
-    if (v !== undefined && (v <= 0 || v >= 180)) {
+    if (v !== undefined && (!Number.isFinite(v) || v <= 0 || v >= 180)) {
       return `An angle in a triangle is between 0° and 180°, and ${k} = ${fmt(v)}°.`;
     }
   }
+  const lengths = [t.a, t.b, t.c];
+  if (
+    lengths.every((value): value is number => value !== undefined) &&
+    (t.a! + t.b! <= t.c! || t.a! + t.c! <= t.b! || t.b! + t.c! <= t.a!)
+  )
+    return 'Those three lengths cannot form a triangle.';
+
+  if (lengths.every((value): value is number => value !== undefined)) {
+    const angleFromSides = (opposite: number, first: number, second: number) =>
+      rad2deg(
+        Math.acos(
+          Math.max(
+            -1,
+            Math.min(
+              1,
+              (first * first + second * second - opposite * opposite) /
+                (2 * first * second),
+            ),
+          ),
+        ),
+      );
+    const expected: Record<'A' | 'B' | 'C', number> = {
+      A: angleFromSides(t.a!, t.b!, t.c!),
+      B: angleFromSides(t.b!, t.a!, t.c!),
+      C: angleFromSides(t.c!, t.a!, t.b!),
+    };
+    for (const key of ['A', 'B', 'C'] as const) {
+      if (
+        t[key] !== undefined &&
+        Math.abs(t[key]! - expected[key]) > Math.max(0.2, expected[key] * 0.002)
+      )
+        return 'A supplied angle is inconsistent with the three side lengths.';
+    }
+  }
+
+  const completePairs = PAIRS.filter(
+    ([side, angle]) => t[side] !== undefined && t[angle] !== undefined,
+  ).map(([side, angle]) => t[side]! / Math.sin(deg2rad(t[angle]!)));
+  if (
+    completePairs.length >= 2 &&
+    completePairs.some(
+      (ratio) =>
+        Math.abs(ratio - completePairs[0]) >
+        Math.max(0.02, Math.abs(completePairs[0]) * 0.005),
+    )
+  )
+    return 'The supplied side-angle pairs do not satisfy the sine rule.';
+
   const given = (['A', 'B', 'C'] as const)
     .map((k) => t[k])
     .filter((v): v is number => v !== undefined);
@@ -413,7 +461,9 @@ function bySineRule(t: Tri): SolveResult {
       steps,
       'Sine rule',
       'Solve the triangle',
-      `${ta} = ${fmt(ang)}${DEG}`,
+      secondTriangle
+        ? `${ta} = ${fmt(ang)}${DEG} \\quad\\text{or}\\quad ${ta} = ${fmt(obtuse)}${DEG}`
+        : `${ta} = ${fmt(ang)}${DEG}`,
     );
   }
 
@@ -463,7 +513,7 @@ function byCosineRule(t: Tri): SolveResult {
       };
     }
     const cosC = (a * a + b * b - c * c) / (2 * a * b);
-    const C = rad2deg(Math.acos(cosC));
+    const C = rad2deg(Math.acos(Math.max(-1, Math.min(1, cosC))));
     steps.push({
       note: 'All three sides are known, so rearrange to make the angle the subject.',
       latex: `\\cos C = \\dfrac{a^{2} + b^{2} - c^{2}}{2ab}`,

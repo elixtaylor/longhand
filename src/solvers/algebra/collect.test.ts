@@ -122,6 +122,13 @@ describe('term collecting', () => {
     expect(r.steps.some((s) => s.annotation === 'extraneous')).toBe(true);
   });
 
+  it('keeps surviving irrational roots exact after a domain rejection', () => {
+    const answer = solve('(x-1)(x^2-2)/(x-1) = 0').answerLatex ?? '';
+    expect(answer).toContain('\\sqrt{2}');
+    expect(answer).not.toContain('1.414');
+    expect(answer).not.toContain('x = 1,');
+  });
+
   it('refuses a degree ≥ 3 result with no rational root, rather than guessing', () => {
     // x(x-1)(x-2) = 5  expands to  x^3 - 3x^2 + 2x - 5 = 0, which has no
     // rational root at all (checked against every p/q the theorem allows) —

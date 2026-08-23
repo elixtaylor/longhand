@@ -48,8 +48,19 @@ export function syntheticDivide(
 function divisors(n: number): number[] {
   const a = Math.abs(Math.round(n));
   if (a === 0) return [0];
+  if (!Number.isSafeInteger(a)) return [-1, 1];
+  // Trial division only needs to reach sqrt(n), not n. For extremely large
+  // coefficients, keep the universally useful ±1 candidates and refuse a
+  // non-neat factorisation quickly rather than freezing the page.
+  const limit = Math.floor(Math.sqrt(a));
+  if (limit > 100_000) return [-1, 1];
   const out: number[] = [];
-  for (let i = 1; i <= a; i++) if (a % i === 0) out.push(i, -i);
+  for (let i = 1; i <= limit; i++) {
+    if (a % i !== 0) continue;
+    const pair = a / i;
+    out.push(i, -i);
+    if (pair !== i) out.push(pair, -pair);
+  }
   return out.sort((x, y) => Math.abs(x) - Math.abs(y) || x - y);
 }
 
@@ -66,6 +77,7 @@ export function candidates(p: Poly): Rational[] {
 
   const ps = divisors(constant.n);
   const qs = divisors(lead.n).filter((q) => q > 0);
+  if (ps.length * qs.length > 2_000) return [Rational.int(1), Rational.int(-1)];
   const seen = new Set<string>();
   const out: Rational[] = [];
   for (const q of qs) {

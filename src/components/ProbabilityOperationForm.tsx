@@ -16,15 +16,16 @@ const OPS: Array<{ id: ProbOp; label: string; keyword: string }> = [
 ];
 
 /**
- * Probability's methods are a genuine operation choice (see VectorOperationForm/
- * ComplexOperationForm), but two of them also take one further, optional value —
- * P(A∩B), left blank to assume independent events — which those two didn't need,
- * so this isn't quite either existing op-form's shape.
+ * Probability's methods are a genuine operation choice. Combined events need
+ * either a supplied overlap or an explicit independence assumption so the
+ * calculator never invents a relationship between the events.
  */
 export function ProbabilityOperationForm({
+  methodId,
   onSubmit,
   onOperationChange,
 }: {
+  methodId?: ProbOp;
   onSubmit: (serialized: string) => void;
   /** Probability's methods are exactly these four operations (unlike
    * Vectors'/Complex's, which sit several operations under one or two
@@ -33,12 +34,14 @@ export function ProbabilityOperationForm({
    * of sync with what was actually just solved. */
   onOperationChange?: (id: ProbOp) => void;
 }) {
-  const [op, setOp] = useState<ProbOp>('single');
+  const [selectedOp, setSelectedOp] = useState<ProbOp>(methodId ?? 'single');
+  const op = methodId ?? selectedOp;
   const [fav, setFav] = useState('');
   const [total, setTotal] = useState('');
   const [pa, setPa] = useState('');
   const [pb, setPb] = useState('');
   const [pab, setPab] = useState('');
+  const [independent, setIndependent] = useState(false);
 
   const favN = Number(fav.trim());
   const totalN = Number(total.trim());
@@ -58,7 +61,8 @@ export function ProbabilityOperationForm({
         pb.trim() !== '' &&
         Number.isFinite(paN) &&
         Number.isFinite(pbN) &&
-        (pab.trim() === '' || Number.isFinite(pabN));
+        (pab.trim() === '' || Number.isFinite(pabN)) &&
+        (independent || (op !== 'intersection' && pab.trim() !== ''));
 
   const serialized = complete
     ? op === 'single'
@@ -69,6 +73,7 @@ export function ProbabilityOperationForm({
           ...(op !== 'intersection' && pab.trim() !== ''
             ? [`P(A and B)=${pabN}`]
             : []),
+          ...(independent ? ['independent'] : []),
         ].join(', ')} ${OPS.find((o) => o.id === op)!.keyword}`
     : '';
   const liveResult = complete ? probabilitySolver.solve(serialized, op) : null;
@@ -83,6 +88,7 @@ export function ProbabilityOperationForm({
     const parts = [`P(A)=${paN}`, `P(B)=${pbN}`];
     if (op !== 'intersection' && pab.trim() !== '')
       parts.push(`P(A and B)=${pabN}`);
+    if (independent) parts.push('independent');
     onSubmit(`${parts.join(', ')} ${OPS.find((o) => o.id === op)!.keyword}`);
   }
 
@@ -92,16 +98,22 @@ export function ProbabilityOperationForm({
     setValue: (v: string) => void,
     placeholder?: string,
   ) {
+    const id = `probability-${label.toLowerCase().replace(/[^a-z]+/g, '-')}`;
+    const invalid = value.trim() !== '' && !Number.isFinite(Number(value));
     return (
       <div className="number-field" key={label}>
-        <label className="field-label">{label}</label>
+        <label className="field-label" htmlFor={id}>
+          {label}
+        </label>
         <input
+          id={id}
           className="expr-input num-input"
           type="text"
           inputMode="decimal"
           autoComplete="off"
           placeholder={placeholder}
           aria-label={label}
+          aria-invalid={invalid || undefined}
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />
@@ -109,44 +121,72 @@ export function ProbabilityOperationForm({
     );
   }
 
+  function clearValues() {
+    setFav('');
+    setTotal('');
+    setPa('');
+    setPb('');
+    setPab('');
+    setIndependent(false);
+  }
+
   return (
     <form className="structured-form" onSubmit={submit}>
-      <div className="op-picker" role="radiogroup" aria-label="Operation">
-        {OPS.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            aria-pressed={op === o.id}
-            onClick={() => {
-              setOp(o.id);
-              onOperationChange?.(o.id);
-            }}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-
-      {op === 'single' ? (
-        <div className="number-fields">
-          {numberField('Favourable outcomes', fav, setFav)}
-          {numberField('Total outcomes', total, setTotal)}
+      <fieldset className="calculator-choice">
+        <legend className="calculator-section-label">Calculation</legend>
+        <div className="op-picker" role="radiogroup" aria-label="Operation">
+          {OPS.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              aria-pressed={op === o.id}
+              onClick={() => {
+                setSelectedOp(o.id);
+                onOperationChange?.(o.id);
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
-      ) : (
-        <>
+      </fieldset>
+
+      <div className="calculator-input-region">
+        {op === 'single' ? (
           <div className="number-fields">
-            {numberField('P(A)', pa, setPa, '0–1')}
-            {numberField('P(B)', pb, setPb, '0–1')}
-            {op !== 'intersection' && numberField('P(A∩B)', pab, setPab)}
+            {numberField('Favourable outcomes', fav, setFav)}
+            {numberField('Total outcomes', total, setTotal)}
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <div className="number-fields">
+              {numberField('P(A)', pa, setPa, '0 to 1')}
+              {numberField('P(B)', pb, setPb, '0 to 1')}
+              {op !== 'intersection' &&
+                numberField('P(A∩B)', pab, setPab, '0 to 1')}
+            </div>
+            <label className="probability-assumption">
+              <input
+                type="checkbox"
+                checked={independent}
+                onChange={(event) => setIndependent(event.target.checked)}
+              />
+              <span>Events are independent</span>
+            </label>
+          </>
+        )}
+      </div>
 
       <CalculatorPreview result={liveResult} />
 
-      <button type="submit" className="btn-primary" disabled={!complete}>
-        Solve
-      </button>
+      <div className="calculator-actions">
+        <button type="submit" className="btn-primary" disabled={!complete}>
+          Solve
+        </button>
+        <button type="button" className="btn-secondary" onClick={clearValues}>
+          Clear
+        </button>
+      </div>
     </form>
   );
 }

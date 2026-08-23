@@ -67,13 +67,27 @@ export function StructuredInputForm({
   const [values, setValues] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(fields.map((f) => [f.id, blank(f)])),
   );
+  const [derivedFields, setDerivedFields] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   function setComponent(fieldId: string, index: number, raw: string) {
     setValues((prev) => {
-      const next = [...prev[fieldId]];
+      // A calculated value belongs to the previous set of givens. Clear all
+      // calculated boxes before applying the student's edit so stale values
+      // can never be submitted as if they were new givens.
+      const nextValues = { ...prev };
+      for (const derivedId of derivedFields) {
+        nextValues[derivedId] = blank(
+          fields.find((field) => field.id === derivedId)!,
+        );
+      }
+      const next = [...nextValues[fieldId]];
       next[index] = raw;
-      return { ...prev, [fieldId]: next };
+      nextValues[fieldId] = next;
+      return nextValues;
     });
+    if (derivedFields.size > 0) setDerivedFields(new Set());
   }
 
   const { parsed, complete } = useMemo(() => {
@@ -84,6 +98,13 @@ export function StructuredInputForm({
       const comps = values[f.id].slice(0, width);
       if (f.kind === 'number' && f.optional) {
         // Blank is a value not given, not a reason to disable submitting.
+        // A value filled by the live solver is display-only until the
+        // student edits it. Excluding it here keeps every recalculation based
+        // solely on the current givens.
+        if (derivedFields.has(f.id)) {
+          nextParsed[f.id] = [];
+          continue;
+        }
         const raw = (comps[0] ?? '').trim();
         if (raw === '') {
           nextParsed[f.id] = [];
@@ -109,11 +130,11 @@ export function StructuredInputForm({
       nextComplete = false;
     }
     return { parsed: nextParsed, complete: nextComplete };
-  }, [allOptional, dims, fields, values]);
+  }, [allOptional, derivedFields, dims, fields, values]);
 
   const serialized = useMemo(
-    () => (method.serialize ? method.serialize(parsed) : ''),
-    [method, parsed],
+    () => (complete && method.serialize ? method.serialize(parsed) : ''),
+    [complete, method, parsed],
   );
   const liveResult = useMemo<SolveResult | null>(() => {
     if (!solver || !serialized) return null;
@@ -129,20 +150,25 @@ export function StructuredInputForm({
     const derived = liveResult.solution.derivedValues;
     if (derived) {
       const updates: Record<string, string[]> = {};
+      const nextDerived = new Set(derivedFields);
       for (const field of fields) {
         const value = derived[field.id];
         if (
           field.kind === 'number' &&
           Number.isFinite(value) &&
-          values[field.id][0].trim() === ''
+          (values[field.id][0].trim() === '' || derivedFields.has(field.id))
         ) {
-          updates[field.id] = [displayDerived(value)];
+          const display = displayDerived(value);
+          if (values[field.id][0] !== display) updates[field.id] = [display];
+          nextDerived.add(field.id);
         }
       }
       if (Object.keys(updates).length > 0) {
         setValues((prev) => ({ ...prev, ...updates }));
-        return;
       }
+      if (nextDerived.size !== derivedFields.size)
+        setDerivedFields(nextDerived);
+      if (Object.keys(updates).length > 0 || nextDerived.size > 0) return;
     }
 
     if (!allOptional) return;
@@ -154,7 +180,8 @@ export function StructuredInputForm({
     if (!field || field.kind !== 'number' || values[field.id][0].trim() !== '')
       return;
     setValues((prev) => ({ ...prev, [field.id]: [match[2]] }));
-  }, [allOptional, fields, liveResult, values]);
+    setDerivedFields((prev) => new Set(prev).add(field.id));
+  }, [allOptional, derivedFields, fields, liveResult, values]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -199,6 +226,11 @@ export function StructuredInputForm({
   function clearValues() {
     setDims(2);
     setValues(Object.fromEntries(fields.map((f) => [f.id, blank(f)])));
+    setDerivedFields(new Set());
+  }
+
+  function isInvalid(raw: string): boolean {
+    return raw.trim() !== '' && !Number.isFinite(Number(raw.trim()));
   }
 
   function fieldLabel(field: FieldSchema): string {
@@ -248,7 +280,7 @@ export function StructuredInputForm({
 
           {fixedFields.map((f) => (
             <div className="structured-field" key={f.id}>
-              <label className="field-label">{fieldLabel(f)}</label>
+              <span className="field-label">{fieldLabel(f)}</span>
               {f.kind === 'point' ? (
                 <div className="point-inputs">
                   {values[f.id].slice(0, dims).map((v, i) => (
@@ -260,6 +292,7 @@ export function StructuredInputForm({
                       autoComplete="off"
                       placeholder={['x', 'y', 'z'][i]}
                       aria-label={`${f.label} — ${['x', 'y', 'z'][i]}`}
+                      aria-invalid={isInvalid(v) || undefined}
                       value={v}
                       onChange={(e) => setComponent(f.id, i, e.target.value)}
                     />
@@ -274,6 +307,7 @@ export function StructuredInputForm({
                     autoComplete="off"
                     placeholder="m"
                     aria-label={`${f.label} — m`}
+                    aria-invalid={isInvalid(values[f.id][0]) || undefined}
                     value={values[f.id][0]}
                     onChange={(e) => setComponent(f.id, 0, e.target.value)}
                   />
@@ -287,6 +321,7 @@ export function StructuredInputForm({
                     autoComplete="off"
                     placeholder="n"
                     aria-label={`${f.label} — n`}
+                    aria-invalid={isInvalid(values[f.id][1]) || undefined}
                     value={values[f.id][1]}
                     onChange={(e) => setComponent(f.id, 1, e.target.value)}
                   />
@@ -299,13 +334,22 @@ export function StructuredInputForm({
             <div className="number-fields">
               {numberFields.map((f) => (
                 <div className="number-field" key={f.id}>
-                  <label className="field-label">{fieldLabel(f)}</label>
+                  <label className="field-label" htmlFor={`field-${f.id}`}>
+                    {fieldLabel(f)}
+                  </label>
                   <input
-                    className="expr-input num-input"
+                    id={`field-${f.id}`}
+                    className={`expr-input num-input${derivedFields.has(f.id) ? ' num-input--derived' : ''}`}
                     type="text"
                     inputMode="decimal"
                     autoComplete="off"
                     aria-label={f.label}
+                    aria-invalid={isInvalid(values[f.id][0]) || undefined}
+                    title={
+                      derivedFields.has(f.id)
+                        ? 'Automatically calculated. Edit to use it as a given value.'
+                        : undefined
+                    }
                     value={values[f.id][0]}
                     onChange={(e) => setComponent(f.id, 0, e.target.value)}
                   />

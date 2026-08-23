@@ -75,6 +75,25 @@ describe('simultaneousSolver', () => {
     );
     expect(res.ok && res.solution.answerLatex).toBe('x = 2, \\quad y = 1');
   });
+  it('handles equations aligned with the coordinate axes', () => {
+    for (const method of ['elimination', 'substitution']) {
+      const res = simultaneousSolver.solve('x = 1 ; y = 2', method);
+      expect(res.ok).toBe(true);
+      if (res.ok) expect(res.solution.answerLatex).toBe('x = 1, \\quad y = 2');
+    }
+  });
+  it('shows the substituted equation before solving it', () => {
+    const res = simultaneousSolver.solve(
+      'x + y = 5 ; x - y = 1',
+      'substitution',
+    );
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.solution.steps.length).toBeGreaterThanOrEqual(7);
+    expect(
+      res.solution.steps.some((step) => step.note?.includes('Expand')),
+    ).toBe(true);
+  });
   it('detects no solution for parallel lines', () => {
     const res = simultaneousSolver.solve(
       'x + y = 1 ; x + y = 2',

@@ -144,7 +144,7 @@ function identityOrContradiction(combined: Poly, exclusions: number[]): Step {
     };
   }
   const caveat = exclusions.length
-    ? ` (except $x = ${exclusions.map((v) => fmt(v)).join(', ')}$, where the original is undefined)`
+    ? ` (except $x = ${exclusions.map((v) => fmt(v, 6)).join(', ')}$, where the original is undefined)`
     : '';
   return {
     note: `Both sides are identical, so every value of $x$ works${caveat}.`,
@@ -166,8 +166,8 @@ function surviving(
 
 function exclusionStep(rejected: number[]): Step {
   return {
-    note: `$x = ${rejected.map((v) => fmt(v)).join(', ')}$ ${rejected.length > 1 ? 'make' : 'makes'} a denominator zero in the original equation, so ${rejected.length > 1 ? 'those are' : 'that is'} rejected even though the algebra produced ${rejected.length > 1 ? 'them' : 'it'}.`,
-    latex: `x \\neq ${rejected.map((v) => fmt(v)).join(', ')}`,
+    note: `$x = ${rejected.map((v) => fmt(v, 6)).join(', ')}$ ${rejected.length > 1 ? 'make' : 'makes'} a denominator zero in the original equation, so ${rejected.length > 1 ? 'those are' : 'that is'} rejected even though the algebra produced ${rejected.length > 1 ? 'them' : 'it'}.`,
+    latex: `x \\neq ${rejected.map((v) => fmt(v, 6)).join(', ')}`,
     annotation: 'extraneous',
   };
 }
@@ -176,6 +176,7 @@ function finalAnswer(
   kept: number[],
   rejected: number[],
   fallback: string | undefined,
+  exactCandidates: { value: number; latex: string }[] = [],
 ): { steps: Step[]; answerLatex: string | undefined } {
   if (rejected.length === 0) return { steps: [], answerLatex: fallback };
   if (kept.length === 0) {
@@ -192,7 +193,15 @@ function finalAnswer(
   }
   return {
     steps: [exclusionStep(rejected)],
-    answerLatex: kept.map((v) => `x = ${fmt(v)}`).join(', \\quad '),
+    answerLatex:
+      exactCandidates.length > 0
+        ? exactCandidates
+            .filter(({ value }) =>
+              kept.some((candidate) => Math.abs(candidate - value) < 1e-6),
+            )
+            .map(({ latex }) => `x = ${latex}`)
+            .join(', \\quad ')
+        : kept.map((v) => `x = ${fmt(v, 6)}`).join(', \\quad '),
   };
 }
 
@@ -271,7 +280,26 @@ function solveImpl(input: string, methodId: string): SolveResult {
     const { kept, rejected } = hasVarDenominator
       ? surviving(combined, exclusions)
       : { kept: [], rejected: [] };
-    const filtered = finalAnswer(kept, rejected, inner.solution.answerLatex);
+    const exactCandidates =
+      deg === 1
+        ? (() => {
+            const root = combined.get(0).neg().div(combined.get(1));
+            return [{ value: root.toNumber(), latex: rl(root) }];
+          })()
+        : (() => {
+            const { a, b, c } = integerAbc(combined);
+            const info = quadraticRoots(a, b, c);
+            return info.numericRoots.map((value, index) => ({
+              value,
+              latex: info.exactRoots[index],
+            }));
+          })();
+    const filtered = finalAnswer(
+      kept,
+      rejected,
+      inner.solution.answerLatex,
+      exactCandidates,
+    );
     steps.push(...filtered.steps);
     return {
       ok: true,
@@ -295,6 +323,10 @@ function solveImpl(input: string, methodId: string): SolveResult {
   steps.push(...peeled.steps);
 
   const roots = [...peeled.roots];
+  const exactCandidates = peeled.roots.map((root) => ({
+    value: root.toNumber(),
+    latex: rl(root),
+  }));
   const exactParts = roots.map((r) => `x = ${rl(r)}`);
   if (peeled.remaining.degree() === 2) {
     const { a, b, c } = integerAbc(peeled.remaining);
@@ -307,9 +339,16 @@ function solveImpl(input: string, methodId: string): SolveResult {
     // numeric roots back through a decimal loses the information the formula
     // just worked out, such as turning √2 into 1.414213562.
     exactParts.push(info.answerLatex);
+    exactCandidates.push(
+      ...info.numericRoots.map((value, index) => ({
+        value,
+        latex: info.exactRoots[index],
+      })),
+    );
   } else if (peeled.remaining.degree() === 1) {
     const r = peeled.remaining.get(0).neg().div(peeled.remaining.get(1));
     roots.push(r);
+    exactCandidates.push({ value: r.toNumber(), latex: rl(r) });
     exactParts.push(`x = ${rl(r)}`);
     steps.push({ note: 'What is left is linear.', latex: `x = ${rl(r)}` });
   }
@@ -318,7 +357,7 @@ function solveImpl(input: string, methodId: string): SolveResult {
   const { kept, rejected } = hasVarDenominator
     ? surviving(combined, exclusions)
     : { kept: [], rejected: [] };
-  const filtered = finalAnswer(kept, rejected, fallback);
+  const filtered = finalAnswer(kept, rejected, fallback, exactCandidates);
   steps.push(...filtered.steps);
   return {
     ok: true,

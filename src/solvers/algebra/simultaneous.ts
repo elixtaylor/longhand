@@ -73,6 +73,33 @@ function eqLatex(e: Eq): string {
   const lhs = eqSideLatex(e);
   return `${lhs} = ${rl(e.c)}`;
 }
+
+function affineLatex(
+  constant: Rational,
+  coefficient: Rational,
+  variable: string,
+): string {
+  let out = constant.isZero() ? '' : rl(constant);
+  if (!coefficient.isZero()) {
+    const term = coeffVar(coefficient.abs(), variable);
+    if (out === '') out = coeffVar(coefficient, variable);
+    else out += coefficient.isNeg() ? ` - ${term}` : ` + ${term}`;
+  }
+  return out || '0';
+}
+
+function appendVariableTerm(coefficient: Rational, variable: string): string {
+  if (coefficient.isZero()) return '';
+  return coefficient.isNeg()
+    ? ` - ${coeffVar(coefficient.abs(), variable)}`
+    : ` + ${coeffVar(coefficient, variable)}`;
+}
+
+function timesExpression(coefficient: Rational, expression: string): string {
+  if (coefficient.eq(Rational.int(1))) return `\\left(${expression}\\right)`;
+  if (coefficient.eq(Rational.int(-1))) return `-\\left(${expression}\\right)`;
+  return `${rl(coefficient)}\\left(${expression}\\right)`;
+}
 function systemLatex(e1: Eq, e2: Eq): string {
   return `\\begin{cases} ${eqLatex(e1)} \\\\ ${eqLatex(e2)} \\end{cases}`;
 }
@@ -151,24 +178,26 @@ function solveByElimination(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
 
   // Back-substitute into (1), one line per stage rather than one arrow.
   const known = elimX ? 'y' : 'x';
-  const knownCoeff = elimX ? e1.b : e1.a;
-  const wantedCoeff = elimX ? e1.a : e1.b;
+  const backEq = elimX || !e1.b.isZero() ? e1 : e2;
+  const backLabel = backEq === e1 ? '(1)' : '(2)';
+  const knownCoeff = elimX ? backEq.b : backEq.a;
+  const wantedCoeff = elimX ? backEq.a : backEq.b;
   const wantedVar = elimX ? 'x' : 'y';
   const product = knownCoeff.mul(val);
-  const remainder = e1.c.sub(product);
+  const remainder = backEq.c.sub(product);
   const wantedVal = remainder.div(wantedCoeff);
 
   steps.push({
-    note: `Put $${known} = ${rl(val)}$ into equation (1).`,
+    note: `Put $${known} = ${rl(val)}$ into equation ${backLabel}.`,
     latex: elimX
-      ? `${coeffVar(e1.a, 'x')} + ${rl(e1.b)}\\left(${rl(val)}\\right) = ${rl(e1.c)}`
-      : `${rl(e1.a)}\\left(${rl(val)}\\right) + ${coeffVar(e1.b, 'y')} = ${rl(e1.c)}`,
+      ? `${coeffVar(backEq.a, 'x')} + ${rl(backEq.b)}\\left(${rl(val)}\\right) = ${rl(backEq.c)}`
+      : `${rl(backEq.a)}\\left(${rl(val)}\\right) + ${coeffVar(backEq.b, 'y')} = ${rl(backEq.c)}`,
   });
   steps.push({
     note: `Work out $${rl(knownCoeff)} \\times ${rl(val)} = ${rl(product)}$.`,
     latex: elimX
-      ? `${coeffVar(e1.a, 'x')} + ${rl(product)} = ${rl(e1.c)}`
-      : `${rl(product)} + ${coeffVar(e1.b, 'y')} = ${rl(e1.c)}`,
+      ? `${coeffVar(backEq.a, 'x')} + ${rl(product)} = ${rl(backEq.c)}`
+      : `${rl(product)} + ${coeffVar(backEq.b, 'y')} = ${rl(backEq.c)}`,
   });
   steps.push({
     note: `${product.isNeg() ? 'Add' : 'Subtract'} $${rl(product.abs())}$ ${product.isNeg() ? 'to' : 'from'} both sides.`,
@@ -224,37 +253,68 @@ function solveBySubstitution(e1: Eq, e2: Eq, sol: Solution2): SolveResult {
     candidates.find((c) => c.coef.abs().eq(Rational.int(1))) ?? candidates[0];
 
   const { eq, other, solveFor } = pick;
+  const equationLabel = eq === e1 ? '(1)' : '(2)';
+  const otherLabel = other === e1 ? '(1)' : '(2)';
   // Isolate: from  a x + b y = c  →  solved = (c - (otherCoeff)·otherVar) / coef
   const isX = solveFor === 'x';
   const coef = isX ? eq.a : eq.b;
   const otherCoef = isX ? eq.b : eq.a;
   const otherVar = isX ? 'y' : 'x';
-  const isolated =
-    coef.eq(Rational.int(1)) && otherCoef.isZero()
-      ? `${solveFor} = ${rl(eq.c)}`
-      : `${solveFor} = \\dfrac{${rl(eq.c)} - (${rl(otherCoef)})${otherVar}}{${rl(coef)}}`;
+  const isolatedNumerator = affineLatex(eq.c, otherCoef.neg(), otherVar);
+  const isolatedRhs = coef.eq(Rational.int(1))
+    ? isolatedNumerator
+    : `\\dfrac{${isolatedNumerator}}{${rl(coef)}}`;
+  const isolated = `${solveFor} = ${isolatedRhs}`;
   steps.push({
-    note: `Rearrange (1) to make $${solveFor}$ the subject.`,
+    note: `Rearrange ${equationLabel} to make $${solveFor}$ the subject.`,
     latex: isolated,
   });
 
+  const solvedCoefficient = isX ? other.a : other.b;
+  const remainingCoefficient = isX ? other.b : other.a;
   steps.push({
-    note: `Substitute this into the other equation and simplify.`,
-    latex: `\\text{into }(2):\\quad ${eqLatex(other)}`,
+    note: `Substitute this expression for $${solveFor}$ into equation ${otherLabel}.`,
+    latex: `${timesExpression(solvedCoefficient, isolatedRhs)}${appendVariableTerm(remainingCoefficient, otherVar)} = ${rl(other.c)}`,
   });
 
   const otherVal = otherVar === 'y' ? sol.y! : sol.x!;
   const thisVal = isX ? sol.x! : sol.y!;
+  const substitutedConstant = solvedCoefficient.mul(eq.c).div(coef);
+  const substitutedVariable = remainingCoefficient.sub(
+    solvedCoefficient.mul(otherCoef).div(coef),
+  );
+  const remainder = other.c.sub(substitutedConstant);
   steps.push({
-    note: `Solve for $${otherVar}$.`,
-    latex: `${otherVar} = ${rl(otherVal)}`,
+    note: 'Expand the substituted expression and collect like terms.',
+    latex: `${affineLatex(substitutedConstant, substitutedVariable, otherVar)} = ${rl(other.c)}`,
   });
   steps.push({
-    note: `Substitute back to find $${solveFor}$.`,
+    note: `${substitutedConstant.isNeg() ? 'Add' : 'Subtract'} $${rl(substitutedConstant.abs())}$ ${substitutedConstant.isNeg() ? 'to' : 'from'} both sides.`,
+    latex: `${coeffVar(substitutedVariable, otherVar)} = ${rl(remainder)}`,
+  });
+  if (!substitutedVariable.eq(Rational.int(1))) {
+    steps.push({
+      note: `Divide both sides by $${rl(substitutedVariable)}$.`,
+      latex: `${otherVar} = \\dfrac{${rl(remainder)}}{${rl(substitutedVariable)}} = ${rl(otherVal)}`,
+      annotation: `${otherVar} found`,
+    });
+  } else {
+    steps[steps.length - 1].annotation = `${otherVar} found`;
+  }
+  steps.push({
+    note: `Substitute $${otherVar} = ${rl(otherVal)}$ back into the isolated expression.`,
+    latex: `${solveFor} = \\dfrac{${rl(eq.c)} - (${rl(otherCoef)})\left(${rl(otherVal)}\\right)}{${rl(coef)}}`,
+  });
+  steps.push({
+    note: 'Work out the remaining value.',
     latex: `${solveFor} = ${rl(thisVal)}`,
+    annotation: `${solveFor} found`,
+  });
+  steps.push({
+    note: 'State both values together.',
+    latex: answer(sol)!,
     annotation: 'solved',
   });
-  steps.push({ note: 'Both values:', latex: answer(sol)! });
 
   return {
     ok: true,

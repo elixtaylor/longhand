@@ -141,6 +141,17 @@ function termX(coeff: Rational): string {
   return `${rl(coeff)}x`;
 }
 
+function igcd(a: number, b: number): number {
+  a = Math.abs(a);
+  b = Math.abs(b);
+  while (b) [a, b] = [b, a % b];
+  return a || 1;
+}
+
+function ilcm(a: number, b: number): number {
+  return Math.abs((a / igcd(a, b)) * b);
+}
+
 function solveQuadratic(iq: Ineq): SolveResult {
   let std = iq.lhs.sub(iq.rhs);
   let rel = iq.rel;
@@ -168,9 +179,16 @@ function solveQuadratic(iq: Ineq): SolveResult {
     });
   }
 
-  const a = std.get(2).toNumber();
-  const b = std.get(1).toNumber();
-  const c = std.get(0).toNumber();
+  // Clear fractional coefficients before finding roots. The exact root helper
+  // works with integer discriminants; feeding it 0.5x² directly can misread
+  // perfect squares and lose exact boundaries.
+  const ra = std.get(2);
+  const rb = std.get(1);
+  const rc = std.get(0);
+  const commonDenominator = ilcm(ilcm(ra.d, rb.d), rc.d);
+  const a = ra.n * (commonDenominator / ra.d);
+  const b = rb.n * (commonDenominator / rb.d);
+  const c = rc.n * (commonDenominator / rc.d);
   const info = quadraticRoots(a, b, c);
 
   if (info.nature === 'complex') {
@@ -198,18 +216,25 @@ function solveQuadratic(iq: Ineq): SolveResult {
     };
   }
 
-  const roots = [...info.numericRoots].sort((x, y) => x - y);
+  const roots = info.numericRoots
+    .map((value, index) => ({
+      value,
+      exact: info.exactRoots[index] ?? fmtRoot(value),
+    }))
+    .sort((x, y) => x.value - y.value);
   steps.push({
     note: 'Solve the matching equation to find where the parabola crosses the axis — these are the critical values.',
     latex: `${polyLatex(std)} = 0 \\;\\Rightarrow\\; ${info.answerLatex}`,
     annotation: 'critical values',
   });
 
-  const [lo, hi] = roots.length === 2 ? roots : [roots[0], roots[0]];
+  const [loRoot, hiRoot] = roots.length === 2 ? roots : [roots[0], roots[0]];
+  const lo = loRoot.value;
+  const hi = hiRoot.value;
   const below = rel === '<' || rel === '<=';
   const inclusive = rel.includes('=');
-  const lb = fmtRoot(lo);
-  const hb = fmtRoot(hi);
+  const lb = loRoot.exact;
+  const hb = hiRoot.exact;
 
   steps.push({
     note: 'The parabola opens upwards, so it is **below** the axis between the roots and **above** it outside them.',

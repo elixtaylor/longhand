@@ -16,7 +16,7 @@ interface Edge {
 function parseEdges(input: string): Edge[] {
   const edges: Edge[] = [];
   const re =
-    /([A-Za-z]\w*)\s*(?:-|–|to|→)\s*([A-Za-z]\w*)\s*[:=\s]\s*(-?\d+(?:\.\d+)?)/g;
+    /([A-Za-z]\w*)\s*(?:-|–|to|→)\s*([A-Za-z]\w*)\s*[:=\s]\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?![\w.])/g;
   let m: RegExpExecArray | null;
   let guard = 0;
   while ((m = re.exec(input)) && guard++ < 500) {
@@ -138,7 +138,7 @@ export const networksSolver: Solver = {
   defaultMethodId: 'shortest-path',
   detect(input) {
     const edges = parseEdges(input);
-    if (edges.length < 2) return 0;
+    if (edges.length < 1) return 0;
     const explicit =
       /network|graph|shortest\s*path|spanning\s*tree|\bmst\b|dijkstra|kruskal|prim/i.test(
         input,
@@ -147,10 +147,16 @@ export const networksSolver: Solver = {
   },
   solve(input, methodId): SolveResult {
     const edges = parseEdges(input);
-    if (edges.length < 2) {
+    if (edges.length < 1) {
       return {
         ok: false,
         error: 'Type the connections like  A-B 5, B-C 3, A-C 9.',
+      };
+    }
+    if (edges.some((e) => !Number.isFinite(e.w))) {
+      return {
+        ok: false,
+        error: 'Every network weight must be a finite number.',
       };
     }
     if (edges.some((e) => e.w < 0)) {
@@ -166,6 +172,13 @@ export const networksSolver: Solver = {
 
     if (wantMst) {
       const { sorted, chosen, rejected, total } = minimumSpanningTree(edges);
+      if (!Number.isFinite(total)) {
+        return {
+          ok: false,
+          error:
+            'Those weights produce a total outside the calculator’s numeric range.',
+        };
+      }
       const steps: Step[] = [
         {
           note: `The network has ${nodes.length} nodes, so a spanning tree needs ${nodes.length - 1} edges.`,
@@ -215,8 +228,20 @@ export const networksSolver: Solver = {
     const m = input.match(
       /(?:from\s*)?([A-Za-z]\w*)\s*(?:to|→|-->)\s*([A-Za-z]\w*)\s*$/i,
     );
-    const start = m && nodes.includes(m[1]) ? m[1] : nodes[0];
-    const end = m && nodes.includes(m[2]) ? m[2] : nodes[nodes.length - 1];
+    const requestedStart = m
+      ? nodes.find((node) => node.toLowerCase() === m[1].toLowerCase())
+      : undefined;
+    const requestedEnd = m
+      ? nodes.find((node) => node.toLowerCase() === m[2].toLowerCase())
+      : undefined;
+    if (m && (requestedStart === undefined || requestedEnd === undefined)) {
+      return {
+        ok: false,
+        error: `Choose endpoints from this network: ${nodes.join(', ')}.`,
+      };
+    }
+    const start = requestedStart ?? nodes[0];
+    const end = requestedEnd ?? nodes[nodes.length - 1];
     if (start === end)
       return {
         ok: false,

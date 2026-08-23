@@ -38,6 +38,10 @@ describe('differentiationSolver', () => {
       "f'(x) = 4x",
     );
   });
+  it('rejects non-finite number words instead of treating them as variables', () => {
+    expect(differentiationSolver.solve('NaN', 'rules').ok).toBe(false);
+    expect(differentiationSolver.solve('Infinity', 'rules').ok).toBe(false);
+  });
 });
 
 describe('integrationSolver', () => {
@@ -68,6 +72,19 @@ describe('integrationSolver', () => {
     expect(
       ans(integrationSolver, 'integrate x^2 from 0 to 1', 'definite'),
     ).toBe('\\frac{1}{3}');
+  });
+
+  it('rejects definite integrals whose numeric evaluation overflows', () => {
+    const huge = `1${'0'.repeat(100)}`;
+    expect(
+      integrationSolver.solve(`integrate x^4 from 0 to ${huge}`, 'definite').ok,
+    ).toBe(false);
+    expect(
+      integrationSolver.solve(
+        `integrate (2x+1)^4 from 0 to ${huge}`,
+        'substitution',
+      ).ok,
+    ).toBe(false);
   });
 
   it('gives a signed area when the curve dips below the axis', () => {
@@ -142,6 +159,36 @@ describe('integrationSolver', () => {
     if (atan.ok) expect(atan.solution.answerLatex).toBe('\\arctan x + C');
   });
 
+  it('handles exponential notation and negative multipliers cleanly', () => {
+    expect(ans(integrationSolver, 'integrate e^x', 'basic-functions')).toBe(
+      'e^x + C',
+    );
+    expect(
+      ans(integrationSolver, 'integrate -2 sin x', 'basic-functions'),
+    ).toBe('2\\cos x + C');
+    expect(
+      ans(integrationSolver, 'integrate -2 tan x', 'basic-functions'),
+    ).toBe('2\\ln|\\cos x| + C');
+    expect(ans(integrationSolver, 'integrate -cos x', 'basic-functions')).toBe(
+      '-\\sin x + C',
+    );
+  });
+
+  it('uses the reverse chain rule for affine trig and exponential inputs', () => {
+    expect(ans(integrationSolver, 'integrate sin(2x)', 'basic-functions')).toBe(
+      '-\\frac{1}{2}\\cos\\left(2x\\right) + C',
+    );
+    expect(
+      ans(integrationSolver, 'integrate 3cos(2x+1)', 'basic-functions'),
+    ).toBe('\\frac{3}{2}\\sin\\left(2x + 1\\right) + C');
+    expect(
+      ans(integrationSolver, 'integrate exp(3x-2)', 'basic-functions'),
+    ).toBe('\\frac{1}{3}e^{3x - 2} + C');
+    expect(
+      ans(integrationSolver, 'integrate sec^2(4x)', 'basic-functions'),
+    ).toBe('\\frac{1}{4}\\tan\\left(4x\\right) + C');
+  });
+
   it('finds the area between two curves, including crossings', () => {
     const result = integrationSolver.solve(
       'area between y=x^2 and y=2x from 0 to 2',
@@ -151,13 +198,28 @@ describe('integrationSolver', () => {
     if (result.ok) expect(result.solution.answerLatex).toContain('1.333333333');
   });
 
+  it('rejects an area whose evaluated pieces overflow', () => {
+    const huge = `1${'0'.repeat(100)}`;
+    expect(
+      integrationSolver.solve(
+        `area between y=x^4 and y=0 from 0 to ${huge}`,
+        'area-between',
+      ).ok,
+    ).toBe(false);
+  });
+
   it('finds a washer volume about the x-axis', () => {
     const result = integrationSolver.solve(
       'volume of revolution y=x from 0 to 2 about x-axis',
       'volume-revolution',
     );
     expect(result.ok, result.ok ? '' : result.error).toBe(true);
-    if (result.ok) expect(result.solution.answerLatex).toContain('8.37758041');
+    if (result.ok) {
+      expect(result.solution.answerLatex).toBe(
+        'V = \\dfrac{8\\pi}{3}\\text{ cubic units}',
+      );
+      expect(JSON.stringify(result.solution.steps)).toContain('8.37758041');
+    }
   });
 });
 

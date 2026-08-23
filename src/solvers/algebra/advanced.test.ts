@@ -51,6 +51,16 @@ describe('polynomialsSolver', () => {
     const r = polynomialsSolver.solve('x^3 + x + 1', 'factor-theorem');
     expect(r.ok).toBe(false);
   });
+
+  it('bounds rational-root searches for very large coefficients', () => {
+    const started = Date.now();
+    const result = polynomialsSolver.solve(
+      'x^3 + 1000000000039',
+      'factor-theorem',
+    );
+    expect(result.ok).toBe(false);
+    expect(Date.now() - started).toBeLessThan(250);
+  });
 });
 
 describe('logarithmsSolver', () => {
@@ -164,6 +174,29 @@ describe('logarithmsSolver', () => {
     expect(logarithmsSolver.solve('2^x = -8', 'same-base').ok).toBe(false);
   });
 
+  it('handles exponential equations whose variable part is constant', () => {
+    for (const input of ['2^(0x) = 1', '1^x = 1', '0*2^x = 0']) {
+      const result = logarithmsSolver.solve(input, 'same-base');
+      expect(result.ok, input).toBe(true);
+      if (result.ok) expect(result.solution.answerLatex).toContain('mathbb{R}');
+    }
+    expect(logarithmsSolver.solve('2^(0x) = 3', 'same-base').ok).toBe(false);
+  });
+
+  it('rejects invalid logarithm bases', () => {
+    expect(logarithmsSolver.solve('log1(10)', 'same-base').ok).toBe(false);
+    expect(logarithmsSolver.solve('log0(10)', 'same-base').ok).toBe(false);
+  });
+
+  it('keeps an overflowing natural-log solution exact without undefined output', () => {
+    const result = logarithmsSolver.solve('ln x = 1000', 'same-base');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.answerLatex).toBe('x = e^{1000}');
+      expect(JSON.stringify(result.solution)).not.toContain('undefined');
+    }
+  });
+
   it('solves a two-term exponential equation that reduces to a quadratic', () => {
     // Let u = 2^x. 4^x = u², 2^(x+1) = 2u → u² + 2u - 15 = 0 → u = 3 or u = -5.
     // u = -5 is rejected (2^x is always positive), so 2^x = 3 → x = log2(3).
@@ -180,6 +213,25 @@ describe('logarithmsSolver', () => {
     // Let u = 3^x: u² - 4u + 3 = 0 → u = 1 or u = 3 → x = 0 or x = 1.
     const s = sol(logarithmsSolver, '9^x-4*3^x+3=0', 'same-base');
     expect(s.answerLatex).toBe('x = 1 \\quad\\text{or}\\quad x = 0');
+  });
+
+  it('solves the linear substitution left after quadratic terms cancel', () => {
+    const s = sol(logarithmsSolver, '4^x-4^x+2^x-2=0', 'same-base');
+    expect(s.answerLatex).toBe('x = 1');
+    expect(
+      s.steps.some((step: { note?: string }) =>
+        /linear/i.test(step.note ?? ''),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps every strictly positive substituted root', () => {
+    const result = logarithmsSolver.solve(
+      '4^x-0.000000000001*2^x=0',
+      'same-base',
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.solution.answerLatex).toContain('x =');
   });
 
   it('reports no real solution when every root of u is non-positive', () => {

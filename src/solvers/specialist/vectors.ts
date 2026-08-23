@@ -31,8 +31,12 @@ function parseVec(s: string): Vec {
   return parts;
 }
 
-const VEC =
-  '\\(?\\[?<?\\s*-?\\d*\\.?\\d+\\s*(?:,\\s*-?\\d*\\.?\\d+\\s*){1,2}\\)?\\]?>?';
+// Keep the numeric branches disjoint. `\d*\.?\d+` has many equivalent ways
+// to match a long run of digits and can backtrack catastrophically when a
+// malformed public input contains hundreds of them.
+const NUMBER = '-?(?:\\d+(?:\\.\\d+)?|\\.\\d+)';
+const VEC = `\\(?\\[?<?\\s*${NUMBER}\\s*(?:,\\s*${NUMBER}\\s*){1,2}\\)?\\]?>?`;
+const MAX_VECTOR_INPUT_LENGTH = 256;
 
 interface Problem {
   op:
@@ -59,6 +63,9 @@ interface Problem {
 
 function parse(input: string): Problem {
   const s = input.trim();
+  if (s.length > MAX_VECTOR_INPUT_LENGTH) {
+    throw new Error('That vector input is too long.');
+  }
 
   const mag =
     s.match(new RegExp(`^\\|\\s*(${VEC})\\s*\\|$`)) ??
@@ -105,7 +112,7 @@ function parse(input: string): Problem {
     };
   }
 
-  const scale = s.match(new RegExp(`^(-?\\d*\\.?\\d+)\\s*[*×]?\\s*(${VEC})$`));
+  const scale = s.match(new RegExp(`^(${NUMBER})\\s*[*×]?\\s*(${VEC})$`));
   if (scale) return { op: 'scale', a: parseVec(scale[2]), k: Number(scale[1]) };
 
   const bin = s.match(
@@ -131,6 +138,18 @@ function parse(input: string): Problem {
 
 const dot = (a: Vec, b: Vec) => a.reduce((s, x, i) => s + x * b[i], 0);
 const mag = (a: Vec) => Math.sqrt(dot(a, a));
+
+function finiteVec(v: Vec): boolean {
+  return v.every(Number.isFinite);
+}
+
+function numericFailure(): SolveResult {
+  return {
+    ok: false,
+    error:
+      'Those components produce values outside the calculator’s numeric range.',
+  };
+}
 
 const POINT_FIELDS_3: FieldSchema[] = [
   { id: 'a', label: 'Point A', kind: 'point' },
@@ -228,6 +247,7 @@ export const vectorsSolver: Solver = {
     if (p.op === 'add' || p.op === 'sub') {
       const sign = p.op === 'add' ? 1 : -1;
       const out = a.map((x, i) => x + sign * b![i]);
+      if (!finiteVec(out)) return numericFailure();
       const symbol = p.op === 'add' ? '+' : '-';
       return {
         ok: true,
@@ -256,6 +276,7 @@ export const vectorsSolver: Solver = {
 
     if (p.op === 'scale') {
       const out = a.map((x) => x * k!);
+      if (!finiteVec(out)) return numericFailure();
       return {
         ok: true,
         solution: {
@@ -283,6 +304,8 @@ export const vectorsSolver: Solver = {
 
     if (p.op === 'magnitude') {
       const m = mag(a);
+      if (!Number.isFinite(m) || !Number.isFinite(dot(a, a)))
+        return numericFailure();
       return {
         ok: true,
         solution: {
@@ -310,12 +333,15 @@ export const vectorsSolver: Solver = {
 
     if (p.op === 'unit') {
       const m = mag(a);
+      if (!Number.isFinite(m) || !Number.isFinite(dot(a, a)))
+        return numericFailure();
       if (m === 0)
         return {
           ok: false,
           error: 'The zero vector has no direction, so it has no unit vector.',
         };
       const out = a.map((x) => x / m);
+      if (!finiteVec(out)) return numericFailure();
       return {
         ok: true,
         solution: {
@@ -345,6 +371,7 @@ export const vectorsSolver: Solver = {
       const d = dot(a, b!);
       const ma = mag(a);
       const mb = mag(b!);
+      if (![d, ma, mb, ma * mb].every(Number.isFinite)) return numericFailure();
       const steps: Step[] = [
         {
           note: 'The dot product multiplies matching components and adds the results.',
@@ -387,6 +414,7 @@ export const vectorsSolver: Solver = {
       const d = dot(a, b!);
       const ma = mag(a);
       const mb = mag(b!);
+      if (![d, ma, mb, ma * mb].every(Number.isFinite)) return numericFailure();
       if (ma === 0 || mb === 0)
         return {
           ok: false,
@@ -433,6 +461,7 @@ export const vectorsSolver: Solver = {
       }
       const ab = B.map((x, i) => x - A[i]);
       const ac = C.map((x, i) => x - A[i]);
+      if (!finiteVec(ab) || !finiteVec(ac)) return numericFailure();
       const EPS = 1e-9;
       const pivot = ab.findIndex((x) => Math.abs(x) > EPS);
       if (pivot === -1) {
@@ -442,7 +471,11 @@ export const vectorsSolver: Solver = {
         };
       }
       const k = ac[pivot] / ab[pivot];
-      const collinear = ac.every((x, j) => Math.abs(x - k * ab[j]) < EPS);
+      if (!Number.isFinite(k)) return numericFailure();
+      const scale = Math.max(1, ...ab.map(Math.abs), ...ac.map(Math.abs));
+      const collinear = ac.every(
+        (x, j) => Math.abs(x - k * ab[j]) <= EPS * scale,
+      );
       const steps: Step[] = [
         {
           note: 'If three points are collinear, the vectors between them all point along the same line. Find two vectors that start from the same point, A.',
@@ -516,6 +549,8 @@ export const vectorsSolver: Solver = {
       }
       const numerator = A.map((x, i) => n * x + m * B[i]);
       const P = numerator.map((x) => x / (m + n));
+      if (!Number.isFinite(m + n) || !finiteVec(numerator) || !finiteVec(P))
+        return numericFailure();
       return {
         ok: true,
         solution: {
@@ -556,6 +591,7 @@ export const vectorsSolver: Solver = {
     const [a1, a2, a3] = a;
     const [b1, b2, b3] = b!;
     const out = [a2 * b3 - a3 * b2, a3 * b1 - a1 * b3, a1 * b2 - a2 * b1];
+    if (!finiteVec(out)) return numericFailure();
     return {
       ok: true,
       solution: {

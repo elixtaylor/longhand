@@ -1,5 +1,5 @@
 import { normalise } from '../nl/normalise';
-import { foldArithmetic } from '../nl/arithmetic';
+import { evaluate, foldArithmetic } from '../nl/arithmetic';
 import { detectSolvers } from './registry';
 import type { Solver, SolveResult } from './types';
 
@@ -74,14 +74,39 @@ const REFERENCE = new RegExp(
   'i',
 );
 
-/** Every number an answer states, in the order written. */
+/**
+ * Read each complete numeric answer branch.
+ *
+ * Pulling every digit out independently is unsafe for exact roots:
+ * x = -3 + sqrt(7) contains -3 and 7, but neither is the solution. Convert
+ * simple fractions and surds to a numeric expression and evaluate the whole
+ * branch instead. If a branch is not safely numeric, leave it unresolved.
+ */
 function answerValues(latex: string | undefined): number[] {
   if (!latex) return [];
-  const cleaned = latex.replace(
-    /\\d?frac\s*\{(-?[\d.]+)\}\s*\{(-?[\d.]+)\}/g,
-    (_, a, b) => String(Number(a) / Number(b)),
-  );
-  return (cleaned.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+  const branches = latex.includes('\\pm')
+    ? [latex.replace(/\\pm/g, '+'), latex.replace(/\\pm/g, '-')]
+    : latex.split(/\\text\{\s*or\s*\}/i);
+  const values: number[] = [];
+  for (const branch of branches) {
+    let cleaned = branch
+      .replace(
+        /\\sqrt\s*\{(-?[\d.]+)\}/g,
+        (_match, value: string) => '(' + Math.sqrt(Number(value)) + ')',
+      )
+      .replace(/\\d?frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, '(($1)/($2))')
+      .replace(/\\left|\\right|\\quad/g, '')
+      .replace(/\\text\{[^{}]*\}/g, '')
+      .replace(/[$\\{}]/g, '')
+      .trim();
+    const pieces = cleaned.split('=');
+    cleaned = pieces[pieces.length - 1].trim();
+    if (!/^[\d.+\-*/^()\s]+$/.test(cleaned)) return [];
+    const value = evaluate(cleaned);
+    if (value === null || !Number.isFinite(value)) return [];
+    values.push(value);
+  }
+  return values;
 }
 
 /** Resolve "the larger root" against the values an answer offers. */
@@ -305,6 +330,10 @@ function readings(text: string, prev: WorkedPart): string[] {
         text.replace(REF_PICK, ` ${chosen} `).replace(/\s+/g, ' ').trim(),
         text,
       ];
+    // Do not pass an unresolved multi-root expression to a parser that might
+    // consume only its first visible number and return a confident wrong
+    // answer. Keeping the wording intact produces an honest refusal.
+    return [text];
   }
 
   // "Integrate the answer" means the answer even though "integrate" acts on a
@@ -342,19 +371,23 @@ function trySplit(
 
   const first: WorkedPart = { label: 'a', text: leftText, ...left };
 
-  // The tail may itself be several parts ("solve … then differentiate … then
-  // integrate …"), so recurse before treating it as a single piece.
-  const deeper =
-    depth > 0
-      ? trySplit(rightText, re, solveOne, depth - 1, methodOverrides)
-      : null;
-  const tails = deeper ?? [];
-  if (tails.length > 0) {
-    // Each tail part still has to resolve references against what precedes it.
-    return relabel([first, ...tails]);
-  }
-
   for (const reading of readings(rightText, first)) {
+    // Resolve the first reference in the tail before recursing. This lets
+    // "solve … then use the answer … then use that answer …" carry the result
+    // one part at a time instead of asking the unresolved tail to stand alone.
+    const deeper =
+      depth > 0
+        ? (trySplit(reading, STRONG, solveOne, depth - 1, methodOverrides) ??
+          trySplit(reading, WEAK, solveOne, depth - 1, methodOverrides))
+        : null;
+    if (deeper && deeper.length > 1) {
+      if (reading !== rightText) {
+        const originalFirstTail = cut(rightText, re)?.[0] ?? rightText;
+        deeper[0] = { ...deeper[0], carried: originalFirstTail };
+      }
+      return relabel([first, ...deeper]);
+    }
+
     const right = solveFragment(reading, solveOne, methodOverrides);
     if (right && right.result.ok) {
       return relabel([

@@ -112,6 +112,9 @@ function tokenise(src: string): Token[] {
       let j = i;
       while (j < s.length && /[a-zA-Z]/.test(s[j])) j++;
       const word = s.slice(i, j);
+      if (/^(?:nan|infinity)$/i.test(word)) {
+        throw new ExprError(`“${word}” is not a finite number.`);
+      }
       // An English word left in the input must stop the parse. Below, any
       // unrecognised run becomes a product of single-letter variables, which
       // would quietly turn "and stationary points" into a·n·d·s·t·… and hand

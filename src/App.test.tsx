@@ -32,4 +32,14 @@ describe('home reset', () => {
       ),
     ).not.toBeNull();
   });
+
+  it('gives the settings route a page heading', () => {
+    window.history.replaceState(null, '', '/settings');
+    render(<App />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Settings' }),
+    ).toBeTruthy();
+    window.history.replaceState(null, '', '/');
+  });
 });

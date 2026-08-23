@@ -17,6 +17,24 @@ export interface Interpretation extends Reading {
   detection: Detection | null;
 }
 
+/** Keep one malformed or numerically extreme problem from breaking the UI. */
+function safeSolverCall(
+  solver: Solver,
+  text: string,
+  methodId: string,
+  options: SolveOptions,
+): SolveResult {
+  try {
+    return solver.solve(text, methodId, options);
+  } catch {
+    return {
+      ok: false,
+      error:
+        'That problem could not be completed safely. Check the values and notation, then try again.',
+    };
+  }
+}
+
 /** Normalise, then work out which topic the problem belongs to. */
 export function interpret(raw: string): Interpretation {
   const reading = normalise(raw);
@@ -43,15 +61,15 @@ export function runSolve(
   // normaliser intentionally strips. Give that solver the raw form first so
   // `r=5 cm` can be converted rather than silently becoming unitless.
   if (solver.id === 'measurement') {
-    const original = solver.solve(raw, methodId, options);
+    const original = safeSolverCall(solver, raw, methodId, options);
     if (original.ok) return original;
   }
   const { text } = normalise(raw);
-  const first = solver.solve(text, methodId, options);
+  const first = safeSolverCall(solver, text, methodId, options);
   if (first.ok) return first;
   // If the rewrite confused this solver, give the original a chance before
   // reporting failure — the student's own phrasing may already have been valid.
-  const original = solver.solve(raw, methodId, options);
+  const original = safeSolverCall(solver, raw, methodId, options);
   return original.ok ? original : first;
 }
 

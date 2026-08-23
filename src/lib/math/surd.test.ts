@@ -21,4 +21,18 @@ describe('simplifySqrt', () => {
     expect(isPerfectSquare(26)).toBe(false);
     expect(isPerfectSquare(0)).toBe(true);
   });
+
+  it('returns promptly for a very large safe radicand', () => {
+    const n = 8_000_000_000_000_001;
+    const started = Date.now();
+    const result = simplifySqrt(n);
+    expect(result.outside * result.outside * result.inside).toBe(n);
+    expect(Date.now() - started).toBeLessThan(250);
+  });
+
+  it('rejects integers outside the exact safe range', () => {
+    expect(() => simplifySqrt(Number.MAX_SAFE_INTEGER + 1)).toThrow(
+      /non-negative integer/,
+    );
+  });
 });

@@ -45,7 +45,7 @@ function listFrom(input: string): number[] | null {
   }
 }
 
-function read(input: string, methodId: string): Seq {
+function read(input: string): Seq {
   const p = parseParams(input);
   const n = p.n ?? 10;
 
@@ -70,6 +70,11 @@ function read(input: string, methodId: string): Seq {
   const a = p.a ?? p.a1;
   const d = p.d;
   const r = p.r;
+  if (d !== undefined && r !== undefined) {
+    throw new Error(
+      'Give either a common difference d or a common ratio r, not both.',
+    );
+  }
   if (a === undefined || (d === undefined && r === undefined)) {
     throw new Error(
       'Give a list like  3, 7, 11, 15  or values like  a=3, d=4, n=10.',
@@ -79,7 +84,7 @@ function read(input: string, methodId: string): Seq {
   return {
     a,
     step: (d ?? r)!,
-    kind: methodId === 'geometric' && r !== undefined ? 'geometric' : kind,
+    kind,
     n,
   };
 }
@@ -88,6 +93,12 @@ function arithmetic(s: Seq): SolveResult {
   const { a, step: d, n, terms } = s;
   const tn = a + (n - 1) * d;
   const sum = (n / 2) * (2 * a + (n - 1) * d);
+  if (!Number.isFinite(tn) || !Number.isFinite(sum))
+    return {
+      ok: false,
+      error:
+        'Those sequence values are outside the calculator’s numeric range.',
+    };
 
   const steps: Step[] = [];
   if (terms) {
@@ -140,6 +151,7 @@ function arithmetic(s: Seq): SolveResult {
 
 /** Tidy "a + (n−1)d" into the simplified linear rule. */
 function ruleLatex(a: number, d: number): string {
+  if (d === 0) return fmt(a);
   const c = a - d;
   if (c === 0) return `${fmt(d)}n`;
   const coeff = d === 1 ? 'n' : d === -1 ? '-n' : `${fmt(d)}n`;
@@ -149,6 +161,12 @@ function ruleLatex(a: number, d: number): string {
 function geometric(s: Seq): SolveResult {
   const { a, step: r, n, terms } = s;
   const tn = a * Math.pow(r, n - 1);
+  if (!Number.isFinite(tn))
+    return {
+      ok: false,
+      error:
+        'Those sequence values are outside the calculator’s numeric range.',
+    };
 
   const steps: Step[] = [];
   if (terms) {
@@ -183,14 +201,27 @@ function geometric(s: Seq): SolveResult {
   });
 
   let answer = `t_{${n}} = ${fmt(tn, 4)}`;
-  if (Math.abs(r - 1) < EPS) {
+  if (r === 1) {
+    const sum = n * a;
+    if (!Number.isFinite(sum))
+      return {
+        ok: false,
+        error:
+          'Those sequence values are outside the calculator’s numeric range.',
+      };
     steps.push({
       note: 'With r = 1 every term is the same, so the sum is just n × a.',
-      latex: `S_{${n}} = ${n} \\times ${fmt(a)} = ${fmt(n * a)}`,
+      latex: `S_{${n}} = ${n} \\times ${fmt(a)} = ${fmt(sum)}`,
     });
-    answer += `, \\quad S_{${n}} = ${fmt(n * a)}`;
+    answer += `, \\quad S_{${n}} = ${fmt(sum)}`;
   } else {
     const sum = (a * (Math.pow(r, n) - 1)) / (r - 1);
+    if (!Number.isFinite(sum))
+      return {
+        ok: false,
+        error:
+          'Those sequence values are outside the calculator’s numeric range.',
+      };
     steps.push({
       note: 'The sum of the first n terms:',
       latex: `S_n = \\dfrac{a(r^{n} - 1)}{r - 1}`,
@@ -204,6 +235,11 @@ function geometric(s: Seq): SolveResult {
 
     if (Math.abs(r) < 1) {
       const inf = a / (1 - r);
+      if (!Number.isFinite(inf))
+        return {
+          ok: false,
+          error: 'The limiting sum is outside the calculator’s numeric range.',
+        };
       steps.push({
         note: 'Because $|r| < 1$ the terms shrink towards zero, so the series converges to a limiting sum.',
         latex: `S_{\\infty} = \\dfrac{a}{1 - r} = \\dfrac{${fmt(a)}}{1 - ${fmt(r)}} = ${fmt(inf, 4)}`,
@@ -259,22 +295,30 @@ export const sequencesSolver: Solver = {
       return explicit ? 0.97 : 0.85;
     return 0;
   },
-  solve(input, methodId): SolveResult {
+  solve(input): SolveResult {
     let s: Seq;
     try {
-      s = read(input, methodId);
+      s = read(input);
     } catch (e) {
       return {
         ok: false,
         error: e instanceof Error ? e.message : 'Could not read that sequence.',
       };
     }
-    // A typed list tells us which kind it is; otherwise trust the chosen tab.
-    const kind = s.terms
-      ? s.kind
-      : methodId === 'geometric'
-        ? 'geometric'
-        : s.kind;
+    if (
+      !Number.isFinite(s.a) ||
+      !Number.isFinite(s.step) ||
+      !Number.isSafeInteger(s.n) ||
+      s.n <= 0
+    ) {
+      return {
+        ok: false,
+        error:
+          'The first term and step must be finite, and n must be a positive whole number.',
+      };
+    }
+    // The supplied key (d or r), or a typed list, determines the sequence.
+    const kind = s.kind;
     return kind === 'geometric'
       ? geometric({ ...s, kind })
       : arithmetic({ ...s, kind });

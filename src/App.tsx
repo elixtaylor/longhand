@@ -92,13 +92,32 @@ export default function App() {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+
+  // Page changes should start at the page heading. Without this, opening a
+  // calculator from lower in the directory inherits that scroll position and
+  // can land with its diagram and first fields already above the viewport.
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    document.title =
+      page === 'home'
+        ? 'Longhand'
+        : page === 'calculators'
+          ? 'Calculators | Longhand'
+          : page === 'graphing'
+            ? 'Graphs and Equations | Longhand'
+            : 'Settings | Longhand';
+  }, [page]);
   const closeSidebar = () => {
+    const restoreMenuFocus = sidebarOpen;
     setSidebarOpen(false);
-    window.requestAnimationFrame(() =>
-      document
-        .querySelector<HTMLButtonElement>('[aria-label="Open menu"]')
-        ?.focus(),
-    );
+    if (restoreMenuFocus) {
+      window.requestAnimationFrame(() =>
+        document
+          .querySelector<HTMLButtonElement>('[aria-label="Open menu"]')
+          ?.focus(),
+      );
+    }
   };
 
   // Apply the theme to <html> so the token sets in themes.css take effect.
@@ -269,7 +288,7 @@ function SettingsPage({
           >
             ← Return
           </button>
-          <span className="graphing-kicker">Settings</span>
+          <h1 className="graphing-kicker">Settings</h1>
         </div>
       </header>
       <section className="page-card">

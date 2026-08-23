@@ -347,6 +347,15 @@ export const measurementSolver: Solver = {
         error: `That ${shape.id} still needs ${missing.map((m) => `${m}=`).join(', ')} — e.g.  ${shape.id} ${shape.needs.map((n) => `${n}=5`).join(', ')}.`,
       };
     }
+    const invalidDimension = shape.needs.find(
+      (key) => !Number.isFinite(parsed[key]) || parsed[key] <= 0,
+    );
+    if (invalidDimension !== undefined) {
+      return {
+        ok: false,
+        error: `${invalidDimension} must be a finite length greater than zero.`,
+      };
+    }
 
     // Decide which quantities to work out.
     const { values: p, unit } = dimensionValues(input, parsed);
@@ -361,12 +370,25 @@ export const measurementSolver: Solver = {
     let wanted = available.filter(([, c]) => c !== undefined) as Array<
       [string, Calc]
     >;
+    if (wanted.some(([, calculation]) => !Number.isFinite(calculation.value))) {
+      return {
+        ok: false,
+        error:
+          'Those dimensions produce values outside the calculator’s numeric range.',
+      };
+    }
     if (requested) {
       // "Area" on a solid sensibly means surface area.
       const key =
         requested === 'area' && shape.dim === '3d' ? 'surface' : requested;
       const picked = wanted.filter(([k]) => k === key);
-      if (picked.length > 0) wanted = picked;
+      if (picked.length === 0) {
+        return {
+          ok: false,
+          error: `This ${shape.id} calculator cannot find ${LABELS[key]?.toLowerCase() ?? key} from those measurements.`,
+        };
+      }
+      wanted = picked;
     }
 
     const steps: Step[] = [

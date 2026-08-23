@@ -44,6 +44,11 @@ describe('geometricProofSolver', () => {
     expect(result.ok && result.solution.answerLatex).toBe(
       '\\angle ABC = \\angle BCA',
     );
+    if (result.ok) {
+      const working = result.solution.steps.map((step) => step.latex).join(' ');
+      expect(working).toContain('\\angle BAD = \\angle DAC');
+      expect(working).not.toContain('\\angle ABD = \\angle DAC');
+    }
   });
 
   it('proves triangle congruence using a named criterion', () => {
@@ -54,6 +59,18 @@ describe('geometricProofSolver', () => {
     expect(result.ok).toBe(true);
     if (result.ok)
       expect(result.solution.methodName).toBe('SAS congruence proof');
+  });
+
+  it('reads full three-letter angle givens in a congruence proof', () => {
+    const result = geometricProofSolver.solve(
+      'prove triangles ABC and DEF are congruent by ASA, angle ABC = angle DEF, AB = DE, angle BAC = angle EDF',
+      'congruence',
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.solution.steps[0].latex).toContain('ABC = DEF');
+      expect(result.solution.steps[0].latex).toContain('BAC = EDF');
+    }
   });
 
   it('does not claim unrelated prose', () => {

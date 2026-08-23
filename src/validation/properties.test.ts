@@ -17,6 +17,7 @@ import { fractionsSolver } from '../solvers/arithmetic/fractions';
 import { percentageSolver } from '../solvers/arithmetic/percentages';
 import { indicesSolver } from '../solvers/algebra/indices';
 import { inequalitySolver } from '../solvers/algebra/inequalities';
+import { matricesSolver } from '../solvers/specialist/matrices';
 
 /**
  * Property-based validation.
@@ -49,6 +50,14 @@ function randomPoly(
 }
 const evalCoeffs = (coeffs: number[], x: number) =>
   coeffs.reduce((sum, c, i) => sum + c * Math.pow(x, i), 0);
+
+function matrixFromLatex(latex: string): number[][] {
+  const match = latex.match(/\\begin\{pmatrix\}\s*(.*?)\s*\\end\{pmatrix\}/);
+  if (!match) return [];
+  return match[1]
+    .split(/\s+\\\\\s+/)
+    .map((row) => row.split(/\s*&\s*/).map(Number));
+}
 
 /* ------------------------------------------------------------- quadratics */
 
@@ -609,6 +618,72 @@ describe('percentages: reverse undoes forward', () => {
         close(Number(res.solution.answerLatex), (pct / 100) * amount, 1e-6),
       ).toBe(true);
     }
+  });
+});
+
+/* --------------------------------------------------------------- matrices */
+
+describe('matrices: results agree with independent arithmetic', () => {
+  it('matches direct determinant formulae for 2×2 and 3×3 matrices', () => {
+    const rng = makeRng(26);
+    for (let i = 0; i < 160; i++) {
+      const a = Array.from({ length: 3 }, () =>
+        Array.from({ length: 3 }, () => rng.int(-9, 9)),
+      );
+      const input = `det [[${a.map((row) => row.join(',')).join('],[')}]]`;
+      const result = matricesSolver.solve(input, 'determinant');
+      expect(result.ok, input).toBe(true);
+      if (!result.ok || !result.solution.answerLatex) continue;
+      const expected =
+        a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) -
+        a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) +
+        a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+      expect(numbersIn(result.solution.answerLatex)[0], input).toBe(expected);
+
+      const two = a.slice(0, 2).map((row) => row.slice(0, 2));
+      const twoInput = `det [[${two.map((row) => row.join(',')).join('],[')}]]`;
+      const twoResult = matricesSolver.solve(twoInput, 'determinant');
+      expect(twoResult.ok, twoInput).toBe(true);
+      if (twoResult.ok && twoResult.solution.answerLatex) {
+        expect(numbersIn(twoResult.solution.answerLatex)[0], twoInput).toBe(
+          two[0][0] * two[1][1] - two[0][1] * two[1][0],
+        );
+      }
+    }
+  });
+
+  it('multiplies every reported 2×2 inverse back to the identity', () => {
+    const rng = makeRng(27);
+    let checked = 0;
+    for (let i = 0; i < 180; i++) {
+      const a = [
+        [rng.int(-8, 8), rng.int(-8, 8)],
+        [rng.int(-8, 8), rng.int(-8, 8)],
+      ];
+      if (a[0][0] * a[1][1] - a[0][1] * a[1][0] === 0) continue;
+      const input = `inverse [[${a[0].join(',')}],[${a[1].join(',')}]]`;
+      const result = matricesSolver.solve(input, 'inverse');
+      expect(result.ok, input).toBe(true);
+      if (!result.ok || !result.solution.answerLatex) continue;
+      const inverse = matrixFromLatex(result.solution.answerLatex);
+      expect(inverse).toHaveLength(2);
+      if (inverse.length !== 2) continue;
+
+      const product = a.map((row) =>
+        inverse[0].map((_, column) =>
+          row.reduce(
+            (sum, value, index) => sum + value * inverse[index][column],
+            0,
+          ),
+        ),
+      );
+      expect(close(product[0][0], 1, 1e-3), input).toBe(true);
+      expect(close(product[0][1], 0, 1e-3), input).toBe(true);
+      expect(close(product[1][0], 0, 1e-3), input).toBe(true);
+      expect(close(product[1][1], 1, 1e-3), input).toBe(true);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(120);
   });
 });
 

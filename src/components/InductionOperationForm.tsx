@@ -34,71 +34,87 @@ export function InductionOperationForm({
     if (complete) onSubmit(serialized);
   }
 
+  function clearValues() {
+    setSummand('');
+    setStart('1');
+    setDomain('natural');
+  }
+
   return (
     <form className="structured-form induction-form" onSubmit={submit}>
-      <div className="structured-field">
-        <label className="field-label" htmlFor="induction-summand">
-          Summand f(r)
-        </label>
-        <input
-          id="induction-summand"
-          className="expr-input"
-          type="text"
-          inputMode="text"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          placeholder="e.g. r^2"
-          value={summand}
-          onChange={(event) => setSummand(event.target.value)}
-        />
-      </div>
+      <div className="calculator-input-region">
+        <div className="calculator-field-stack">
+          <div className="structured-field">
+            <label className="field-label" htmlFor="induction-summand">
+              Summand f(r)
+            </label>
+            <input
+              id="induction-summand"
+              className="expr-input"
+              type="text"
+              inputMode="text"
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              placeholder="e.g. r^2"
+              value={summand}
+              onChange={(event) => setSummand(event.target.value)}
+            />
+          </div>
 
-      <div className="number-fields induction-number-fields">
-        <div className="number-field">
-          <label className="field-label" htmlFor="induction-start">
-            Start n₀
-          </label>
-          <input
-            id="induction-start"
-            className="expr-input num-input"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            aria-label="Start n₀"
-            value={start}
-            onChange={(event) => setStart(event.target.value)}
-          />
+          <div className="number-fields induction-number-fields">
+            <div className="number-field">
+              <label className="field-label" htmlFor="induction-start">
+                Start n₀
+              </label>
+              <input
+                id="induction-start"
+                className="expr-input num-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                aria-label="Start n₀"
+                aria-invalid={(!validStart && start.trim() !== '') || undefined}
+                value={start}
+                onChange={(event) => setStart(event.target.value)}
+              />
+            </div>
+
+            <div className="number-field">
+              <label className="field-label" htmlFor="induction-domain">
+                Domain
+              </label>
+              <select
+                id="induction-domain"
+                className="induction-domain-select"
+                aria-label="Induction domain"
+                value={domain}
+                onChange={(event) => setDomain(event.target.value as Domain)}
+              >
+                <option value="natural">n ∈ ℕ, n ≥ n₀</option>
+                <option value="integer">n ∈ ℤ, n ≥ n₀</option>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div className="number-field">
-          <label className="field-label" htmlFor="induction-domain">
-            Domain
-          </label>
-          <select
-            id="induction-domain"
-            className="induction-domain-select"
-            aria-label="Induction domain"
-            value={domain}
-            onChange={(event) => setDomain(event.target.value as Domain)}
-          >
-            <option value="natural">n ∈ ℕ, n ≥ n₀</option>
-            <option value="integer">n ∈ ℤ, n ≥ n₀</option>
-          </select>
-        </div>
+        {validStart && domain === 'natural' && startNumber < 0 && (
+          <p className="field-error" role="alert">
+            Natural-number induction must start at 0 or above.
+          </p>
+        )}
       </div>
-
-      {validStart && domain === 'natural' && startNumber < 0 && (
-        <p className="field-error" role="alert">
-          Natural-number induction must start at 0 or above.
-        </p>
-      )}
 
       <CalculatorPreview result={liveResult} />
 
-      <button type="submit" className="btn-primary" disabled={!complete}>
-        Show the proof
-      </button>
+      <div className="calculator-actions">
+        <button type="submit" className="btn-primary" disabled={!complete}>
+          Show the proof
+        </button>
+        <button type="button" className="btn-secondary" onClick={clearValues}>
+          Clear
+        </button>
+      </div>
     </form>
   );
 }
